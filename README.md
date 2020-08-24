@@ -120,7 +120,8 @@ query will send a cancelation packet, this doesn't always work (due the packet a
 ```c++
 auto cancelator = new QObject;
 db.exec("SELECT pg_sleep(5)"), [=] (AResult &result) {
-    // Will crash if cancelator is a danglying reference
+    // This will never be called but it would crash
+    // if cancelator was dangling reference and not passed as last parameter
     cancelator->setProperty("foo");
 
 }, cancelator); // notice the object being passed here
