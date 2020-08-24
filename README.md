@@ -115,8 +115,8 @@ db.exec("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
 
 ### Cancelation
 ASql was created with web usage in mind, namely to be used in Cutelyst but can also be used on Desktop/Mobile apps too, so in order to cancel
-or avoid a crash due some invalid pointer captured by the lambda you can pass a QPointer object, that if deleted and was set for the current
-query will send a cancelation packet, this doesn't always work, but your lambda will not be called anymore.
+or avoid a crash due some invalid pointer captured by the lambda you can pass a QObject pointer, that if deleted and was set for the current
+query will send a cancelation packet, this doesn't always work (due the packet arriving after the query was done), but your lambda will not be called anymore.
 ```c++
 auto cancelator = new QObject;
 db.exec("SELECT pg_sleep(5)"), [=] (AResult &result) {
