@@ -552,7 +552,7 @@ int AResultPg::fields() const
     return PQnfields(m_result);
 }
 
-int AResultPg::numRowsAffected()
+int AResultPg::numRowsAffected() const
 {
     return QString::fromLatin1(PQcmdTuples(m_result)).toInt();
 }

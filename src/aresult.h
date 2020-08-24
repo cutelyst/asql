@@ -20,7 +20,7 @@ public:
     virtual int at() const = 0;
     virtual int size() const = 0;
     virtual int fields() const = 0;
-    virtual int numRowsAffected() = 0;
+    virtual int numRowsAffected() const = 0;
 
     virtual QString fieldName(int column) const = 0;
     virtual QVariant value(int column) const = 0;

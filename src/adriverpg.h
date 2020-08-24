@@ -26,7 +26,7 @@ public:
     virtual int at() const override;
     virtual int size() const override;
     virtual int fields() const override;
-    virtual int numRowsAffected() override;
+    virtual int numRowsAffected() const override;
 
     virtual QString fieldName(int column) const override;
     virtual QVariant value(int column) const override;
