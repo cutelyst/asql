@@ -182,19 +182,21 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                 int status = PQresultStatus(result);
                                 APGQuery &pgQuery = m_queuedQueries.head();
                                 qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK;
-                                if (pgQuery.result.m_result) {
+                                if (pgQuery.result->m_result) {
                                     // when we had already had a result it means we should emit the
                                     // first one and keep waiting till a null result is returned
-                                    pgQuery.result.processResult();
-                                    pgQuery.result.m_lastResultSet = false;
+                                    pgQuery.result->processResult();
+                                    pgQuery.result->m_lastResultSet = false;
                                     pgQuery.done();
-                                    pgQuery.result = AResultPg();
+
+                                    // allocate a new result
+                                    pgQuery.result = QSharedPointer<AResultPg>(new AResultPg());
                                 }
-                                pgQuery.result.m_result = result;
+                                pgQuery.result->m_result = result;
                             } else {
                                 if (m_queuedQueries.size()) {
                                     APGQuery pgQuery = m_queuedQueries.dequeue();
-                                    pgQuery.result.processResult();
+                                    pgQuery.result->processResult();
                                     pgQuery.done();
                                     m_queryRunning = false;
 
@@ -374,8 +376,8 @@ void ADriverPg::finishQueries(const QString &error)
 {
     while (!m_queuedQueries.isEmpty()) {
         APGQuery pgQuery = m_queuedQueries.dequeue();
-        pgQuery.result.m_error = true;
-        pgQuery.result.m_errorString = error;
+        pgQuery.result->m_error = true;
+        pgQuery.result->m_errorString = error;
         pgQuery.done();
     }
 }
@@ -387,8 +389,8 @@ void ADriverPg::doExec(APGQuery &pgQuery)
         m_queryRunning = true;
     } else {
         m_queuedQueries.dequeue();
-        pgQuery.result.m_error = true;
-        pgQuery.result.m_errorString = QString::fromLocal8Bit(PQerrorMessage(m_conn));
+        pgQuery.result->m_error = true;
+        pgQuery.result->m_errorString = QString::fromLocal8Bit(PQerrorMessage(m_conn));
         pgQuery.done();
     }
 }
@@ -500,8 +502,8 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
     if (ret == 1) {
         m_queryRunning = true;
     } else {
-        pgQuery.result.m_error = true;
-        pgQuery.result.m_errorString = QString::fromLocal8Bit(PQerrorMessage(m_conn));
+        pgQuery.result->m_error = true;
+        pgQuery.result->m_errorString = QString::fromLocal8Bit(PQerrorMessage(m_conn));
         pgQuery.done();
         m_queuedQueries.dequeue();
     }
@@ -510,6 +512,11 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
 AResultPg::AResultPg()
 {
 
+}
+
+AResultPg::~AResultPg()
+{
+    PQclear(m_result);
 }
 
 bool AResultPg::next()

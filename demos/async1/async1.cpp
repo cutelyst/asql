@@ -4,6 +4,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDateTime>
+#include <QTimer>
 #include <QUuid>
 #include <QUrl>
 
@@ -11,12 +12,60 @@
 #include "../../src/adatabase.h"
 #include "../../src/aresult.h"
 #include "../../src/amigrations.h"
+#include "../../src/acache.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    APool::addDatabase(QUrl(QStringLiteral("postgresql:///bng?target_session_attrs=read-write")));
+    APool::addDatabase(QUrl(QStringLiteral("postgresql:///mydb?target_session_attrs=read-write")));
+    APool::setDatabaseMaxIdleConnections(10);
+
+    auto cache = new ACache;
+    cache->setDatabase(APool::database());
+    cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+        qDebug() << "CACHED 1" << result.errorString() << result.size();
+        if (result.error()) {
+            qDebug() << "Error" << result.errorString();
+        }
+
+        while (result.next()) {
+            for (int i = 0; i < result.fields(); ++i) {
+                qDebug() << "cached 1" << result.at() << i << result.value(i);
+            }
+        }
+    }, new QObject);
+
+    QTimer::singleShot(2000, [=] {
+        cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+            qDebug() << "CACHED 2" << result.errorString() << result.size();
+            if (result.error()) {
+                qDebug() << "Error" << result.errorString();
+            }
+
+            while (result.next()) {
+                for (int i = 0; i < result.fields(); ++i) {
+                    qDebug() << "cached 2" << result.at() << i << result.value(i);
+                }
+            }
+        }, new QObject);
+
+        bool ret = cache->clear(QStringLiteral("SELECT now()"));
+        qDebug() << "CACHED - CLEARED" << ret;
+
+        cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+            qDebug() << "CACHED 3" << result.errorString() << result.size();
+            if (result.error()) {
+                qDebug() << "Error 3" << result.errorString();
+            }
+
+            while (result.next()) {
+                for (int i = 0; i < result.fields(); ++i) {
+                    qDebug() << "cached 3" << result.at() << i << result.value(i);
+                }
+            }
+        }, new QObject);
+    });
 
     //    auto obj = new QObject;
 
@@ -86,29 +135,29 @@ int main(int argc, char *argv[])
 ////        }
 //    });
 
-    auto mig = new AMigrations();
-    mig->connect(mig, &AMigrations::ready, [=] (bool error, const QString &erroString) {
-        qDebug() << "ready" << error << erroString;
-        mig->migrate([=] (bool error, const QString &errorString) {
-            qDebug() << "MIGRATED" << error << errorString;
-        });
-    });
-    mig->load(APool::database(), QStringLiteral("foo"));
+//    auto mig = new AMigrations();
+//    mig->connect(mig, &AMigrations::ready, [=] (bool error, const QString &erroString) {
+//        qDebug() << "ready" << error << erroString;
+//        mig->migrate([=] (bool error, const QString &errorString) {
+//            qDebug() << "MIGRATED" << error << errorString;
+//        });
+//    });
+//    mig->load(APool::database(), QStringLiteral("foo"));
 
-    mig->fromString(QStringLiteral(R"V0G0N(
-                                  -- 1 up
-                                  create table messages (message text);
-                                  insert into messages values ('I ♥ Cutelyst!');
-                                  -- 1 down
-                                  drop table messages;
-                                   -- 2 up
-                                   create table log (message text);
-                                   insert into log values ('logged');
-                                   -- 2 down
-                                   drop table log;
-                                   -- 3 up
-                                   create tabsle log (message text);
-                                  )V0G0N"));
+//    mig->fromString(QStringLiteral(R"V0G0N(
+//                                  -- 1 up
+//                                  create table messages (message text);
+//                                  insert into messages values ('I ♥ Cutelyst!');
+//                                  -- 1 down
+//                                  drop table messages;
+//                                   -- 2 up
+//                                   create table log (message text);
+//                                   insert into log values ('logged');
+//                                   -- 2 down
+//                                   drop table log;
+//                                   -- 3 up
+//                                   create tabsle log (message text);
+//                                  )V0G0N"));
 //    qDebug() << "MIG" << mig.latest() << mig.active();
 //    qDebug() << "sqlFor" << mig.sqlFor(0, 2);
 

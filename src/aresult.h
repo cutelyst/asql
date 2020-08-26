@@ -2,14 +2,14 @@
 #define ARESULT_H
 
 #include <QVariant>
+#include <QSharedPointer>
 
-#include "aqsqlexports.h"
+#include <aqsqlexports.h>
 
-class ASQL_EXPORT AResult
+class ASQL_EXPORT AResultPrivate
 {
 public:
-    AResult();
-    virtual ~AResult();
+    virtual ~AResultPrivate();
 
     virtual bool next() = 0;
     virtual bool lastResulSet() const = 0;
@@ -24,6 +24,29 @@ public:
 
     virtual QString fieldName(int column) const = 0;
     virtual QVariant value(int column) const = 0;
+};
+
+class ASQL_EXPORT AResult
+{
+public:
+    AResult();
+    AResult(const QSharedPointer<AResultPrivate> &priv);
+    AResult(const AResult &other);
+    virtual ~AResult();
+
+    bool next();
+    bool lastResulSet() const;
+    bool error() const;
+    QString errorString() const;
+
+    void setAt(int row);
+    int at() const;
+    int size() const;
+    int fields() const;
+    int numRowsAffected() const;
+
+    QString fieldName(int column) const;
+    QVariant value(int column) const;
 
     /*!
      * \brief columnNames returns the column names
@@ -61,6 +84,8 @@ public:
      */
     QJsonArray jsonArray();
 
+protected:
+    QSharedPointer<AResultPrivate> d;
 };
 
 #endif // ARESULT_H

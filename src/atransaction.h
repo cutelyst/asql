@@ -3,10 +3,11 @@
 
 #include <QSharedPointer>
 
-#include "adatabase.h"
+#include <adatabase.h>
+#include <aqsqlexports.h>
 
 class ATransactionPrivate;
-class ATransaction
+class ASQL_EXPORT ATransaction
 {
 public:
     ATransaction();

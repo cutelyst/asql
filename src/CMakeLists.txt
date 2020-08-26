@@ -8,6 +8,7 @@ set(asql_SRC
     adriver.cpp
     adriver.h
     aresult.cpp
+    acache.cpp
     adriverpg.cpp
     adriverpg.h
 )
@@ -19,6 +20,7 @@ set(asql_HEADERS
     atransaction.h
     aresult.h
     adriver.h
+    acache.h
     aqsqlexports.h
 )
 

@@ -12,10 +12,11 @@
 
 typedef struct pg_conn PGconn;
 
-class AResultPg : public AResult
+class AResultPg : public AResultPrivate
 {
 public:
     AResultPg();
+    virtual ~AResultPg();
 
     virtual bool next() override;
     virtual bool lastResulSet() const override;
@@ -33,17 +34,20 @@ public:
 
     void processResult();
 
+    QString m_errorString;
+    PGresult *m_result = nullptr;
     int m_pos = -1;
     bool m_error = false;
     bool m_lastResultSet = true;
-    QString m_errorString;
-    PGresult *m_result = nullptr;
 };
 
-typedef struct
+class APGQuery
 {
+public:
+    APGQuery() : result(QSharedPointer<AResultPg>(new AResultPg))
+    { }
     QString query;
-    AResultPg result;
+    QSharedPointer<AResultPg> result;
     QVariantList params;
     AResultFn cb;
     QSharedPointer<ADatabasePrivate> db;
@@ -51,11 +55,12 @@ typedef struct
     QObject *checkReceiver;
 
     inline void done() {
+        AResult r(result);
         if (cb && (!checkReceiver || !receiver.isNull())) {
-            cb(result);
+            cb(r);
         }
     }
-} APGQuery;
+};
 
 class ADriverPg : public ADriver
 {

@@ -6,7 +6,7 @@
 
 #include <adatabase.h>
 
-#include "aqsqlexports.h"
+#include <aqsqlexports.h>
 
 class ASQL_EXPORT APool : public QObject
 {

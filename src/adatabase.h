@@ -7,7 +7,7 @@
 
 #include <functional>
 
-#include "aqsqlexports.h"
+#include <aqsqlexports.h>
 
 class AResult;
 

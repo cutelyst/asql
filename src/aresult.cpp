@@ -8,9 +8,69 @@ AResult::AResult()
 
 }
 
+AResult::AResult(const AResult &other)
+{
+    d = other.d;
+}
+
 AResult::~AResult()
 {
 
+}
+
+bool AResult::next()
+{
+    return d->next();
+}
+
+bool AResult::lastResulSet() const
+{
+    return d->lastResulSet();
+}
+
+bool AResult::error() const
+{
+    return d->error();
+}
+
+QString AResult::errorString() const
+{
+    return QString();
+}
+
+void AResult::setAt(int row)
+{
+    d->setAt(row);
+}
+
+int AResult::at() const
+{
+    return d->at();
+}
+
+int AResult::size() const
+{
+    return d->size();
+}
+
+int AResult::fields() const
+{
+    return d->fields();
+}
+
+int AResult::numRowsAffected() const
+{
+    return d->numRowsAffected();
+}
+
+QString AResult::fieldName(int column) const
+{
+    return d->fieldName(column);
+}
+
+QVariant AResult::value(int column) const
+{
+    return d->value(column);
 }
 
 QStringList AResult::columnNames()
@@ -94,3 +154,12 @@ QJsonArray AResult::jsonArray()
     return ret;
 }
 
+AResult::AResult(const QSharedPointer<AResultPrivate> &priv) : d(priv)
+{
+
+}
+
+AResultPrivate::~AResultPrivate()
+{
+
+}
