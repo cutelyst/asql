@@ -35,7 +35,7 @@ bool AResult::error() const
 
 QString AResult::errorString() const
 {
-    return QString();
+    return d->errorString();
 }
 
 void AResult::setAt(int row)
