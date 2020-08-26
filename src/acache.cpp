@@ -44,8 +44,9 @@ void ACache::setDatabase(const ADatabase &db)
 bool ACache::clear(const QString &query, const QVariantList &params)
 {
     Q_D(ACache);
-    qDebug(ASQL_CACHE) << "clearing cache" << query;
-    return d->cache.remove({query, params});
+    int ret = d->cache.remove({query, params});
+    qDebug(ASQL_CACHE) << "clearing cache" << ret << query;
+    return ret;
 }
 
 void ACache::exec(const QString &query, AResultFn cb, QObject *receiver)
@@ -56,7 +57,7 @@ void ACache::exec(const QString &query, AResultFn cb, QObject *receiver)
 void ACache::exec(const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_D(ACache);
-    auto it = d->cache.find({query, QVariantList()});
+    auto it = d->cache.find({query, params});
     if (it != d->cache.end()) {
         ACacheValue &value = it.value();
         if (value.hasResult) {
@@ -82,10 +83,10 @@ void ACache::exec(const QString &query, const QVariantList &params, AResultFn cb
         receiverObj.receiver = receiver;
         receiverObj.checkReceiver = receiver;
         value.receivers.push_back(receiverObj);
-        d->cache.insert({query, QVariantList()}, value);
+        d->cache.insert({query, params}, value);
 
         auto dbFn = [=] (AResult &result) {
-            auto it = d->cache.find({query, QVariantList()});
+            auto it = d->cache.find({query, params});
             if (it != d->cache.end()) {
                  ACacheValue &value = it.value();
                  value.result = result;
