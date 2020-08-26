@@ -154,6 +154,11 @@ QJsonArray AResult::jsonArray()
     return ret;
 }
 
+bool AResult::operator==(const AResult &other) const
+{
+    return d == other.d;
+}
+
 AResult::AResult(const QSharedPointer<AResultPrivate> &priv) : d(priv)
 {
 

@@ -84,6 +84,8 @@ public:
      */
     QJsonArray jsonArray();
 
+    bool operator==(const AResult &other) const;
+
 protected:
     QSharedPointer<AResultPrivate> d;
 };
