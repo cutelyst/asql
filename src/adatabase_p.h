@@ -9,9 +9,7 @@ class ADatabasePrivate
 {
 public:
     ADatabasePrivate(const QUrl &ci);
-    ~ADatabasePrivate() {
-        qDebug() << "~ADatabasePrivate()";;
-    }
+    ~ADatabasePrivate() = default;
     QUrl connectionInfo;
     ADriver *driver;
 };
