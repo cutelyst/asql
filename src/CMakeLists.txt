@@ -61,7 +61,7 @@ target_link_libraries(ASqlQt5
     PUBLIC
         Qt5::Core
     PRIVATE
-        ${LIBPQ_LIBRARIES}
+        PostgreSQL::PostgreSQL
 )
 
 set_property(TARGET ASqlQt5 PROPERTY PUBLIC_HEADER ${asql_HEADERS})

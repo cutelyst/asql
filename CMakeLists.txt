@@ -3,10 +3,7 @@ project(libasql VERSION 0.9.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
-find_package(PkgConfig REQUIRED)
-
-# Postgres library
-pkg_check_modules(LIBPQ REQUIRED libpq)
+find_package(PostgreSQL REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 
@@ -82,7 +79,6 @@ include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/ASql
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${LIBPQ_INCLUDE_DIRS}
 )
 
 # cmake config files
