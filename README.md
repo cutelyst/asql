@@ -9,6 +9,7 @@ Qt Async Sql library
 * Notifications
 * Database maintainance with AMigrations class
 * Conveniently converts your query data to JSON or QVariantHash
+* Cache support
 
 ## Usage
 
@@ -50,7 +51,7 @@ Please if you have user input values that you need to pass to your query do your
 
 ```
 
-### Performing a multiple queries without params
+### Performing multiple queries without params
 When you are not sending parameters PostgreSQL allows for multiple queries, this results into multiple calls to your lambda, if one query fails the remaining queries are ignored as if they where in a transaction block. It's possible to check if the last result has arrived
 ```c++
     // This query is at the same scope at the previou one, this mean ADatabase will queue them
@@ -163,5 +164,59 @@ mig->connect(mig, &AMigrations::ready, [=] (bool error, const QString &erroStrin
     });
 });
 mig->load(APool::database(), QStringLiteral("my_app_foo"));
+```
 
+### Caching
+ASql can cache AResults int a transparent way, if exec() is called with the same query string or with same query string combined with the same parameters an unique entry is created on the Cache object.
+```c++
+auto cache = new ACache;
+cache->setDatabase(APool::database());
+
+// This query does not exist in cache so it will arive at the database
+cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+    qDebug() << "CACHED 1" << result.errorString() << result.size();
+    if (result.error()) {
+        qDebug() << "Error" << result.errorString();
+    }
+
+    while (result.next()) {
+        for (int i = 0; i < result.fields(); ++i) {
+            qDebug() << "cached 1" << result.at() << i << result.value(i);
+        }
+    }
+});
+
+QTimer::singleShot(2000, [=] {
+    // this query will fetch the cached result, unless 2s were not enough in such case it will be queued
+    cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+        qDebug() << "CACHED 2" << result.errorString() << result.size();
+        if (result.error()) {
+            qDebug() << "Error" << result.errorString();
+        }
+
+        while (result.next()) {
+            for (int i = 0; i < result.fields(); ++i) {
+                qDebug() << "cached 2" << result.at() << i << result.value(i);
+            }
+        }
+    });
+
+    // Manually clears the cache
+    bool ret = cache->clear(QStringLiteral("SELECT now()"));
+    qDebug() << "CACHED - CLEARED" << ret;
+
+    // Since we cleared it this will result in a new db call
+    cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+        qDebug() << "CACHED 3" << result.errorString() << result.size();
+        if (result.error()) {
+            qDebug() << "Error 3" << result.errorString();
+        }
+
+        while (result.next()) {
+            for (int i = 0; i < result.fields(); ++i) {
+                qDebug() << "cached 3" << result.at() << i << result.value(i);
+            }
+        }
+    });
+});
 ```
