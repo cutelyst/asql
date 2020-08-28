@@ -11,7 +11,7 @@ ADatabase::ADatabase()
 
 }
 
-ADatabase::ADatabase(const QUrl &connectionInfo)
+ADatabase::ADatabase(const QString &connectionInfo)
     : d(new ADatabasePrivate(connectionInfo))
 {
 
@@ -90,7 +90,7 @@ ADatabase &ADatabase::operator =(const ADatabase &copy)
     return *this;
 }
 
-ADatabasePrivate::ADatabasePrivate(const QUrl &ci)
+ADatabasePrivate::ADatabasePrivate(const QString &ci)
     : connectionInfo(ci)
 {
     driver = new ADriverPg;

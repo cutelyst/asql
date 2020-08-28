@@ -76,43 +76,19 @@ QString connectionStatus(ConnStatusType type) {
     }
 }
 
-static QString qQuote(QString s)
-{
-    s.replace(QLatin1Char('\\'), QLatin1String("\\\\"));
-    s.replace(QLatin1Char('\''), QLatin1String("\\'"));
-    s.append(QLatin1Char('\'')).prepend(QLatin1Char('\''));
-    return s;
-}
+//static QString qQuote(QString s)
+//{
+//    s.replace(QLatin1Char('\\'), QLatin1String("\\\\"));
+//    s.replace(QLatin1Char('\''), QLatin1String("\\'"));
+//    s.append(QLatin1Char('\'')).prepend(QLatin1Char('\''));
+//    return s;
+//}
 
 void ADriverPg::open(std::function<void(bool, const QString &)> cb)
 {
-    const QUrl info = connectionInfo();
-    QString conninfo;
-    if (!info.host().isEmpty()) {
-        conninfo.append(QLatin1String("host=") + qQuote(info.host()));
-    }
-    if (info.port() != -1) {
-        conninfo.append(QLatin1String(" port=") + qQuote(QString::number(info.port())));
-    }
-    if (!info.userName().isEmpty()) {
-        conninfo.append(QLatin1String(" user=") + qQuote(info.userName()));
-    }
-    if (!info.password().isEmpty()) {
-        conninfo.append(QLatin1String(" password=") + qQuote(info.password()));
-    }
-    if (!info.fileName().isEmpty()) {
-        conninfo.append(QLatin1String(" dbname=") + qQuote(info.fileName()));
-    }
+    qDebug(ASQL_PG) << "Open" << connectionInfo();
 
-    const QUrlQuery infoParams(info);
-    const auto infoParamsItems = infoParams.queryItems();
-    for (const QPair<QString, QString> param : infoParamsItems) {
-        conninfo.append(QLatin1Char(' ') + param.first + QLatin1Char('=') + qQuote(param.second));
-    }
-
-    qDebug(ASQL_PG) << "Open" << conninfo;
-
-    m_conn = PQconnectStart(conninfo.toLocal8Bit().constData());
+    m_conn = PQconnectStart(connectionInfo().toUtf8().constData());
     if (m_conn) {
         const auto socket = PQsocket(m_conn);
         if (socket > 0) {

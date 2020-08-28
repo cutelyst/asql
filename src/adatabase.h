@@ -32,7 +32,7 @@ public:
      * * Username and database "postgresql://username@/db2"
      * * Username, host, database and options "postgresql://username@example.com/db3/bng?target_session_attrs=read-write"
      */
-    ADatabase(const QUrl &connectionInfo);
+    ADatabase(const QString &connectionInfo);
 
     ADatabase(const ADatabase &other);
 

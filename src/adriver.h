@@ -3,7 +3,6 @@
 
 #include <QString>
 #include <QSocketNotifier>
-#include <QUrl>
 
 #include <adatabase.h>
 
@@ -17,8 +16,8 @@ public:
     ADriver();
     virtual ~ADriver() = default;
 
-    QUrl connectionInfo() const;
-    void setConnectionInfo(const QUrl &connectionInfo);
+    QString connectionInfo() const;
+    void setConnectionInfo(const QString &connectionInfo);
 
     virtual void open(std::function<void(bool isOpen, const QString &error)> cb) = 0;
 
@@ -35,7 +34,7 @@ public:
     virtual void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver) = 0;
 
 private:
-    QUrl m_info;
+    QString m_info;
 };
 
 #endif // ADRIVER_H

@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    APool::addDatabase(QUrl(QStringLiteral("postgresql:///mydb?target_session_attrs=read-write")));
+    APool::addDatabase(QStringLiteral("postgres://server.com,server2.com/mydb?target_session_attrs=read-write"));
     APool::setDatabaseMaxIdleConnections(10);
 
     auto cache = new ACache;

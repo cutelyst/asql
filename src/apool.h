@@ -25,7 +25,7 @@ public:
      * \param connectionInfo is a driver url such as postgresql://user:pass@host:port/dbname
      * \param connectionName is an identifier for such connections, for example "read-write" or "read-only-replicas"
      */
-    static void addDatabase(const QUrl &connectionInfo, const QString &connectionName = QLatin1String(defaultConnection));
+    static void addDatabase(const QString &connectionInfo, const QString &connectionName = QLatin1String(defaultConnection));
     static ADatabase database(const QString &connectionName = QLatin1String(defaultConnection));
 
     static void setDatabaseMaxIdleConnections(int max, const QString &connectionName = QLatin1String(defaultConnection));

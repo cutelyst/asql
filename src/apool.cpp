@@ -6,7 +6,7 @@
 Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
 
 typedef struct {
-    QUrl connectionInfo;
+    QString connectionInfo;
     QVector<ADatabasePrivate *> pool;
     int maxIdleConnections = 1;
 } APoolInternal;
@@ -20,7 +20,7 @@ APool::APool(QObject *parent) : QObject(parent)
 
 }
 
-void APool::addDatabase(const QUrl &connectionInfo, const QString &connectionName)
+void APool::addDatabase(const QString &connectionInfo, const QString &connectionName)
 {
     if (!m_connectionPool.contains(connectionName)) {
         APoolInternal pool;

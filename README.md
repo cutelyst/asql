@@ -18,7 +18,7 @@ A connection pool is a convenient way to getting new connections without worryin
 
 ```c++
 // No new connection is created at this moment
-APool::addDatabase(QUrl(QStringLiteral("postgresql://user:pass@server/dbname?target_session_attrs=read-write")));
+APool::addDatabase(QStringLiteral("postgresql://user:pass@server/dbname?target_session_attrs=read-write"));
 
 // Defines the maximum number of idle connections (defaults to 1)
 APool::setDatabaseMaxIdleConnections(10);
