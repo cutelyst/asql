@@ -59,7 +59,7 @@ ADatabase APool::database(const QString &connectionName)
             db.d = QSharedPointer<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
                     pushDatabaseBack(connectionName, priv);
             });
-            db.open({});
+            db.open();
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << connectionName;
             ADatabasePrivate *priv = iPool.pool.takeLast();

@@ -50,7 +50,7 @@ public:
      * either by success or failure, with \param describing the error.
      * \param cb
      */
-    void open(std::function<void(bool isOpen, const QString &error)> cb);
+    void open(std::function<void(bool isOpen, const QString &error)> cb = {});
 
     /*!
      * \brief isOpen returns if the database connection is open.
