@@ -15,6 +15,7 @@ class ADriver
 {
 public:
     ADriver();
+    virtual ~ADriver() = default;
 
     QUrl connectionInfo() const;
     void setConnectionInfo(const QUrl &connectionInfo);

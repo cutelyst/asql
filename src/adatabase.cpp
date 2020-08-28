@@ -96,3 +96,8 @@ ADatabasePrivate::ADatabasePrivate(const QUrl &ci)
     driver = new ADriverPg;
     driver->setConnectionInfo(ci);
 }
+
+ADatabasePrivate::~ADatabasePrivate()
+{
+    delete driver;
+}
