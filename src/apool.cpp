@@ -35,11 +35,12 @@ static void pushDatabaseBack(const QString &connectionName, ADatabasePrivate *pr
 {
     auto it = m_connectionPool.find(connectionName);
     if (it != m_connectionPool.end()) {
-        qDebug(ASQL_POOL) << "Returning database connection to pool" << connectionName << priv;
         APoolInternal &iPool = it.value();
-        if (iPool.maxIdleConnections > iPool.pool.size()) {
+        if (iPool.maxIdleConnections > iPool.pool.size() || !priv->driver->isOpen()) {
+            qDebug(ASQL_POOL) << "Deleting database connection due max idle connections or it is not open" << iPool.maxIdleConnections << iPool.pool.size() << priv->driver->isOpen();
             delete priv;
         } else {
+            qDebug(ASQL_POOL) << "Returning database connection to pool" << connectionName << priv;
             iPool.pool.push_back(priv);
         }
     } else {
