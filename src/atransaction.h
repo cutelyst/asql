@@ -17,6 +17,8 @@ public:
 
     ATransaction(const ATransaction &other);
 
+    ADatabase database() const;
+
     ATransaction &operator =(const ATransaction &copy);
 
     /*!
@@ -25,7 +27,7 @@ public:
      *
      * \param cb
      */
-    void begin(AResultFn cb = {});
+    void begin(AResultFn cb = {}, QObject *receiver = nullptr);
 
     /*!
      * \brief commit a transaction, this operation usually succeeds,
@@ -33,7 +35,7 @@ public:
      *
      * \param cb
      */
-    void commit(AResultFn cb = {});
+    void commit(AResultFn cb = {}, QObject *receiver = nullptr);
 
     /*!
      * \brief rollback a transaction, this operation usually succeeds,
@@ -41,7 +43,7 @@ public:
      *
      * \param cb
      */
-    void rollback(AResultFn cb = {});
+    void rollback(AResultFn cb = {}, QObject *receiver = nullptr);
 
 private:
     QSharedPointer<ATransactionPrivate> d;
