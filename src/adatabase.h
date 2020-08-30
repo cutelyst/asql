@@ -60,6 +60,8 @@ public:
      */
     void open(std::function<void(bool isOpen, const QString &error)> cb = {});
 
+    State state() const;
+
     /*!
      * \brief onStateChanged the callback is called once connection state changes
      *

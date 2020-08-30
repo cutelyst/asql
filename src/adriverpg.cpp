@@ -98,9 +98,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
             m_readNotify = new QSocketNotifier(socket, QSocketNotifier::Read);
 
             const QString error = QString::fromLocal8Bit(PQerrorMessage(m_conn));
-            if (m_stateChangedCb) {
-                m_stateChangedCb(ADatabase::Connecting, error);
-            }
+            setState(ADatabase::Connecting, error);
 
             auto connFn = [=]  {
                 PostgresPollingStatusType type = PQconnectPoll(m_conn);
@@ -123,9 +121,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                         cb(true, QString());
                     }
 
-                    if (m_stateChangedCb) {
-                        m_stateChangedCb(ADatabase::Connected, QString());
-                    }
+                    setState(ADatabase::Connected, QString());
 
                     // see if we have queue queries
                     nextQuery();
@@ -139,9 +135,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                     if (cb) {
                         cb(false, error);
                     }
-                    if (m_stateChangedCb) {
-                        m_stateChangedCb(ADatabase::Disconnected, error);
-                    }
+                    setState(ADatabase::Disconnected, error);
                     return;
                 }
                 default:
@@ -223,9 +217,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                             finishConnection();
                             finishQueries(error);
 
-                            if (m_stateChangedCb) {
-                                m_stateChangedCb(ADatabase::Disconnected, error);
-                            }
+                            setState(ADatabase::Disconnected, error);
                         }
                     }
                 }
@@ -238,6 +230,19 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
 bool ADriverPg::isOpen() const
 {
     return m_connected;
+}
+
+void ADriverPg::setState(ADatabase::State state, const QString &status)
+{
+    m_state = state;
+    if (m_stateChangedCb) {
+        m_stateChangedCb(state, status);
+    }
+}
+
+ADatabase::State ADriverPg::state() const
+{
+    return m_state;
 }
 
 void ADriverPg::onStateChanged(std::function<void (ADatabase::State, const QString &)> cb)

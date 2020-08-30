@@ -36,7 +36,7 @@ static void pushDatabaseBack(const QString &connectionName, ADatabasePrivate *pr
     auto it = m_connectionPool.find(connectionName);
     if (it != m_connectionPool.end()) {
         APoolInternal &iPool = it.value();
-        if (iPool.pool.size() >= iPool.maxIdleConnections || !priv->driver->isOpen()) {
+        if (iPool.pool.size() >= iPool.maxIdleConnections || priv->driver->state() == ADatabase::Disconnected) {
             qDebug(ASQL_POOL) << "Deleting database connection due max idle connections or it is not open" << iPool.maxIdleConnections << iPool.pool.size() << priv->driver->isOpen();
             delete priv;
         } else {

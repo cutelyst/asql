@@ -44,6 +44,11 @@ void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
     }
 }
 
+ADatabase::State ADatabase::state() const
+{
+    return d->driver->state();
+}
+
 void ADatabase::onStateChanged(std::function<void (ADatabase::State, const QString &)> cb)
 {
     d->driver->onStateChanged(cb);

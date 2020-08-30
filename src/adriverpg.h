@@ -71,6 +71,8 @@ public:
     virtual void open(std::function<void(bool isOpen, const QString &error)> cb) override;
     virtual bool isOpen() const override;
 
+    void setState(ADatabase::State state, const QString &status);
+    virtual ADatabase::State state() const override;
     virtual void onStateChanged(std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
     virtual void begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
@@ -91,6 +93,7 @@ private:
     inline void doExecParams(APGQuery &query);
 
     PGconn *m_conn = nullptr;
+    ADatabase::State m_state = ADatabase::Disconnected;
     bool m_connected = false;
     bool m_queryRunning = false;
     std::function<void (ADatabase::State, const QString &)> m_stateChangedCb;

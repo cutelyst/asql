@@ -21,6 +21,7 @@ public:
 
     virtual void open(std::function<void(bool isOpen, const QString &error)> cb) = 0;
 
+    virtual ADatabase::State state() const = 0;
     virtual void onStateChanged(std::function<void(ADatabase::State state, const QString &status)> cb) = 0;
 
     virtual bool isOpen() const = 0;
