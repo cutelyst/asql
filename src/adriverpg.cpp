@@ -56,8 +56,6 @@ ADriverPg::~ADriverPg()
     if (m_conn) {
         PQfinish(m_conn);
     }
-    delete m_writeNotify;
-    delete m_readNotify;
 }
 
 QString connectionStatus(ConnStatusType type) {
@@ -94,8 +92,8 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
     if (m_conn) {
         const auto socket = PQsocket(m_conn);
         if (socket > 0) {
-            m_writeNotify = new QSocketNotifier(socket, QSocketNotifier::Write);
-            m_readNotify = new QSocketNotifier(socket, QSocketNotifier::Read);
+            m_writeNotify = new QSocketNotifier(socket, QSocketNotifier::Write, this);
+            m_readNotify = new QSocketNotifier(socket, QSocketNotifier::Read, this);
 
             const QString error = QString::fromLocal8Bit(PQerrorMessage(m_conn));
             setState(ADatabase::Connecting, error);
@@ -144,7 +142,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                 }
             };
 
-            m_writeNotify->connect(m_writeNotify, &QSocketNotifier::activated, [=] {
+            connect(m_writeNotify, &QSocketNotifier::activated, this, [=] {
 //                qDebug(ASQL_PG) << "PG write" << connectionStatus(PQstatus(m_conn)) << PQisBusy(m_conn);
                 m_writeNotify->setEnabled(false);
                 if (!m_connected) {
@@ -152,8 +150,8 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                 }
             });
 
-            m_readNotify->connect(m_readNotify, &QSocketNotifier::activated, [=] {
-                qDebug(ASQL_PG) << "PG read";
+            connect(m_readNotify, &QSocketNotifier::activated, this, [=] {
+                qDebug(ASQL_PG) << "PG read" << this;
                 if (!m_connected) {
                     connFn();
                 } else {
@@ -189,7 +187,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                 break;
                             }
                         }
-                        qDebug(ASQL_PG) << "Not busy OUT";
+                        qDebug(ASQL_PG) << "Not busy OUT" << this;
 
                         PGnotify *notify = nullptr;
                         while ((notify = PQnotifies(m_conn)) != nullptr) {
@@ -252,29 +250,31 @@ void ADriverPg::onStateChanged(std::function<void (ADatabase::State, const QStri
 
 void ADriverPg::begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver)
 {
-    exec(db, QStringLiteral("BEGIN"), cb, receiver);
+    exec(db, QStringLiteral("BEGIN"), QVariantList(), cb, receiver);
 }
 
 void ADriverPg::commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver)
 {
-    exec(db, QStringLiteral("COMMIT"), cb, receiver);
+    exec(db, QStringLiteral("COMMIT"), QVariantList(), cb, receiver);
 }
 
 void ADriverPg::rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver)
 {
-    exec(db, QStringLiteral("ROLLBACK"), cb, receiver);
+    exec(db, QStringLiteral("ROLLBACK"), QVariantList(), cb, receiver);
 }
 
-bool ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, AResultFn cb, QObject *receiver)
+void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     APGQuery pgQuery;
     pgQuery.query = query;
+    pgQuery.params = params;
     pgQuery.cb = cb;
     pgQuery.db = db;
     pgQuery.receiver = receiver;
     pgQuery.checkReceiver = receiver;
+
     if (receiver) {
-        receiver->connect(receiver, &QObject::destroyed, [=] (QObject *obj) {
+        connect(receiver, &QObject::destroyed, this, [=] (QObject *obj) {
             if (m_queryRunning && !m_queuedQueries.empty() && m_queuedQueries.head().checkReceiver == obj) {
                 PGcancel *cancel = PQgetCancel(m_conn);
                 char errbuf[256];
@@ -289,35 +289,18 @@ bool ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, 
             qDebug(ASQL_PG) << "destroyed" << m_queryRunning << m_queuedQueries.empty() ;
         });
     }
+
     m_queuedQueries.append(pgQuery);
 
     if (m_queryRunning || !m_conn || !m_connected) {
-        return true;
+        return;
     }
 
-    doExec(pgQuery);
-
-    return true;
-}
-
-bool ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
-{
-    APGQuery pgQuery;
-    pgQuery.query = query;
-    pgQuery.params = params;
-    pgQuery.cb = cb;
-    pgQuery.db = db;
-    pgQuery.receiver = receiver;
-    pgQuery.checkReceiver = receiver;
-    m_queuedQueries.append(pgQuery);
-
-    if (m_queryRunning || !m_conn || !m_connected) {
-        return true;
+    if (params.isEmpty()) {
+        doExec(pgQuery);
+    } else {
+        doExecParams(pgQuery);
     }
-
-    doExecParams(pgQuery);
-
-    return true;
 }
 
 void ADriverPg::subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver)
@@ -327,7 +310,7 @@ void ADriverPg::subscribeToNotification(QSharedPointer<ADatabasePrivate> db, con
         return;
     }
 
-    exec(db, QStringLiteral("LISTEN %1").arg(name), [=] (AResult &result) {
+    exec(db, QStringLiteral("LISTEN %1").arg(name), {}, [=] (AResult &result) {
         qDebug(ASQL_PG) << "subscribed" << result.error() << result.errorString();
         m_subscribedNotifications.insert(name, cb);
     }, receiver);
@@ -336,7 +319,7 @@ void ADriverPg::subscribeToNotification(QSharedPointer<ADatabasePrivate> db, con
 void ADriverPg::unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver)
 {
     if (m_subscribedNotifications.remove(name)) {
-        exec(db, QStringLiteral("UNLISTEN %1").arg(name), [=] (AResult &result) {
+        exec(db, QStringLiteral("UNLISTEN %1").arg(name), {}, [=] (AResult &result) {
             qDebug(ASQL_PG) << "unsubscribed" << result.error() << result.errorString();
         }, receiver);
     }

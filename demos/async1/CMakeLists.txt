@@ -9,3 +9,9 @@ target_link_libraries(transactions
     ASqlQt5::Core
     Qt5::Core
 )
+
+add_executable(deleter deleter.cpp)
+target_link_libraries(deleter
+    ASqlQt5::Core
+    Qt5::Core
+)

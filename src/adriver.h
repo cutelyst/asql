@@ -10,8 +10,9 @@
 
 class AResult;
 
-class ADriver
+class ADriver : public QObject
 {
+    Q_OBJECT
 public:
     ADriver();
     virtual ~ADriver() = default;
@@ -30,8 +31,7 @@ public:
     virtual void commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) = 0;
     virtual void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) = 0;
 
-    virtual bool exec(QSharedPointer<ADatabasePrivate> db, const QString &query, AResultFn cb, QObject *receiver) = 0;
-    virtual bool exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) = 0;
+    virtual void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) = 0;
 
     virtual void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver) = 0;
     virtual void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver) = 0;

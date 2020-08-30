@@ -64,6 +64,7 @@ public:
 
 class ADriverPg : public ADriver
 {
+    Q_OBJECT
 public:
     ADriverPg();
     virtual ~ADriverPg();
@@ -79,8 +80,7 @@ public:
     virtual void commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
     virtual void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
 
-    virtual bool exec(QSharedPointer<ADatabasePrivate> db, const QString &query, AResultFn cb, QObject *receiver) override;
-    virtual bool exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    virtual void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
 
     virtual void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver) override;
     virtual void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver) override;
