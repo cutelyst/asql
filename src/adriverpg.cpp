@@ -95,6 +95,11 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
             m_writeNotify = new QSocketNotifier(socket, QSocketNotifier::Write);
             m_readNotify = new QSocketNotifier(socket, QSocketNotifier::Read);
 
+            const QString error = QString::fromLocal8Bit(PQerrorMessage(m_conn));
+            if (m_stateChangedCb) {
+                m_stateChangedCb(ADatabase::Connecting, error);
+            }
+
             auto connFn = [=]  {
                 PostgresPollingStatusType type = PQconnectPoll(m_conn);
 //                qDebug(ASQL_PG) << "poll" << type << "status" << connectionStatus(PQstatus(m_conn));
@@ -114,6 +119,10 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                         cb(true, QString());
                     }
 
+                    if (m_stateChangedCb) {
+                        m_stateChangedCb(ADatabase::Connected, QString());
+                    }
+
                     // see if we have queue queries
                     nextQuery();
                     return;
@@ -127,6 +136,9 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                     m_writeNotify->deleteLater();
                     if (cb) {
                         cb(false, error);
+                    }
+                    if (m_stateChangedCb) {
+                        m_stateChangedCb(ADatabase::Disconnected, error);
                     }
                     return;
                 }
@@ -209,9 +221,9 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                             finishConnection();
                             finishQueries(error);
 
-                            open([=] (bool sucess, const QString &error) {
-                                qDebug(ASQL_PG) << "RECONNECT ERROR" << sucess << error << PQstatus(m_conn) << connectionStatus(PQstatus(m_conn));
-                            });
+                            if (m_stateChangedCb) {
+                                m_stateChangedCb(ADatabase::Disconnected, error);
+                            }
                         }
                     }
                 }
@@ -224,6 +236,11 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
 bool ADriverPg::isOpen() const
 {
     return m_connected;
+}
+
+void ADriverPg::onStateChanged(std::function<void (ADatabase::State, const QString &)> cb)
+{
+    m_stateChangedCb = cb;
 }
 
 void ADriverPg::begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver)

@@ -17,7 +17,15 @@ typedef std::function<void(const QString &payload, bool self)> ANotificationFn;
 class ADatabasePrivate;
 class ASQL_EXPORT ADatabase
 {
+    Q_GADGET
 public:
+    enum State {
+        Disconnected,
+        Connecting,
+        Connected
+    };
+    Q_ENUM(State)
+
     /*!
      * \brief ADatabase contructs an invalid database object
      */
@@ -51,6 +59,15 @@ public:
      * \param cb
      */
     void open(std::function<void(bool isOpen, const QString &error)> cb = {});
+
+    /*!
+     * \brief onStateChanged the callback is called once connection state changes
+     *
+     * Only one callback can be registeres per database
+     *
+     * \param cb
+     */
+    void onStateChanged(std::function<void(State state, const QString &status)> cb);
 
     /*!
      * \brief isOpen returns if the database connection is open.
