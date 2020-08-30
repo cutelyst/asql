@@ -96,8 +96,8 @@ private:
     std::function<void (ADatabase::State, const QString &)> m_stateChangedCb;
     QHash<QString, ANotificationFn> m_subscribedNotifications;
     QQueue<APGQuery> m_queuedQueries;
-    QSocketNotifier *m_writeNotify;
-    QSocketNotifier *m_readNotify;
+    QSocketNotifier *m_writeNotify = nullptr;
+    QSocketNotifier *m_readNotify = nullptr;
 };
 
 #endif // ADRIVERPG_H

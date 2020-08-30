@@ -56,6 +56,8 @@ ADriverPg::~ADriverPg()
     if (m_conn) {
         PQfinish(m_conn);
     }
+    delete m_writeNotify;
+    delete m_readNotify;
 }
 
 QString connectionStatus(ConnStatusType type) {
@@ -108,12 +110,14 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
 //                    qDebug(ASQL_PG) << "PGRES_POLLING_READING" << type;
                     return;
                 case PGRES_POLLING_WRITING:
-                    qDebug(ASQL_PG) << "PGRES_POLLING_WRITING" << type;
+                    qDebug(ASQL_PG) << "PGRES_POLLING_WRITING 1" << type << m_writeNotify->isEnabled();
                     m_writeNotify->setEnabled(true);
+                    qDebug(ASQL_PG) << "PGRES_POLLING_WRITING 2" << type << m_writeNotify->isEnabled();
                     return;
                 case PGRES_POLLING_OK:
-                    qDebug(ASQL_PG) << "PGRES_POLLING_OK" << type;
+                    qDebug(ASQL_PG) << "PGRES_POLLING_OK 1" << type << m_writeNotify->isEnabled();
                     m_writeNotify->setEnabled(false);
+                    qDebug(ASQL_PG) << "PGRES_POLLING_OK 2" << type << m_writeNotify->isEnabled();
                     m_connected = true;
                     if (cb) {
                         cb(true, QString());
@@ -130,10 +134,8 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                 {
                     const QString error = QString::fromLocal8Bit(PQerrorMessage(m_conn));
                     qDebug(ASQL_PG) << "PGRES_POLLING_FAILED" << type << error;
-                    PQfinish(m_conn);
-                    m_conn = nullptr;
-                    m_readNotify->deleteLater();
-                    m_writeNotify->deleteLater();
+                    finishConnection();
+
                     if (cb) {
                         cb(false, error);
                     }
@@ -359,10 +361,16 @@ void ADriverPg::finishConnection()
     }
 
     m_connected = false;
-    m_readNotify->deleteLater();
-    m_readNotify = nullptr;
-    m_writeNotify->deleteLater();
-    m_writeNotify = nullptr;
+    if (m_readNotify) {
+        m_readNotify->setEnabled(false);
+        m_readNotify->deleteLater();
+        m_readNotify = nullptr;
+    }
+    if (m_writeNotify) {
+        m_writeNotify->setEnabled(false);
+        m_writeNotify->deleteLater();
+        m_writeNotify = nullptr;
+    }
 }
 
 void ADriverPg::finishQueries(const QString &error)
