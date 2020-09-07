@@ -116,7 +116,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                     qDebug(ASQL_PG) << "PGRES_POLLING_OK 2" << type << m_writeNotify->isEnabled();
                     m_connected = true;
                     if (cb) {
-                        cb(true, QString());
+                        cb(false, QString());
                     }
 
                     setState(ADatabase::Connected, QString());
