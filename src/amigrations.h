@@ -13,7 +13,12 @@ public:
     explicit AMigrations(QObject *parent = nullptr);
     virtual ~AMigrations();
 
-    void load(const ADatabase &db, const QString &name = QString());
+    /*!
+     * \brief load migration information from the asql_migrations table using the specified migration \p name.
+     * \param db a valid dabase option
+     * \param name of the migration
+     */
+    void load(const ADatabase &db, const QString &name);
 
     /*!
      * \brief active version of this migration, only valid after ready has been emitted

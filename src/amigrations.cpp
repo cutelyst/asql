@@ -48,12 +48,8 @@ void AMigrations::load(const ADatabase &db, const QString &name)
             qDebug(ASQL_MIG) << "Create migrations table" << result.errorString();
         }
 
-        d_ptr->db.exec(QStringLiteral(R"V0G0N(
-                                      INSERT INTO asql_migrations VALUES ($1, 0)
-                                      ON CONFLICT (name) DO NOTHING
-                                      RETURNING version
-                                      )V0G0N"), {name},
-                       [=] (AResult &result2) {
+        d_ptr->db.exec(QStringLiteral("SELECT version FROM asql_migrations WHERE name=$1"),
+                       {name}, [=] (AResult &result2) {
             if (result2.error()) {
                 Q_EMIT ready(true, result2.errorString());
                 return;
@@ -61,6 +57,8 @@ void AMigrations::load(const ADatabase &db, const QString &name)
 
             if (result2.next()) {
                 d_ptr->active = result2.value(0).toInt();
+            } else {
+                d_ptr->active = 0;
             }
             Q_EMIT ready(false, QString());
         }, this);
@@ -223,10 +221,15 @@ void AMigrations::migrate(int version, std::function<void(bool, const QString &)
                     }
                     return;
                 }
-            });
+            }, this);
 
-            d->db.exec(QStringLiteral("UPDATE asql_migrations SET version = $1 WHERE name = $2;"),
-            {version, d->name}, [=] (AResult &result) {
+            d->db.exec(QStringLiteral(R"V0G0N(
+                                      INSERT INTO asql_migrations VALUES ($1, $2)
+                                      ON CONFLICT (name) DO UPDATE
+                                      SET version=EXCLUDED.version
+                                      RETURNING version
+                                      )V0G0N"),
+            {d->name, version}, [=] (AResult &result) {
                 if (result.error()) {
                     if (cb) {
                         cb(true, result.errorString());
