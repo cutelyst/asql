@@ -45,7 +45,7 @@ void AMigrations::load(const ADatabase &db, const QString &name)
                                   )V0G0N"),
                    [=] (AResult &result) {
         if (result.error()) {
-            qDebug() << "Create migrations table" << result.errorString();
+            qDebug(ASQL_MIG) << "Create migrations table" << result.errorString();
         }
 
         d_ptr->db.exec(QStringLiteral(R"V0G0N(
@@ -105,11 +105,11 @@ void AMigrations::fromString(const QString &text)
     QString line;
     while (!stream.atEnd()) {
         stream.readLineInto(&line);
-        qDebug() << "MIG LINE" << line << upWay << version;
+        qDebug(ASQL_MIG) << "MIG LINE" << line << upWay << version;
         QRegularExpressionMatch match = re.match(line);
         if (match.hasMatch()) {
             const QStringRef way = match.capturedRef(2);
-            qDebug() << "CAPTURE" << way << match.capturedRef(1).toInt();
+            qDebug(ASQL_MIG) << "CAPTURE" << way << match.capturedRef(1).toInt();
             if (way.compare(QStringLiteral("up"), Qt::CaseInsensitive) == 0) {
                 upWay = true;
                 version = match.capturedRef(1).toInt();
@@ -122,10 +122,10 @@ void AMigrations::fromString(const QString &text)
             latest = qMax(latest, version);
         } else if (version) {
             if (upWay) {
-                qDebug() << "UP" << version << line;
+                qDebug(ASQL_MIG) << "UP" << version << line;
                 up[version].append(line + QLatin1Char('\n'));
             } else {
-                qDebug() << "DOWN" << version << line;
+                qDebug(ASQL_MIG) << "DOWN" << version << line;
                 down[version].append(line + QLatin1Char('\n'));
             }
         }

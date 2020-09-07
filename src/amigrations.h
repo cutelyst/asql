@@ -13,7 +13,7 @@ public:
     explicit AMigrations(QObject *parent = nullptr);
     virtual ~AMigrations();
 
-    void load(const ADatabase &db, const QString &name);
+    void load(const ADatabase &db, const QString &name = QString());
 
     /*!
      * \brief active version of this migration, only valid after ready has been emitted
@@ -69,6 +69,7 @@ public:
      * \param dryRun if set will rollback the transaction instead of committing
      */
     void migrate(int version, std::function<void(bool error, const QString &errorString)> cb, bool dryRun = false);
+
 Q_SIGNALS:
     void ready(bool error, const QString &errorString);
 
