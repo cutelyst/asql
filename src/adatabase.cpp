@@ -38,9 +38,8 @@ void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
         d->driver->open(cb);
     } else {
         if (cb) {
-            cb(true, QString());
+            cb(false, QString());
         }
-        return;
     }
 }
 
