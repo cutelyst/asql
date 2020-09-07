@@ -79,3 +79,10 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/asql-qt5.pc.in
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt5.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
+
+add_executable(asql-migration asql_migration.cpp)
+target_link_libraries(asql-migration
+    PUBLIC
+        Qt5::Core
+        ASqlQt5::Core
+)
