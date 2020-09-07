@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
                 return;
             }
 
-            const int newVersion = targetVersion != -1 ? targetVersion :  mig->latest();
+            const int newVersion = targetVersion != -1 && targetVersion <= mig->latest() ? targetVersion :  mig->latest();
 
             if (mig->active() == newVersion) {
                 std::cerr << qPrintable(QCoreApplication::translate("main", "Database is already at target version: %1.").arg(QString::number(mig->active()))) << std::endl;
