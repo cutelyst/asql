@@ -167,13 +167,13 @@ QString AMigrations::sqlFor(int versionFrom, int versionTo) const
     return ret;
 }
 
-void AMigrations::migrate(std::function<void(bool, const QString &)> cb)
+void AMigrations::migrate(std::function<void(bool, const QString &)> cb, bool dryRun)
 {
     Q_D(AMigrations);
-    migrate(d->latest, cb);
+    migrate(d->latest, cb, dryRun);
 }
 
-void AMigrations::migrate(int version, std::function<void(bool, const QString &)> cb)
+void AMigrations::migrate(int version, std::function<void(bool, const QString &)> cb, bool dryRun)
 {
     Q_D(AMigrations);
     if (version < 0) {
@@ -234,8 +234,7 @@ void AMigrations::migrate(int version, std::function<void(bool, const QString &)
                     return;
                 }
 
-                ATransaction tFinal(t);
-                tFinal.commit([=] (AResult &result) {
+                auto tAction = [=] (AResult &result) {
                     if (result.error()) {
                         if (cb) {
                             cb(true, result.errorString());
@@ -245,7 +244,13 @@ void AMigrations::migrate(int version, std::function<void(bool, const QString &)
                             cb(false, QString());
                         }
                     }
-                });
+                };
+
+                if (!dryRun) {
+                    ATransaction(t).commit(tAction, this);
+                } else {
+                    ATransaction(t).rollback(tAction, this);
+                }
             }, this);
         }, this);
     });

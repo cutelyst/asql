@@ -54,19 +54,21 @@ public:
      * All version numbers need to be positive, with version 0 representing an empty database.
      *
      * \sa finished() signal is emitted with the result.
-     * \param version
+     * \param cb callback function that is called to inform the result
+     * \param dryRun if set will rollback the transaction instead of committing
      */
-    void migrate(std::function<void(bool error, const QString &errorString)> cb);
+    void migrate(std::function<void(bool error, const QString &errorString)> cb, bool dryRun = false);
 
     /*!
      * \brief migrate Migrate from "active" to different version, up or down.
      * All version numbers need to be positive, with version 0 representing an empty database.
      *
      * \sa finished() signal is emitted with the result.
-     * \param version
+     * \param version to try to apply changes
+     * \param cb callback function that is called to inform the result
+     * \param dryRun if set will rollback the transaction instead of committing
      */
-    void migrate(int version, std::function<void(bool error, const QString &errorString)> cb);
-
+    void migrate(int version, std::function<void(bool error, const QString &errorString)> cb, bool dryRun = false);
 Q_SIGNALS:
     void ready(bool error, const QString &errorString);
 
