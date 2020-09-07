@@ -77,7 +77,7 @@ void ATransaction::rollback(AResultFn cb, QObject *receiver)
     Q_ASSERT(!d.isNull());
     if (d->running) {
         d->running = false;
-        d->db.commit(cb, receiver);
+        d->db.rollback(cb, receiver);
     } else {
         qWarning(ASQL_TRANSACTION, "Transaction not started");
     }
