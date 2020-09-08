@@ -49,61 +49,73 @@ void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
 
 ADatabase::State ADatabase::state() const
 {
+    Q_ASSERT(d);
     return d->driver->state();
 }
 
 void ADatabase::onStateChanged(std::function<void (ADatabase::State, const QString &)> cb)
 {
+    Q_ASSERT(d);
     d->driver->onStateChanged(cb);
 }
 
 bool ADatabase::isOpen() const
 {
+    Q_ASSERT(d);
     return d->driver->isOpen();
 }
 
 void ADatabase::begin(AResultFn cb, QObject *receiver)
 {
+    Q_ASSERT(d);
     d->driver->begin(d, cb, receiver);
 }
 
 void ADatabase::commit(AResultFn cb, QObject *receiver)
 {
+    Q_ASSERT(d);
     d->driver->commit(d, cb, receiver);
 }
 
 void ADatabase::rollback(AResultFn cb, QObject *receiver)
 {
+    Q_ASSERT(d);
     d->driver->rollback(d, cb, receiver);
 }
 
 void ADatabase::exec(const QString &query, AResultFn cb, QObject *receiver)
 {
+    Q_ASSERT(d);
     d->driver->exec(d, query, QVariantList(), cb, receiver);
 }
 
 void ADatabase::execPrepared(const APreparedQuery &query, AResultFn cb, QObject *receiver)
 {
+    Q_ASSERT(d);
     d->driver->exec(d, query, QVariantList(), cb, receiver);
 }
 
 void ADatabase::exec(const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
+    Q_ASSERT(d);
     d->driver->exec(d, query, params, cb, receiver);
 }
 
 void ADatabase::execPrepared(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
+    Q_ASSERT(d);
     d->driver->exec(d, query, params, cb, receiver);
 }
 
 void ADatabase::subscribeToNotification(const QString &channel, ANotificationFn cb, QObject *receiver)
 {
+    Q_ASSERT(d);
     d->driver->subscribeToNotification(d, channel, cb, receiver);
 }
 
 void ADatabase::unsubscribeFromNotification(const QString &channel, QObject *receiver)
 {
+    Q_ASSERT(d);
     d->driver->unsubscribeFromNotification(d, channel, receiver);
 }
 

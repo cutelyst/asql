@@ -46,6 +46,8 @@ int main(int argc, char *argv[])
                 ATransaction(t).commit();
             }
         });
+
+//        ADatabase().rollback(); assert
     }
 
     auto db = APool::database();
