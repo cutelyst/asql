@@ -9,12 +9,15 @@ set(asql_SRC
     adriver.h
     aresult.cpp
     acache.cpp
+    apreparedquery.cpp
+    apreparedquery.h
     adriverpg.cpp
     adriverpg.h
 )
 
 set(asql_HEADERS
     adatabase.h
+    apreparedquery.h
     amigrations.h
     apool.h
     atransaction.h

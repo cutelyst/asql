@@ -14,6 +14,7 @@ class AResult;
 typedef std::function<void(AResult &row)> AResultFn;
 typedef std::function<void(const QString &payload, bool self)> ANotificationFn;
 
+class APreparedQuery;
 class ADatabasePrivate;
 class ASQL_EXPORT ADatabase
 {
@@ -102,7 +103,7 @@ public:
     void rollback(AResultFn cb = {}, QObject *receiver = nullptr);
 
     /*!
-     * \brief exec ecutes a \param query against this database connection,
+     * \brief exec excutes a \param query against this database connection,
      * once done AResult object will have the retrieved data if any, always
      * check for AResult::error() to see if the query was successful.
      *
@@ -118,7 +119,20 @@ public:
     void exec(const QString &query, AResultFn cb, QObject *receiver = nullptr);
 
     /*!
-     * \brief exec ecutes a \param query against this database connection,
+     * \brief exec executes a prepared \param query against this database connection,
+     * once done AResult object will have the retrieved data if any, always
+     * check for AResult::error() to see if the query was successful.
+     *
+     * \note For proper usage of APreparedQuery see it's documentation.
+     * \note Postgres does not allow for multiple commands on prepared queries.
+     *
+     * \param query
+     * \param cb
+     */
+    void execPrepared(const APreparedQuery &query, AResultFn cb, QObject *receiver = nullptr);
+
+    /*!
+     * \brief exec executes a \param query against this database connection,
      * once done AResult object will have the retrieved data if any, always
      * check for AResult::error() to see if the query was successful.
      *
@@ -127,6 +141,20 @@ public:
      * \param cb
      */
     void exec(const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
+
+    /*!
+     * \brief exec executes a prepared \param query against this database connection
+     * with the following \p params to be bound,
+     * once done AResult object will have the retrieved data if any, always
+     * check for AResult::error() to see if the query was successful.
+     *
+     * \note For proper usage of APreparedQuery see it's documentation.
+     * \note Postgres does not allow for multiple commands on prepared queries.
+     *
+     * \param query
+     * \param cb
+     */
+    void execPrepared(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
 
     /*!
      * \brief subscribeToNotification will start listening for notifications

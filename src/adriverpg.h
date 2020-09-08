@@ -5,6 +5,7 @@
 #include <libpq-fe.h>
 
 #include "aresult.h"
+#include "apreparedquery.h"
 
 #include <QQueue>
 #include <QPointer>
@@ -47,12 +48,14 @@ public:
     APGQuery() : result(QSharedPointer<AResultPg>(new AResultPg))
     { }
     QString query;
+    APreparedQuery preparedQuery;
     QSharedPointer<AResultPg> result;
     QVariantList params;
     AResultFn cb;
     QSharedPointer<ADatabasePrivate> db;
     QPointer<QObject> receiver;
     QObject *checkReceiver;
+    bool preparing = false;
 
     inline void done() {
         AResult r(result);
@@ -81,6 +84,7 @@ public:
     virtual void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
 
     virtual void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    virtual void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
 
     virtual void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver) override;
     virtual void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver) override;
@@ -101,6 +105,7 @@ private:
     QQueue<APGQuery> m_queuedQueries;
     QSocketNotifier *m_writeNotify = nullptr;
     QSocketNotifier *m_readNotify = nullptr;
+    QStringList m_preparedQueries;
 };
 
 #endif // ADRIVERPG_H

@@ -15,3 +15,9 @@ target_link_libraries(deleter
     ASqlQt5::Core
     Qt5::Core
 )
+
+add_executable(prepared prepared.cpp)
+target_link_libraries(prepared
+    ASqlQt5::Core
+    Qt5::Core
+)

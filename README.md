@@ -4,6 +4,7 @@ Qt Async Sql library
 ## Features
 * Scoped transactions objects
 * PostgreSQL driver
+* Prepared queries
 * Cancellabel queries
 * Thread local Connection pool
 * Notifications
@@ -75,24 +76,45 @@ When you are not sending parameters PostgreSQL allows for multiple queries, this
 } // The scope is over, now once ADatabase db variable is done with the queries it will return to the pool
 ```
 
-### Performing a multiple queries with params
-When you sending queries with parameters ASql passes your data as special data set.
+### Performing a prepared query
+Prepared queries allows the database server to avoid to repeatedly parse and plan your query execution, this doesn't always
+means faster execution, this is because the planner can often make better planning when the data is known.
+
+Our advice is that you try to mesure your execution with real data, switching from prepared to not prepared is also very trivial.
+
+It's very important that the APreparedQuery object doesn't get deleted (by getting out of scope), this is because
+it holds an unique identification for your query, in order to make this easier one can use the APreparedQueryLiteral macro,
+manually create a static APreparedQuery object or by having your query as a member of a class that isn't going to be deleted soon.
 ```c++
 // PostgreSQL uses numered place holders, and yes you can repeat them :)
-db.exec("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
-{true, QStringLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
+db.execPrepared("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
+{true, APreparedQueryLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
 [=] (AResult &result) {
     if (result.error()) {
         qDebug() << result.errorString();
         return;
     }
 
-    if (result.lastResulSet()) {
-        // do something..
-    }
-
     // Convert a single row to JSON {"id": 1234}
     qDebug() << "JSON" << result.jsonObject();
+});
+```
+
+### Transactions
+In async mode it might be a bit complicated to make sure your transaction rollback on error or when you are done with the database object.
+```c++
+ATransaction t(db);
+t.begin();
+db.exec("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
+{true, QStringLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
+[=] (AResult &result) {
+    if (result.error()) {
+        qDebug() << result.errorString();
+        return; // Auto rollback
+    }
+
+    // Lambdas don't allow for non const methods on t variable, but we can copy it (as it's inplict shared)
+    ATransaction(t).commit();
 });
 ```
 

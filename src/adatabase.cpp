@@ -78,7 +78,17 @@ void ADatabase::exec(const QString &query, AResultFn cb, QObject *receiver)
     d->driver->exec(d, query, QVariantList(), cb, receiver);
 }
 
+void ADatabase::execPrepared(const APreparedQuery &query, AResultFn cb, QObject *receiver)
+{
+    d->driver->exec(d, query, QVariantList(), cb, receiver);
+}
+
 void ADatabase::exec(const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+{
+    d->driver->exec(d, query, params, cb, receiver);
+}
+
+void ADatabase::execPrepared(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     d->driver->exec(d, query, params, cb, receiver);
 }
