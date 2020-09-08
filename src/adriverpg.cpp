@@ -158,11 +158,11 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                     if (PQconsumeInput(m_conn) == 1) {
                         while (PQisBusy(m_conn) == 0) {
                             PGresult *result = PQgetResult(m_conn);
-                            qDebug(ASQL_PG) << "Not busy: RESULT" << result << "busy" << PQisBusy(m_conn);
+                            qDebug(ASQL_PG) << "Not busy: RESULT" << result << "busy" << PQisBusy(m_conn) << m_queuedQueries.size();
                             if (result != nullptr) {
                                 int status = PQresultStatus(result);
                                 APGQuery &pgQuery = m_queuedQueries.head();
-                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "done" << pgQuery.result->m_result;
+                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << pgQuery.result;
                                 if (pgQuery.result->m_result) {
                                     // when we had already had a result it means we should emit the
                                     // first one and keep waiting till a null result is returned
@@ -194,6 +194,8 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                     m_queryRunning = false;
                                 }
                                 nextQuery();
+                                break;
+                            } else {
                                 break;
                             }
                         }
