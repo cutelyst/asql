@@ -22,10 +22,20 @@ int main(int argc, char *argv[])
     QCoreApplication app(argc, argv);
 
     APool::addDatabase(QStringLiteral("postgres:///?target_session_attrs=read-write"));
-    APool::setDatabaseMaxIdleConnections(10);
+    APool::setDatabaseMaxIdleConnections(2);
+    APool::setDatabaseMaximumConnections(4);
+
+    {
+        auto db2 = APool::database();
+        auto db3 = APool::database();
+        auto db4 = APool::database();
+        auto db5 = APool::database();
+        auto db6 = APool::database();
+        auto db7 = APool::database();
+        qDebug() << "db7 valid" << db7.isValid();
+    }
 
     auto db = APool::database();
-
     static APreparedQuery query(QStringLiteral("SELECT now()"));
     db.execPrepared(query, [=] (AResult &result) {
         if (result.error()) {

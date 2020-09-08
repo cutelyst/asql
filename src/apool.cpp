@@ -9,6 +9,8 @@ typedef struct {
     QString connectionInfo;
     QVector<ADatabasePrivate *> pool;
     int maxIdleConnections = 1;
+    int maximuConnections = 0;
+    int connectionCount = 0;
 } APoolInternal;
 
 static thread_local QHash<QString, APoolInternal> m_connectionPool;
@@ -39,6 +41,7 @@ static void pushDatabaseBack(const QString &connectionName, ADatabasePrivate *pr
         if (iPool.pool.size() >= iPool.maxIdleConnections || priv->driver->state() == ADatabase::Disconnected) {
             qDebug(ASQL_POOL) << "Deleting database connection due max idle connections or it is not open" << iPool.maxIdleConnections << iPool.pool.size() << priv->driver->isOpen();
             delete priv;
+            --iPool.connectionCount;
         } else {
             qDebug(ASQL_POOL) << "Returning database connection to pool" << connectionName << priv;
             iPool.pool.push_back(priv);
@@ -55,6 +58,11 @@ ADatabase APool::database(const QString &connectionName)
         APoolInternal &iPool = it.value();
         ADatabase db;
         if (iPool.pool.empty()) {
+            if (iPool.maximuConnections && iPool.connectionCount >= iPool.maximuConnections) {
+                qWarning(ASQL_POOL) << "Maximum number of connections reached" << connectionName << iPool.connectionCount << iPool.maximuConnections;
+                return db;
+            }
+            ++iPool.connectionCount;
             qDebug(ASQL_POOL) << "Creating a database connection for pool" << connectionName << iPool.connectionInfo;
             db.d = QSharedPointer<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
                     pushDatabaseBack(connectionName, priv);
@@ -79,6 +87,16 @@ void APool::setDatabaseMaxIdleConnections(int max, const QString &connectionName
     auto it = m_connectionPool.find(connectionName);
     if (it != m_connectionPool.end()) {
         it.value().maxIdleConnections = max;
+    } else {
+        qCritical(ASQL_POOL) << "Database connection NOT FOUND in pool" << connectionName;
+    }
+}
+
+void APool::setDatabaseMaximumConnections(int max, const QString &connectionName)
+{
+    auto it = m_connectionPool.find(connectionName);
+    if (it != m_connectionPool.end()) {
+        it.value().maximuConnections = max;
     } else {
         qCritical(ASQL_POOL) << "Database connection NOT FOUND in pool" << connectionName;
     }

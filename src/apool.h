@@ -28,7 +28,9 @@ public:
     static void addDatabase(const QString &connectionInfo, const QString &connectionName = QLatin1String(defaultConnection));
     static ADatabase database(const QString &connectionName = QLatin1String(defaultConnection));
 
+
     static void setDatabaseMaxIdleConnections(int max, const QString &connectionName = QLatin1String(defaultConnection));
+    static void setDatabaseMaximumConnections(int max, const QString &connectionName = QLatin1String(defaultConnection));
 };
 
 #endif // APOOL_H
