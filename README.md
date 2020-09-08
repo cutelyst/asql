@@ -102,24 +102,8 @@ db.execPrepared(APreparedQueryLiteral("INSERT INTO temp4 VALUE ($1, $2, $3, $4, 
 
 ### Transactions
 In async mode it might be a bit complicated to make sure your transaction rollback on error or when you are done with the database object.
-```c++
-ATransaction t(db);
-t.begin();
-db.exec("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
-{true, QStringLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
-[=] (AResult &result) {
-    if (result.error()) {
-        qDebug() << result.errorString();
-        return; // Auto rollback
-    }
 
-    // Lambdas don't allow for non const methods on t variable, but we can copy it (as it's inplict shared)
-    ATransaction(t).commit();
-});
-```
-
-### Transactions
-In async mode it might be a bit complicated to make sure your transaction rollback on error or when you are done with the database object.
+To make this easier create an ATransaction object in a scoped manner, once it goes out of scope it will rollback the transaction if it hasn't committed or rolledback manually already.
 ```c++
 ATransaction t(db);
 t.begin();
