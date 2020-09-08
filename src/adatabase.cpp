@@ -34,6 +34,10 @@ bool ADatabase::isValid()
 
 void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
 {
+    if (d.isNull()) {
+        d = QSharedPointer<ADatabasePrivate>(new ADatabasePrivate(QString()));
+    }
+
     if (!d->driver->isOpen()) {
         d->driver->open(cb);
     } else {
@@ -112,8 +116,12 @@ ADatabase &ADatabase::operator =(const ADatabase &copy)
 ADatabasePrivate::ADatabasePrivate(const QString &ci)
     : connectionInfo(ci)
 {
-    driver = new ADriverPg;
-    driver->setConnectionInfo(ci);
+    if (ci.startsWith(QStringLiteral("postgres://"))) {
+        driver = new ADriverPg;
+        driver->setConnectionInfo(ci);
+    } else {
+        driver = new ADriver;
+    }
 }
 
 ADatabasePrivate::~ADatabasePrivate()

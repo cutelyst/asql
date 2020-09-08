@@ -20,22 +20,22 @@ public:
     QString connectionInfo() const;
     void setConnectionInfo(const QString &connectionInfo);
 
-    virtual void open(std::function<void(bool isOpen, const QString &error)> cb) = 0;
+    virtual void open(std::function<void(bool isOpen, const QString &error)> cb);
 
-    virtual ADatabase::State state() const = 0;
-    virtual void onStateChanged(std::function<void(ADatabase::State state, const QString &status)> cb) = 0;
+    virtual ADatabase::State state() const;
+    virtual void onStateChanged(std::function<void(ADatabase::State state, const QString &status)> cb);
 
-    virtual bool isOpen() const = 0;
+    virtual bool isOpen() const;
 
-    virtual void begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) = 0;
-    virtual void commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) = 0;
-    virtual void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) = 0;
+    virtual void begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver);
+    virtual void commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver);
+    virtual void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver);
 
-    virtual void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) = 0;
-    virtual void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) = 0;
+    virtual void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver);
+    virtual void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver);
 
-    virtual void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver) = 0;
-    virtual void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver) = 0;
+    virtual void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver);
+    virtual void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver);
 
 private:
     QString m_info;

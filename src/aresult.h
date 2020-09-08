@@ -84,6 +84,7 @@ public:
      */
     QJsonArray jsonArray();
 
+    AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;
 
 protected:

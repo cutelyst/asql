@@ -30,12 +30,12 @@ bool AResult::lastResulSet() const
 
 bool AResult::error() const
 {
-    return d->error();
+    return d.isNull() || d->error();
 }
 
 QString AResult::errorString() const
 {
-    return d->errorString();
+    return !d.isNull() ? d->errorString() : QStringLiteral("INVALID DRIVER");
 }
 
 void AResult::setAt(int row)
@@ -152,6 +152,12 @@ QJsonArray AResult::jsonArray()
         } while (next());
     }
     return ret;
+}
+
+AResult &AResult::operator=(const AResult &copy)
+{
+    d = copy.d;
+    return *this;
 }
 
 bool AResult::operator==(const AResult &other) const
