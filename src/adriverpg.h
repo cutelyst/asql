@@ -56,6 +56,7 @@ public:
     QPointer<QObject> receiver;
     QObject *checkReceiver;
     bool preparing = false;
+    bool prepared = false;
 
     inline void done() {
         AResult r(result);

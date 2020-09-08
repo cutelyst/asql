@@ -157,13 +157,12 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                 } else {
                     if (PQconsumeInput(m_conn) == 1) {
                         while (PQisBusy(m_conn) == 0) {
-                            qDebug(ASQL_PG) << "Not busy";
                             PGresult *result = PQgetResult(m_conn);
-                            qDebug(ASQL_PG) << "RESULT" << result << "busy" << PQisBusy(m_conn);
+                            qDebug(ASQL_PG) << "Not busy: RESULT" << result << "busy" << PQisBusy(m_conn);
                             if (result != nullptr) {
                                 int status = PQresultStatus(result);
                                 APGQuery &pgQuery = m_queuedQueries.head();
-                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK;
+                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "done" << pgQuery.result->m_result;
                                 if (pgQuery.result->m_result) {
                                     // when we had already had a result it means we should emit the
                                     // first one and keep waiting till a null result is returned
@@ -175,9 +174,9 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                 }
                                 pgQuery.result->m_result = result;
                                 pgQuery.result->processResult();
-                            } else {
+                            } else if (m_queuedQueries.size()) {
                                 APGQuery &pgQuery = m_queuedQueries.head();
-                                if (pgQuery.query.isEmpty() && pgQuery.preparing) {
+                                if (pgQuery.prepared && pgQuery.preparing) {
                                     if (pgQuery.result->error()) {
                                         // PREPARE OR PREPARED QUERY ERROR
                                         m_queuedQueries.dequeue();
@@ -323,6 +322,7 @@ void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &
     pgQuery.db = db;
     pgQuery.receiver = receiver;
     pgQuery.checkReceiver = receiver;
+    pgQuery.prepared = true;
 
     if (receiver) {
         connect(receiver, &QObject::destroyed, this, [=] (QObject *obj) {
@@ -379,7 +379,7 @@ void ADriverPg::nextQuery()
         if (pgQuery.checkReceiver && pgQuery.receiver.isNull()) {
             m_queuedQueries.dequeue();
         } else {
-            if (pgQuery.params.isEmpty() && !pgQuery.query.isEmpty()) {
+            if (pgQuery.params.isEmpty() && !pgQuery.prepared) {
                 doExec(pgQuery);
             } else {
                 doExecParams(pgQuery);
@@ -530,7 +530,7 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
     }
 
     int ret;
-    if (pgQuery.query.isEmpty()) {
+    if (pgQuery.prepared) {
         if (m_preparedQueries.contains(pgQuery.preparedQuery.identification())) {
             ret = PQsendQueryPrepared(m_conn,
                                       pgQuery.preparedQuery.identification().toUtf8().constData(),
@@ -540,7 +540,7 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
                                       paramFormats,
                                       0); // perhaps later use binary results
         } else {
-            pgQuery.preparing = true;
+            m_queuedQueries.head().preparing = true;
             ret = PQsendPrepare(m_conn,
                                 pgQuery.preparedQuery.identification().toUtf8().constData(),
                                 pgQuery.preparedQuery.query().toUtf8().constData(),

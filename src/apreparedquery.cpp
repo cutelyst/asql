@@ -1,5 +1,9 @@
 #include "apreparedquery.h"
 
+#include <QLoggingCategory>
+
+Q_LOGGING_CATEGORY(ASQL_PQ, "asql.prepared_query", QtInfoMsg)
+
 APreparedQuery::APreparedQuery()
 {
 
@@ -10,6 +14,7 @@ APreparedQuery::APreparedQuery(const QString &query)
 {
     static QBasicAtomicInt qPreparedStmtCount = Q_BASIC_ATOMIC_INITIALIZER(0);
     m_identification = QLatin1String("asql_") + QString::number(qPreparedStmtCount.fetchAndAddRelaxed(1) + 1, 16);
+    qDebug(ASQL_PQ) << "Created prepared query identifier" << m_identification;
 }
 
 APreparedQuery::APreparedQuery(const QString &query, const QString &identification)
