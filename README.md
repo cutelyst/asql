@@ -87,8 +87,8 @@ it holds an unique identification for your query, in order to make this easier o
 manually create a static APreparedQuery object or by having your query as a member of a class that isn't going to be deleted soon.
 ```c++
 // PostgreSQL uses numered place holders, and yes you can repeat them :)
-db.execPrepared("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
-{true, APreparedQueryLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
+db.execPrepared(APreparedQueryLiteral("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id")),
+{true, QStringLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
 [=] (AResult &result) {
     if (result.error()) {
         qDebug() << result.errorString();
