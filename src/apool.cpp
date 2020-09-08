@@ -6,8 +6,15 @@
 Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
 
 typedef struct {
+    std::function<void (ADatabase &)> cb;
+    QPointer<QObject> receiver;
+    bool checkReceiver;
+} APoolQueuedClient;
+
+typedef struct {
     QString connectionInfo;
     QVector<ADatabasePrivate *> pool;
+    QQueue<APoolQueuedClient> connectionQueue;
     int maxIdleConnections = 1;
     int maximuConnections = 0;
     int connectionCount = 0;
@@ -33,13 +40,35 @@ void APool::addDatabase(const QString &connectionInfo, const QString &connection
     }
 }
 
-static void pushDatabaseBack(const QString &connectionName, ADatabasePrivate *priv)
+void APool::pushDatabaseBack(const QString &connectionName, ADatabasePrivate *priv)
 {
     auto it = m_connectionPool.find(connectionName);
     if (it != m_connectionPool.end()) {
         APoolInternal &iPool = it.value();
-        if (iPool.pool.size() >= iPool.maxIdleConnections || priv->driver->state() == ADatabase::Disconnected) {
-            qDebug(ASQL_POOL) << "Deleting database connection due max idle connections or it is not open" << iPool.maxIdleConnections << iPool.pool.size() << priv->driver->isOpen();
+        if (priv->driver->state() == ADatabase::Disconnected) {
+            qDebug(ASQL_POOL) << "Deleting database connection as is not open" << priv->driver->isOpen();
+            delete priv;
+            --iPool.connectionCount;
+            return;
+        }
+
+        // Check for waiting clients
+        while (!iPool.connectionQueue.isEmpty()) {
+            APoolQueuedClient client = iPool.connectionQueue.dequeue();
+            if ((client.checkReceiver && client.receiver.isNull()) || !client.cb) {
+                continue;
+            }
+
+            ADatabase db;
+            db.d = QSharedPointer<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
+                    pushDatabaseBack(connectionName, priv);
+            });
+            client.cb(db);
+            return;
+        }
+
+        if (iPool.pool.size() >= iPool.maxIdleConnections) {
+            qDebug(ASQL_POOL) << "Deleting database connection due max idle connections" << iPool.maxIdleConnections << iPool.pool.size();
             delete priv;
             --iPool.connectionCount;
         } else {
@@ -53,10 +82,10 @@ static void pushDatabaseBack(const QString &connectionName, ADatabasePrivate *pr
 
 ADatabase APool::database(const QString &connectionName)
 {
+    ADatabase db;
     auto it = m_connectionPool.find(connectionName);
     if (it != m_connectionPool.end()) {
         APoolInternal &iPool = it.value();
-        ADatabase db;
         if (iPool.pool.empty()) {
             if (iPool.maximuConnections && iPool.connectionCount >= iPool.maximuConnections) {
                 qWarning(ASQL_POOL) << "Maximum number of connections reached" << connectionName << iPool.connectionCount << iPool.maximuConnections;
@@ -76,10 +105,47 @@ ADatabase APool::database(const QString &connectionName)
                     pushDatabaseBack(connectionName, priv);
             });
         }
-        return db;
     } else {
         qCritical(ASQL_POOL) << "Database connection NOT FOUND in pool" << connectionName;
-        return ADatabase();
+    }
+    return db;
+}
+
+void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, const QString &connectionName)
+{
+    ADatabase db;
+    auto it = m_connectionPool.find(connectionName);
+    if (it != m_connectionPool.end()) {
+        APoolInternal &iPool = it.value();
+        if (iPool.pool.empty()) {
+            if (iPool.maximuConnections && iPool.connectionCount >= iPool.maximuConnections) {
+                qInfo(ASQL_POOL) << "Maximum number of connections reached, reached" << connectionName << iPool.connectionCount << iPool.maximuConnections;
+                APoolQueuedClient queued;
+                queued.cb = cb;
+                queued.receiver = receiver;
+                queued.checkReceiver = receiver;
+                iPool.connectionQueue.enqueue(queued);
+                return;
+            }
+            ++iPool.connectionCount;
+            qDebug(ASQL_POOL) << "Creating a database connection for pool" << connectionName << iPool.connectionInfo;
+            db.d = QSharedPointer<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
+                    pushDatabaseBack(connectionName, priv);
+            });
+            db.open();
+        } else {
+            qDebug(ASQL_POOL) << "Reusing a database connection from pool" << connectionName;
+            ADatabasePrivate *priv = iPool.pool.takeLast();
+            db.d = QSharedPointer<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
+                    pushDatabaseBack(connectionName, priv);
+            });
+        }
+    } else {
+        qCritical(ASQL_POOL) << "Database connection NOT FOUND in pool" << connectionName;
+    }
+
+    if (cb) {
+        cb(db);
     }
 }
 

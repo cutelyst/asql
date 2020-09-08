@@ -48,6 +48,23 @@ int main(int argc, char *argv[])
         });
 
 //        ADatabase().rollback(); assert
+
+        APool::database([=] (ADatabase &db) {
+            qDebug() << "Got db" << db.isOpen() << db.state();
+
+            db.exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+                if (result.error()) {
+                    qDebug() << "got db, SELECT error" << result.errorString();
+                    return;
+                }
+
+                if (result.next()) {
+                    qDebug() << "got db, SELECT value" << result.value(0);
+                    ATransaction(t).commit();
+                }
+            });
+        });
+
     }
 
     auto db = APool::database();

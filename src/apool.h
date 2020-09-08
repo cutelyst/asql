@@ -28,9 +28,24 @@ public:
     static void addDatabase(const QString &connectionInfo, const QString &connectionName = QLatin1String(defaultConnection));
     static ADatabase database(const QString &connectionName = QLatin1String(defaultConnection));
 
+    /*!
+     * \brief retrieves a database object
+     *
+     * This method is only useful if the pool has a limit of maximum connections allowed,
+     * when the limit is reached instead of immediately returning a database object it will
+     * queue the request and once an object is freed the callback is issued.
+     *
+     * \param receiver
+     * \param connectionName
+     */
+    static void database(std::function<void(ADatabase &database)>, QObject *receiver = nullptr, const QString &connectionName = QLatin1String(defaultConnection));
+
 
     static void setDatabaseMaxIdleConnections(int max, const QString &connectionName = QLatin1String(defaultConnection));
     static void setDatabaseMaximumConnections(int max, const QString &connectionName = QLatin1String(defaultConnection));
+
+private:
+    inline static void pushDatabaseBack(const QString &connectionName, ADatabasePrivate *priv);
 };
 
 #endif // APOOL_H
