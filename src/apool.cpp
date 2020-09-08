@@ -60,6 +60,7 @@ ADatabase APool::database(const QString &connectionName)
         if (iPool.pool.empty()) {
             if (iPool.maximuConnections && iPool.connectionCount >= iPool.maximuConnections) {
                 qWarning(ASQL_POOL) << "Maximum number of connections reached" << connectionName << iPool.connectionCount << iPool.maximuConnections;
+                db.open();
                 return db;
             }
             ++iPool.connectionCount;

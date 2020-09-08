@@ -33,6 +33,19 @@ int main(int argc, char *argv[])
         auto db6 = APool::database();
         auto db7 = APool::database();
         qDebug() << "db7 valid" << db7.isValid();
+        ATransaction t(db7);
+        t.begin();
+        db7.exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+            if (result.error()) {
+                qDebug() << "SELECT error" << result.errorString();
+                return;
+            }
+
+            if (result.next()) {
+                qDebug() << "SELECT value" << result.value(0);
+                ATransaction(t).commit();
+            }
+        });
     }
 
     auto db = APool::database();
