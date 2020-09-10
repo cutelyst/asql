@@ -89,3 +89,4 @@ target_link_libraries(asql-migration
         Qt5::Core
         ASqlQt5::Core
 )
+install(TARGETS asql-migration DESTINATION ${CMAKE_INSTALL_BINDIR})
