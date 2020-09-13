@@ -128,7 +128,7 @@ ADatabase &ADatabase::operator =(const ADatabase &copy)
 ADatabasePrivate::ADatabasePrivate(const QString &ci)
     : connectionInfo(ci)
 {
-    if (ci.startsWith(QStringLiteral("postgresql://"))) {
+    if (ci.startsWith(QStringLiteral("postgres://")) || ci.startsWith(QStringLiteral("postgresql://"))) {
         driver = new ADriverPg;
         driver->setConnectionInfo(ci);
     } else {
