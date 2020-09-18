@@ -22,26 +22,42 @@ int main(int argc, char *argv[])
     APool::addDatabase(QStringLiteral("postgres:///"));
     APool::setDatabaseMaxIdleConnections(10);
 
-    APool::database().exec(QStringLiteral("SELECT now(), now(), 123 AS number"), [=] (AResult &result) {
-        qDebug() << "iterator 1" << result.errorString() << result.size();
+    auto db = APool::database();
+    db.exec(QStringLiteral("SELECT generate_series(1, 10) AS number"), [=] (AResult &result) {
+        qDebug() << "=====iterator single row" << result.errorString() << result.size() << "last" << result.lastResulSet();
         if (result.error()) {
             qDebug() << "Error" << result.errorString();
         }
 
-        QVariant v(QVariant::fromValue(result));
-
-        const AResult cResult(result);
-
-        for (auto row : cResult) {
-            qDebug() << "for loop row numbered" << row[0];
-            qDebug() << "for loop row named" << row[QStringLiteral("number")];
+        // For range
+        for (auto row : result) {
+            qDebug() << "for loop row numbered" << row[0] << row[QStringLiteral("number")];
         }
 
-        qDebug() << "LOOP 1" << result.errorString() << result.size();
-        auto it = cResult.begin();
-        while (it != cResult.end()) {
-            qDebug() << "loop 1" << it[0];
-            qDebug() << "loop 1" << it.value(0);
+        // Iterators
+        auto it = result.begin();
+        while (it != result.end()) {
+            qDebug() << "iterator" << it.at() << it[0] << it[QStringLiteral("number")];
+            ++it;
+        }
+    });
+    db.setLastQuerySingleRowMode();
+
+    db.exec(QStringLiteral("SELECT generate_series(1, 10) AS number"), [=] (AResult &result) {
+        qDebug() << "=====iterator" << result.errorString() << result.size() << "last" << result.lastResulSet();
+        if (result.error()) {
+            qDebug() << "Error" << result.errorString();
+        }
+
+        // For range
+        for (auto row : result) {
+            qDebug() << "for loop row numbered" << row[0] << row[QStringLiteral("number")];
+        }
+
+        // Iterators
+        auto it = result.begin();
+        while (it != result.end()) {
+            qDebug() << "iterator" << it.at() << it[0] << it[QStringLiteral("number")];
             ++it;
         }
     });

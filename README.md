@@ -12,6 +12,7 @@ Qt Async Sql library
 * Database maintainance with AMigrations class
 * Conveniently converts your query data to JSON or QVariantHash
 * Cache support
+* Single row mode (useful for very large datasets)
 
 ## Usage
 

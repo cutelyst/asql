@@ -94,6 +94,11 @@ void ADriver::exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &qu
     }
 }
 
+void ADriver::setLastQuerySingleRowMode()
+{
+
+}
+
 void ADriver::subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver)
 {
     Q_UNUSED(db)

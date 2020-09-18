@@ -176,24 +176,25 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                 pgQuery.result->processResult();
                             } else if (m_queuedQueries.size()) {
                                 APGQuery &pgQuery = m_queuedQueries.head();
+                                m_queryRunning = false;
                                 if (pgQuery.prepared && pgQuery.preparing) {
                                     if (pgQuery.result->error()) {
                                         // PREPARE OR PREPARED QUERY ERROR
                                         m_queuedQueries.dequeue();
+                                        nextQuery();
                                         pgQuery.done();
                                     } else {
                                         // Query prepared
                                         m_preparedQueries.append(pgQuery.preparedQuery.identification());
                                         pgQuery.result = QSharedPointer<AResultPg>(new AResultPg());
                                         pgQuery.preparing = false;
+                                        nextQuery();
                                     }
-                                    m_queryRunning = false;
                                 } else {
                                     APGQuery pgQuery = m_queuedQueries.dequeue();
+                                    nextQuery();
                                     pgQuery.done();
-                                    m_queryRunning = false;
                                 }
-                                nextQuery();
                                 break;
                             } else {
                                 break;
@@ -352,6 +353,20 @@ void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &
     doExecParams(pgQuery);
 }
 
+void ADriverPg::setLastQuerySingleRowMode()
+{
+    if (m_queuedQueries.size() == 1) {
+        APGQuery &pgQuery = m_queuedQueries.head();
+        pgQuery.setSingleRow = true;
+        if (!pgQuery.preparing && m_state == ADatabase::Connected) {
+            setSingleRowMode();
+        }
+    } else if (m_queuedQueries.size() > 1) {
+        APGQuery &pgQuery = m_queuedQueries.last();
+        pgQuery.setSingleRow = true;
+    }
+}
+
 void ADriverPg::subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver)
 {
     if (m_subscribedNotifications.contains(name)) {
@@ -426,6 +441,9 @@ void ADriverPg::doExec(APGQuery &pgQuery)
     int ret = PQsendQuery(m_conn, pgQuery.query.toUtf8().constData());
     if (ret == 1) {
         m_queryRunning = true;
+        if (pgQuery.setSingleRow) {
+            setSingleRowMode();
+        }
     } else {
         m_queuedQueries.dequeue();
         pgQuery.result->m_error = true;
@@ -541,6 +559,9 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
                                       paramLengths,
                                       paramFormats,
                                       0); // perhaps later use binary results
+            if (pgQuery.setSingleRow) {
+                setSingleRowMode();
+            }
         } else {
             m_queuedQueries.head().preparing = true;
             ret = PQsendPrepare(m_conn,
@@ -558,6 +579,9 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
                                 paramLengths,
                                 paramFormats,
                                 0); // perhaps later use binary results
+        if (pgQuery.setSingleRow) {
+            setSingleRowMode();
+        }
     }
 
     if (ret == 1) {
@@ -567,6 +591,13 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
         pgQuery.result->m_errorString = QString::fromLocal8Bit(PQerrorMessage(m_conn));
         pgQuery.done();
         m_queuedQueries.dequeue();
+    }
+}
+
+void ADriverPg::setSingleRowMode()
+{
+    if (PQsetSingleRowMode(m_conn) != 1) {
+        qWarning(ASQL_PG) << "Failed to set single row mode";
     }
 }
 

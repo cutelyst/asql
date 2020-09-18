@@ -53,6 +53,7 @@ public:
     QObject *checkReceiver;
     bool preparing = false;
     bool prepared = false;
+    bool setSingleRow = false;
 
     inline void done() {
         AResult r(result);
@@ -83,6 +84,8 @@ public:
     virtual void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
     virtual void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
 
+    virtual void setLastQuerySingleRowMode();
+
     virtual void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver) override;
     virtual void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver) override;
 
@@ -92,6 +95,7 @@ private:
     void finishQueries(const QString &error);
     inline void doExec(APGQuery &pgQuery);
     inline void doExecParams(APGQuery &query);
+    inline void setSingleRowMode();
 
     PGconn *m_conn = nullptr;
     ADatabase::State m_state = ADatabase::Disconnected;

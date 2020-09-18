@@ -107,6 +107,12 @@ void ADatabase::execPrepared(const APreparedQuery &query, const QVariantList &pa
     d->driver->exec(d, query, params, cb, receiver);
 }
 
+void ADatabase::setLastQuerySingleRowMode()
+{
+    Q_ASSERT(d);
+    d->driver->setLastQuerySingleRowMode();
+}
+
 void ADatabase::subscribeToNotification(const QString &channel, ANotificationFn cb, QObject *receiver)
 {
     Q_ASSERT(d);

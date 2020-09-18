@@ -156,6 +156,13 @@ public:
      */
     void execPrepared(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
 
+    /**
+     * @brief setSingleRowMode
+     *
+     * Enables single row mode only for the last sent or queued query.
+     */
+    void setLastQuerySingleRowMode();
+
     /*!
      * \brief subscribeToNotification will start listening for notifications
      * described by name, it will register only one callback.
