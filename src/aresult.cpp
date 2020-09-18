@@ -63,6 +63,11 @@ int AResult::numRowsAffected() const
     return d->numRowsAffected();
 }
 
+int AResult::indexOfField(const QString &name) const
+{
+    return d->indexOfField(name);
+}
+
 QString AResult::fieldName(int column) const
 {
     return d->fieldName(column);
@@ -73,7 +78,7 @@ QVariant AResult::value(int column) const
     return d->value(column);
 }
 
-QStringList AResult::columnNames()
+QStringList AResult::columnNames() const
 {
     QStringList columns;
     for (int i = 0; i < fields(); ++i) {
@@ -173,4 +178,14 @@ AResult::AResult(const QSharedPointer<AResultPrivate> &priv) : d(priv)
 AResultPrivate::~AResultPrivate()
 {
 
+}
+
+int AResultPrivate::indexOfField(const QString &name) const
+{
+    for (int i = 0; i < fields(); ++i) {
+        if (name == fieldName(i)) {
+            return i;
+        }
+    }
+    return -1;
 }

@@ -18,8 +18,33 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    APool::addDatabase(QStringLiteral("postgres://server.com,server2.com/mydb?target_session_attrs=read-write"));
+//    APool::addDatabase(QStringLiteral("postgres://server.com,server2.com/mydb?target_session_attrs=read-write"));
+    APool::addDatabase(QStringLiteral("postgres:///"));
     APool::setDatabaseMaxIdleConnections(10);
+
+    APool::database().exec(QStringLiteral("SELECT now(), now(), 123 AS number"), [=] (AResult &result) {
+        qDebug() << "iterator 1" << result.errorString() << result.size();
+        if (result.error()) {
+            qDebug() << "Error" << result.errorString();
+        }
+
+        QVariant v(QVariant::fromValue(result));
+
+        const AResult cResult(result);
+
+        for (auto row : cResult) {
+            qDebug() << "for loop row numbered" << row[0];
+            qDebug() << "for loop row named" << row[QStringLiteral("number")];
+        }
+
+        qDebug() << "LOOP 1" << result.errorString() << result.size();
+        auto it = cResult.begin();
+        while (it != cResult.end()) {
+            qDebug() << "loop 1" << it[0];
+            qDebug() << "loop 1" << it.value(0);
+            ++it;
+        }
+    });
 
     auto cache = new ACache;
     cache->setDatabase(APool::database());
@@ -33,6 +58,17 @@ int main(int argc, char *argv[])
             for (int i = 0; i < result.fields(); ++i) {
                 qDebug() << "cached 1" << result.at() << i << result.value(i);
             }
+        }
+
+        qDebug() << "LOOP 1" << result.errorString() << result.size();
+        auto it = result.constBegin();
+        while (it != result.constEnd()) {
+            qDebug() << "cached 1" << (*it)[0];
+            ++it;
+
+//            for (int i = 0; i < result.fields(); ++i) {
+//                qDebug() << "cached 1" << result.at() << i << result.value(i);
+//            }
         }
     }, new QObject);
 
