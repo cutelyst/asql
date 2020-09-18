@@ -87,74 +87,76 @@ QStringList AResult::columnNames() const
     return columns;
 }
 
-QVariantList AResult::array()
+QVariantList AResult::array() const
 {
     QVariantList ret;
-    if (size()) {
-        setAt(0);
+    auto it = constBegin();
+    if (it != constEnd()) {
         for (int i = 0; i < fields(); ++i) {
-            ret.append(value(i));
+            ret.append(it[i]);
         }
     }
     return ret;
 }
 
-QVariantHash AResult::hash()
+QVariantHash AResult::hash() const
 {
     QVariantHash ret;
-    if (size()) {
-        setAt(0);
+    auto it = constBegin();
+    if (it != constEnd()) {
         for (int i = 0; i < fields(); ++i) {
-            ret.insert(fieldName(i), value(i));
+            ret.insert(fieldName(i), it[i]);
         }
     }
     return ret;
 }
 
-QVariantList AResult::hashes()
+QVariantList AResult::hashes() const
 {
     QVariantList ret;
-    if (size()) {
-        setAt(0);
+    auto it = constBegin();
+    if (it != constEnd()) {
         const QStringList columns = columnNames();
 
         QVariantHash obj;
         do {
             for (int i = 0; i < fields(); ++i) {
-                obj.insert(columns[i],value(i));
+                obj.insert(columns[i], it[i]);
             }
             ret.append(obj);
-        } while (next());
+            ++it;
+        } while (it != constEnd());
     }
     return ret;
 }
 
-QJsonObject AResult::jsonObject()
+QJsonObject AResult::jsonObject() const
 {
     QJsonObject ret;
-    if (size()) {
-        setAt(0);
+    auto it = constBegin();
+    if (it != constEnd()) {
         for (int i = 0; i < fields(); ++i) {
-            ret.insert(fieldName(i), QJsonValue::fromVariant(value(i)));
+            ret.insert(fieldName(i), QJsonValue::fromVariant(it[i]));
         }
     }
     return ret;
 }
 
-QJsonArray AResult::jsonArray()
+QJsonArray AResult::jsonArray() const
 {
     QJsonArray ret;
-    if (size()) {
-        setAt(0);
+    auto it = constBegin();
+    if (it != constEnd()) {
         const QStringList columns = columnNames();
 
         QJsonObject obj;
         do {
             for (int i = 0; i < fields(); ++i) {
-                obj.insert(columns[i], QJsonValue::fromVariant(value(i)));
+                obj.insert(columns[i], QJsonValue::fromVariant(it[i]));
             }
             ret.append(obj);
-        } while (next());
+            ++it;
+        } while (it != constEnd());
     }
     return ret;
 }

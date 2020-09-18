@@ -72,31 +72,31 @@ public:
      * \brief hash returns the first row as a variant list
      * \return
      */
-    QVariantList array();
+    QVariantList array() const;
 
     /*!
      * \brief hash returns the first row as a QHash object
      * \return
      */
-    QVariantHash hash();
+    QVariantHash hash() const;
 
     /*!
      * \brief hashes returns all rows as QVariantHash objects
      * \return
      */
-    QVariantList hashes();
+    QVariantList hashes() const;
 
     /*!
      * \brief jsonObject returns the first row as a JSON object
      * \return
      */
-    QJsonObject jsonObject();
+    QJsonObject jsonObject() const;
 
     /*!
      * \brief jsonArray returns all rows as an array of JSON objects.
      * \return
      */
-    QJsonArray jsonArray();
+    QJsonArray jsonArray() const;
 
     AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;
