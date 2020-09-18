@@ -580,11 +580,6 @@ AResultPg::~AResultPg()
     PQclear(m_result);
 }
 
-bool AResultPg::next()
-{
-    return ++m_pos < size();
-}
-
 bool AResultPg::lastResulSet() const
 {
     return m_lastResultSet;
@@ -598,16 +593,6 @@ bool AResultPg::error() const
 QString AResultPg::errorString() const
 {
     return m_errorString;
-}
-
-void AResultPg::setAt(int row)
-{
-    m_pos = row;
-}
-
-int AResultPg::at() const
-{
-    return m_pos;
 }
 
 int AResultPg::size() const
@@ -675,11 +660,6 @@ static QVariant::Type qDecodePSQLType(int t)
     }
     qDebug(ASQL_PG) << "decode pg type" << t << type;
     return type;
-}
-
-QVariant AResultPg::value(int i) const
-{
-    return value(at(), i);
 }
 
 QVariant AResultPg::value(int row, int column) const

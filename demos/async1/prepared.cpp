@@ -41,8 +41,8 @@ int main(int argc, char *argv[])
                 return;
             }
 
-            if (result.next()) {
-                qDebug() << "SELECT value" << result.value(0);
+            if (result.size()) {
+                qDebug() << "SELECT value" << result.begin().value(0);
                 ATransaction(t).commit();
             }
         });
@@ -58,8 +58,8 @@ int main(int argc, char *argv[])
                     return;
                 }
 
-                if (result.next()) {
-                    qDebug() << "got db, SELECT value" << result.value(0);
+                if (result.size()) {
+                    qDebug() << "got db, SELECT value" << result.begin().value(0);
                     ATransaction(t).commit();
                 }
             });
@@ -75,8 +75,8 @@ int main(int argc, char *argv[])
             return;
         }
 
-        if (result.next()) {
-            qDebug() << "SELECT value" << result.value(0);
+        if (result.size()) {
+            qDebug() << "SELECT value" << result.begin().value(0);
         }
     });
 
@@ -86,8 +86,8 @@ int main(int argc, char *argv[])
             return;
         }
 
-        if (result.next()) {
-            qDebug() << "SELECT value" << result.value(0);
+        if (result.size()) {
+            qDebug() << "SELECT value" << result.begin().value(0);
         }
     });
 
@@ -98,8 +98,8 @@ int main(int argc, char *argv[])
             return;
         }
 
-        if (result.next()) {
-            qDebug() << "SELECT value 2" << result.value(0) << result.value(1) << query2.identification();
+        if (result.size()) {
+            qDebug() << "SELECT value 2" << result.begin().value(0) << result.begin().value(1) << query2.identification();
         }
     });
 
@@ -109,8 +109,8 @@ int main(int argc, char *argv[])
             return;
         }
 
-        if (result.next()) {
-            qDebug() << "SELECT value 2" << result.value(0) << result.value(1) << query2.identification();
+        if (result.size()) {
+            qDebug() << "SELECT value 2" << result.begin().value(0) << result.begin().value(1) << query2.identification();
         }
     });
 
@@ -123,8 +123,8 @@ int main(int argc, char *argv[])
                 return;
             }
 
-            if (result.next()) {
-                qDebug() << "SELECT value 3" << result.value(0) << result.value(1) << queryStatic.identification();
+            if (result.size()) {
+                qDebug() << "SELECT value 3" << result.begin().value(0) << result.begin().value(1) << queryStatic.identification();
             }
         });
     };

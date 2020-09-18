@@ -19,26 +19,21 @@ public:
     AResultPg();
     virtual ~AResultPg();
 
-    virtual bool next() override;
     virtual bool lastResulSet() const override;
     virtual bool error() const override;
     virtual QString errorString() const override;
 
-    virtual void setAt(int row) override;
-    virtual int at() const override;
     virtual int size() const override;
     virtual int fields() const override;
     virtual int numRowsAffected() const override;
 
     virtual QString fieldName(int column) const override;
-    virtual QVariant value(int column) const override;
     virtual QVariant value(int row, int column) const override;
 
     void processResult();
 
     QString m_errorString;
     PGresult *m_result = nullptr;
-    int m_pos = -1;
     bool m_error = false;
     bool m_lastResultSet = true;
 };

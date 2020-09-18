@@ -55,8 +55,8 @@ void AMigrations::load(const ADatabase &db, const QString &name)
                 return;
             }
 
-            if (result2.next()) {
-                d_ptr->active = result2.value(0).toInt();
+            if (result2.size()) {
+                d_ptr->active = result2.constBegin().value(0).toInt();
             } else {
                 d_ptr->active = 0;
             }
@@ -197,8 +197,8 @@ void AMigrations::migrate(int version, std::function<void(bool, const QString &)
             }
 
             int active = 0;
-            if (result.next()) {
-                active = result.value(0).toInt();
+            if (result.size()) {
+                active = result.begin().value(0).toInt();
             }
 
             if (active > latest()) {

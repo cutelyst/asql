@@ -2,6 +2,7 @@
 Qt Async Sql library
 
 ## Features
+* Navigate on your data with iterators
 * Scoped transactions objects
 * PostgreSQL driver
 * Prepared queries
@@ -43,9 +44,9 @@ Please if you have user input values that you need to pass to your query do your
         }
         
         // iterate over your data
-        while (result.next()) {
+        for (auto row : result) {
            for (int i = 0; i < result.fields(); ++i) {
-               qDebug() << "data row" << result.at() << "column" << i << "value" << result.value(i);
+               qDebug() << "data row" << row.at() << "column" << i << "value" << row.value(i);
            }
         }
     });
@@ -67,9 +68,9 @@ When you are not sending parameters PostgreSQL allows for multiple queries, this
         }
         
         // iterate over your data
-        while (result.next()) {
+        for (auto row : result) {
            for (int i = 0; i < result.fields(); ++i) {
-               qDebug() << "data row" << result.at() << "column" << i << "value" << result.value(i);
+               qDebug() << "data row" << row.at() << "column" << i << "value" << row.value(i);
            }
         }
     });
@@ -185,9 +186,9 @@ cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
         qDebug() << "Error" << result.errorString();
     }
 
-    while (result.next()) {
+    for (auto row : result) {
         for (int i = 0; i < result.fields(); ++i) {
-            qDebug() << "cached 1" << result.at() << i << result.value(i);
+            qDebug() << "cached 1" << row.at() << i << row.value(i);
         }
     }
 });
@@ -200,9 +201,9 @@ QTimer::singleShot(2000, [=] {
             qDebug() << "Error" << result.errorString();
         }
 
-        while (result.next()) {
+        for (auto row : result) {
             for (int i = 0; i < result.fields(); ++i) {
-                qDebug() << "cached 2" << result.at() << i << result.value(i);
+                qDebug() << "cached 2" << row.at() << i << row.value(i);
             }
         }
     });
@@ -218,9 +219,9 @@ QTimer::singleShot(2000, [=] {
             qDebug() << "Error 3" << result.errorString();
         }
 
-        while (result.next()) {
+        for (auto row : result) {
             for (int i = 0; i < result.fields(); ++i) {
-                qDebug() << "cached 3" << result.at() << i << result.value(i);
+                qDebug() << "cached 3" << row.at() << i << row.value(i);
             }
         }
     });

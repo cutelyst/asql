@@ -64,7 +64,6 @@ void ACache::exec(const QString &query, const QVariantList &params, AResultFn cb
             qDebug(ASQL_CACHE) << "cached data ready" << query;
             if (cb) {
                 cb(value.result);
-                value.result.setAt(-1);
             }
         } else {
             qDebug(ASQL_CACHE) << "data was requested already" << query;
@@ -96,7 +95,6 @@ void ACache::exec(const QString &query, const QVariantList &params, AResultFn cb
                      if (receiverObj.checkReceiver == nullptr || !receiverObj.receiver.isNull()) {
                          qDebug(ASQL_CACHE) << "dispatching to receiver" << receiverObj.checkReceiver << query;
                          receiverObj.cb(result);
-                         result.setAt(-1);
                      }
                  }
                  value.receivers.clear();

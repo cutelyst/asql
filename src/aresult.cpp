@@ -18,11 +18,6 @@ AResult::~AResult()
 
 }
 
-bool AResult::next()
-{
-    return d->next();
-}
-
 bool AResult::lastResulSet() const
 {
     return d->lastResulSet();
@@ -36,16 +31,6 @@ bool AResult::error() const
 QString AResult::errorString() const
 {
     return !d.isNull() ? d->errorString() : QStringLiteral("INVALID DRIVER");
-}
-
-void AResult::setAt(int row)
-{
-    d->setAt(row);
-}
-
-int AResult::at() const
-{
-    return d->at();
 }
 
 int AResult::size() const
@@ -71,11 +56,6 @@ int AResult::indexOfField(const QString &name) const
 QString AResult::fieldName(int column) const
 {
     return d->fieldName(column);
-}
-
-QVariant AResult::value(int column) const
-{
-    return d->value(column);
 }
 
 QStringList AResult::columnNames() const

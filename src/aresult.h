@@ -11,20 +11,16 @@ class ASQL_EXPORT AResultPrivate
 public:
     virtual ~AResultPrivate();
 
-    virtual bool next() = 0;
     virtual bool lastResulSet() const = 0;
     virtual bool error() const = 0;
     virtual QString errorString() const = 0;
 
-    virtual void setAt(int row) = 0;
-    virtual int at() const = 0;
     virtual int size() const = 0;
     virtual int fields() const = 0;
     virtual int numRowsAffected() const = 0;
 
     int indexOfField(const QString &name) const;
     virtual QString fieldName(int column) const = 0;
-    virtual QVariant value(int column) const = 0;
     virtual QVariant value(int row, int column) const = 0;
 };
 
@@ -47,20 +43,16 @@ public:
     AResult(const AResult &other);
     virtual ~AResult();
 
-    bool next();
     bool lastResulSet() const;
     bool error() const;
     QString errorString() const;
 
-    void setAt(int row);
-    int at() const;
     int size() const;
     int fields() const;
     int numRowsAffected() const;
 
     int indexOfField(const QString &name) const;
     QString fieldName(int column) const;
-    QVariant value(int column) const;
 
     /*!
      * \brief columnNames returns the column names
@@ -108,6 +100,7 @@ public:
 
         explicit inline ARow(QSharedPointer<AResultPrivate> data, int index) : d(data), row(index) { }
 
+        inline int at() const { return row; }
         inline QVariant value(int column) const { return d->value(row, column); }
         inline QVariant value(const QString &name) const { return d->value(row, d->indexOfField(name)); }
         inline QVariant operator[](int column) const { return d->value(row, column); }
@@ -128,6 +121,7 @@ public:
 
         inline ARow operator*() const { return ARow(d, i); }
 
+        inline int at() const { return i; }
         inline QVariant value(int column) const { return d->value(i, column); }
         inline QVariant value(const QString &name) const { return d->value(i, d->indexOfField(name)); }
         inline QVariant operator[](int column) const { return d->value(i, column); }

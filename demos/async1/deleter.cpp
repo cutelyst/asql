@@ -32,8 +32,8 @@ int main(int argc, char *argv[])
                 return;
             }
 
-            if (result.next()) {
-                qDebug() << "SELECT value" << result.value(0);
+            if (result.size()) {
+                qDebug() << "SELECT value" << result.begin().value(0);
             }
         }, obj);
     }

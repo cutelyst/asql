@@ -54,9 +54,9 @@ int main(int argc, char *argv[])
             qDebug() << "Error" << result.errorString();
         }
 
-        while (result.next()) {
+        for (auto row : result) {
             for (int i = 0; i < result.fields(); ++i) {
-                qDebug() << "cached 1" << result.at() << i << result.value(i);
+                qDebug() << "cached 1" << i << row.value(i);
             }
         }
 
@@ -79,9 +79,9 @@ int main(int argc, char *argv[])
                 qDebug() << "Error" << result.errorString();
             }
 
-            while (result.next()) {
+             for (auto row : result) {
                 for (int i = 0; i < result.fields(); ++i) {
-                    qDebug() << "cached 2" << result.at() << i << result.value(i);
+                    qDebug() << "cached 2" << i<< row.value(i);
                 }
             }
         }, new QObject);
@@ -95,9 +95,9 @@ int main(int argc, char *argv[])
                 qDebug() << "Error 3" << result.errorString();
             }
 
-            while (result.next()) {
+            for (auto row : result) {
                 for (int i = 0; i < result.fields(); ++i) {
-                    qDebug() << "cached 3" << result.at() << i << result.value(i);
+                    qDebug() << "cached 3" << row.value(i);
                 }
             }
         }, new QObject);
