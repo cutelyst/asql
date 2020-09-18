@@ -24,6 +24,7 @@ public:
 
     virtual QString fieldName(int column) const = 0;
     virtual QVariant value(int column) const = 0;
+    virtual QVariant value(int row, int column) const = 0;
 };
 
 class ASQL_EXPORT AResult

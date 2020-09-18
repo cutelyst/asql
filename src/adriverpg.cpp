@@ -679,16 +679,21 @@ static QVariant::Type qDecodePSQLType(int t)
 
 QVariant AResultPg::value(int i) const
 {
-    if (i >= PQnfields(m_result)) {
-        qWarning(ASQL_PG, "column %d out of range", i);
+    return value(at(), i);
+}
+
+QVariant AResultPg::value(int row, int column) const
+{
+    if (column >= PQnfields(m_result)) {
+        qWarning(ASQL_PG, "column %d out of range", column);
         return QVariant();
     }
-    const int currentRow = /*isForwardOnly() ? 0 : */at();
-    int ptype = PQftype(m_result, i);
+
+    int ptype = PQftype(m_result, column);
     QVariant::Type type = qDecodePSQLType(ptype);
-    if (PQgetisnull(m_result, currentRow, i))
+    if (PQgetisnull(m_result, row, column))
         return QVariant(type);
-    const char *val = PQgetvalue(m_result, currentRow, i);
+    const char *val = PQgetvalue(m_result, row, column);
     switch (type) {
     case QVariant::Bool:
         return QVariant((bool)(val[0] == 't'));

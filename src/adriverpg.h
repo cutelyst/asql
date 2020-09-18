@@ -32,6 +32,7 @@ public:
 
     virtual QString fieldName(int column) const override;
     virtual QVariant value(int column) const override;
+    virtual QVariant value(int row, int column) const override;
 
     void processResult();
 
