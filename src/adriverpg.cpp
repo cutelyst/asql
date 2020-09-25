@@ -512,20 +512,20 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
                 paramTypes[i] = QUNKNOWNOID;
                 paramFormats[i] = 0;
                 break;
-            case QMetaType::QJsonArray:
-                paramTypes[i] = QJSONBOID;
-                paramFormats[i] = 0;
-                data = QJsonDocument(v.toJsonObject()).toJson();
-                break;
             case QMetaType::QJsonObject:
                 paramTypes[i] = QJSONBOID;
                 paramFormats[i] = 0;
-                data = QJsonDocument(v.toJsonArray()).toJson();
+                data = QJsonDocument(v.toJsonObject()).toJson(QJsonDocument::Compact);
+                break;
+            case QMetaType::QJsonArray:
+                paramTypes[i] = QJSONBOID;
+                paramFormats[i] = 0;
+                data = QJsonDocument(v.toJsonArray()).toJson(QJsonDocument::Compact);
                 break;
             case QMetaType::QJsonDocument:
                 paramTypes[i] = QJSONBOID;
                 paramFormats[i] = 0;
-                data = v.toJsonDocument().toJson();
+                data = v.toJsonDocument().toJson(QJsonDocument::Compact);
                 break;
             default:
                 paramTypes[i] = QUNKNOWNOID; // This allows PG to try to deduce the type
