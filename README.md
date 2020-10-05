@@ -58,7 +58,7 @@ Please if you have user input values that you need to pass to your query do your
 When you are not sending parameters PostgreSQL allows for multiple queries, this results into multiple calls to your lambda, if one query fails the remaining queries are ignored as if they where in a transaction block. It's possible to check if the last result has arrived
 ```c++
     // This query is at the same scope at the previou one, this mean ADatabase will queue them
-    db.exec("SELECT * FROM logs LIMIT 5; SELECT * FROM messages LIMIT 5"), [=] (AResult &result) {
+    db.exec("SELECT * FROM logs LIMIT 5; SELECT * FROM messages LIMIT 5", [=] (AResult &result) {
         if (result.error()) {
             qDebug() << result.errorString();
             return;
@@ -89,7 +89,7 @@ it holds an unique identification for your query, in order to make this easier o
 manually create a static APreparedQuery object or by having your query as a member of a class that isn't going to be deleted soon.
 ```c++
 // PostgreSQL uses numered place holders, and yes you can repeat them :)
-db.execPrepared(APreparedQueryLiteral("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id")),
+db.execPrepared(APreparedQueryLiteral("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
 {true, QStringLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
 [=] (AResult &result) {
     if (result.error()) {
