@@ -522,6 +522,46 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
                 paramFormats[i] = 0;
                 data = QJsonDocument(v.toJsonArray()).toJson(QJsonDocument::Compact);
                 break;
+            case QMetaType::QJsonValue:
+            {
+                const QJsonValue jValue = v.toJsonValue();
+                switch (jValue.type()) {
+                case QJsonValue::Bool:
+                    paramTypes[i] = QBOOLOID;
+                    paramFormats[i] = 1;
+                    data.append(jValue.toBool() ? 0x01 : 0x00);
+                    break;;
+                case QJsonValue::Double:
+                    paramTypes[i] = QUNKNOWNOID; // This allows PG to try to deduce the type
+                    paramFormats[i] = 0;
+                    data = jValue.toVariant().toString().toLatin1();
+                    break;
+                case QJsonValue::String:
+                {
+                    const QString text = v.toString();
+                    paramTypes[i] = !text.isNull() ? QTEXTOID : QUNKNOWNOID;
+                    paramFormats[i] = 0;
+                    data = jValue.toString().toUtf8();
+                }
+                    break;
+                case QJsonValue::Array:
+                    paramTypes[i] = QJSONBOID;
+                    paramFormats[i] = 0;
+                    data = QJsonDocument(jValue.toArray()).toJson(QJsonDocument::Compact);
+                    break;
+                case QJsonValue::Object:
+                    paramTypes[i] = QJSONBOID;
+                    paramFormats[i] = 0;
+                    data = QJsonDocument(jValue.toObject()).toJson(QJsonDocument::Compact);
+                    break;
+                default:
+                    paramTypes[i] = QUNKNOWNOID;
+                    paramFormats[i] = 0;
+                    paramValues[i] = nullptr;
+                    paramLengths[i] = 0;
+                }
+            }
+                break;
             case QMetaType::QJsonDocument:
                 paramTypes[i] = QJSONBOID;
                 paramFormats[i] = 0;
