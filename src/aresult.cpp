@@ -73,7 +73,7 @@ QVariantList AResult::array() const
     auto it = constBegin();
     if (it != constEnd()) {
         for (int i = 0; i < fields(); ++i) {
-            ret.append(it[i]);
+            ret.append(it.value(i));
         }
     }
     return ret;
@@ -85,7 +85,7 @@ QVariantHash AResult::hash() const
     auto it = constBegin();
     if (it != constEnd()) {
         for (int i = 0; i < fields(); ++i) {
-            ret.insert(fieldName(i), it[i]);
+            ret.insert(fieldName(i), it.value(i));
         }
     }
     return ret;
@@ -101,7 +101,7 @@ QVariantList AResult::hashes() const
         QVariantHash obj;
         do {
             for (int i = 0; i < fields(); ++i) {
-                obj.insert(columns[i], it[i]);
+                obj.insert(columns[i], it.value(i));
             }
             ret.append(obj);
             ++it;
@@ -116,7 +116,7 @@ QJsonObject AResult::jsonObject() const
     auto it = constBegin();
     if (it != constEnd()) {
         for (int i = 0; i < fields(); ++i) {
-            ret.insert(fieldName(i), QJsonValue::fromVariant(it[i]));
+            ret.insert(fieldName(i), QJsonValue::fromVariant(it.value(i)));
         }
     }
     return ret;
@@ -132,7 +132,7 @@ QJsonArray AResult::jsonArray() const
         QJsonObject obj;
         do {
             for (int i = 0; i < fields(); ++i) {
-                obj.insert(columns[i], QJsonValue::fromVariant(it[i]));
+                obj.insert(columns[i], QJsonValue::fromVariant(it.value(i)));
             }
             ret.append(obj);
             ++it;

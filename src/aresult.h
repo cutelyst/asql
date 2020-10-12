@@ -93,6 +93,17 @@ public:
     AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;
 
+    class AColumn {
+    public:
+        QSharedPointer<AResultPrivate> d;
+        int row;
+        int column;
+
+        explicit inline AColumn(QSharedPointer<AResultPrivate> data, int _row, int _column) : d(data), row(_row), column(_column) { }
+
+        inline QVariant value() const { return d->value(row, column); }
+    };
+
     class ARow {
     public:
         QSharedPointer<AResultPrivate> d;
@@ -103,8 +114,8 @@ public:
         inline int at() const { return row; }
         inline QVariant value(int column) const { return d->value(row, column); }
         inline QVariant value(const QString &name) const { return d->value(row, d->indexOfField(name)); }
-        inline QVariant operator[](int column) const { return d->value(row, column); }
-        inline QVariant operator[](const QString &name) const { return d->value(row, d->indexOfField(name)); }
+        inline AColumn operator[](int column) const { return AColumn(d, row, column); }
+        inline AColumn operator[](const QString &name) const { return AColumn(d, row, d->indexOfField(name)); }
     };
 
     class const_iterator {
@@ -124,8 +135,8 @@ public:
         inline int at() const { return i; }
         inline QVariant value(int column) const { return d->value(i, column); }
         inline QVariant value(const QString &name) const { return d->value(i, d->indexOfField(name)); }
-        inline QVariant operator[](int column) const { return d->value(i, column); }
-        inline QVariant operator[](const QString &name) const { return d->value(i, d->indexOfField(name)); }
+        inline AColumn operator[](int column) const { return AColumn(d, i, column); }
+        inline AColumn operator[](const QString &name) const { return AColumn(d, i, d->indexOfField(name)); }
 
         inline bool operator==(const const_iterator &o) const { return i == o.i; }
         inline bool operator!=(const const_iterator &o) const { return i != o.i; }
@@ -150,6 +161,9 @@ public:
     inline const_iterator constBegin() const { return const_iterator(d, 0); }
     inline const_iterator end() const { return const_iterator(d, size()); }
     inline const_iterator constEnd() const { return const_iterator(d, size()); }
+
+    inline ARow operator[](int column) const { return ARow(d, column); }
+    inline ARow operator[](const QString &name) const { return ARow(d, d->indexOfField(name)); }
 
 protected:
     QSharedPointer<AResultPrivate> d;
