@@ -147,6 +147,9 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                 m_writeNotify->setEnabled(false);
                 if (!m_connected) {
                     connFn();
+                } else if (m_flush) {
+                    m_flush = false;
+                    cmdFlush();
                 }
             });
 
@@ -444,6 +447,7 @@ void ADriverPg::doExec(APGQuery &pgQuery)
         if (pgQuery.setSingleRow) {
             setSingleRowMode();
         }
+        cmdFlush();
     } else {
         m_queuedQueries.dequeue();
         pgQuery.result->m_error = true;
@@ -623,6 +627,7 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
             setSingleRowMode();
         }
     }
+    cmdFlush();
 
     if (ret == 1) {
         m_queryRunning = true;
@@ -638,6 +643,18 @@ void ADriverPg::setSingleRowMode()
 {
     if (PQsetSingleRowMode(m_conn) != 1) {
         qWarning(ASQL_PG) << "Failed to set single row mode";
+    }
+}
+
+void ADriverPg::cmdFlush()
+{
+    int ret = PQflush(m_conn);
+    if (Q_UNLIKELY(ret == -1)) {
+        qWarning(ASQL_PG) << "Failed to flush" << QString::fromLocal8Bit(PQerrorMessage(m_conn));
+    } else if (Q_UNLIKELY(ret == 1)) {
+        // Wait for write-ready and call it again
+        m_flush = true;
+        m_writeNotify->setEnabled(true);
     }
 }
 

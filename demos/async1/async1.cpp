@@ -7,12 +7,14 @@
 #include <QTimer>
 #include <QUuid>
 #include <QUrl>
+#include <QElapsedTimer>
 
 #include "../../src/apool.h"
 #include "../../src/adatabase.h"
 #include "../../src/aresult.h"
 #include "../../src/amigrations.h"
 #include "../../src/acache.h"
+#include "../../src/apreparedquery.h"
 
 int main(int argc, char *argv[])
 {
@@ -228,6 +230,26 @@ int main(int argc, char *argv[])
 //                                  )V0G0N"));
 //    qDebug() << "MIG" << mig.latest() << mig.active();
 //    qDebug() << "sqlFor" << mig.sqlFor(0, 2);
+
+    QElapsedTimer t;
+    t.start();
+
+    auto count = new int{0};
+
+    auto db1 = APool::database();
+    for (int i = 0; i < 100000; ++i) {
+        db1.execPrepared(APreparedQueryLiteral("SELECT * from world"),
+                 {},
+                 [&count, t] (AResult &result) mutable {
+            (*count)++;
+            if (!result.error()) {
+                auto data = result.hash();
+                if (data.size() && *count == 10000) {
+                    qDebug() << "finish" << count << "elap" << t.elapsed();
+                }
+            }
+    });
+    }
 
     app.exec();
 }

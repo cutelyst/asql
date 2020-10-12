@@ -96,10 +96,12 @@ private:
     inline void doExec(APGQuery &pgQuery);
     inline void doExecParams(APGQuery &query);
     inline void setSingleRowMode();
+    inline void cmdFlush();
 
     PGconn *m_conn = nullptr;
     ADatabase::State m_state = ADatabase::Disconnected;
     bool m_connected = false;
+    bool m_flush = false;
     bool m_queryRunning = false;
     std::function<void (ADatabase::State, const QString &)> m_stateChangedCb;
     QHash<QString, ANotificationFn> m_subscribedNotifications;
