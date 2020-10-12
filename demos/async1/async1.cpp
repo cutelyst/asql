@@ -22,9 +22,11 @@ int main(int argc, char *argv[])
     APool::addDatabase(QStringLiteral("postgres:///"));
     APool::setDatabaseMaxIdleConnections(10);
 
+    QVariantList series;
+
     auto db = APool::database();
-    db.exec(QStringLiteral("SELECT generate_series(1, 10) AS number"), [=] (AResult &result) {
-        qDebug() << "=====iterator single row" << result.errorString() << result.size() << "last" << result.lastResulSet();
+    db.exec(QStringLiteral("SELECT generate_series(1, 10) AS number"), [&series] (AResult &result) mutable {
+        qDebug() << "=====iterator single row" << result.errorString() << result.size() << "last" << result.lastResulSet() << "mutable" << series.size();
         if (result.error()) {
             qDebug() << "Error" << result.errorString();
         }
@@ -32,6 +34,7 @@ int main(int argc, char *argv[])
         // For range
         for (auto row : result) {
             qDebug() << "for loop row numbered" << row[0] << row[QStringLiteral("number")];
+            series.append(row[0]);
         }
 
         // Iterators
@@ -43,8 +46,8 @@ int main(int argc, char *argv[])
     });
     db.setLastQuerySingleRowMode();
 
-    db.exec(QStringLiteral("SELECT generate_series(1, 10) AS number"), [=] (AResult &result) {
-        qDebug() << "=====iterator" << result.errorString() << result.size() << "last" << result.lastResulSet();
+    db.exec(QStringLiteral("SELECT generate_series(1, 10) AS number"), [&series] (AResult &result) mutable {
+        qDebug() << "=====iterator" << result.errorString() << result.size() << "last" << result.lastResulSet() << "mutable" << series.size();
         if (result.error()) {
             qDebug() << "Error" << result.errorString();
         }
@@ -52,6 +55,7 @@ int main(int argc, char *argv[])
         // For range
         for (auto row : result) {
             qDebug() << "for loop row numbered" << row[0] << row[QStringLiteral("number")];
+            series.append(row[0]);
         }
 
         // Iterators
@@ -60,6 +64,18 @@ int main(int argc, char *argv[])
             qDebug() << "iterator" << it.at() << it[0] << it[QStringLiteral("number")];
             ++it;
         }
+    });
+
+    APool::database().exec(QStringLiteral("SELECT $1, $2, $3, $4, now()"),
+                           {QJsonValue(true), QJsonValue(123.4567), QJsonValue(QStringLiteral("fooo")), QJsonValue(QJsonObject{})},
+                           [&series] (AResult &result) mutable {
+        qDebug() << "=====iterator JSON" << result.errorString() << result.size() << "last" << result.lastResulSet() << "mutable" << series.size();
+        if (result.error()) {
+            qDebug() << "Error" << result.errorString();
+        }
+
+        // For range
+        qDebug() << "JSON result" << result.array();
     });
 
     auto cache = new ACache;
