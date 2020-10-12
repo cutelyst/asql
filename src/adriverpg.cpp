@@ -154,18 +154,18 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
             });
 
             connect(m_readNotify, &QSocketNotifier::activated, this, [=] {
-                qDebug(ASQL_PG) << "PG read" << this;
+//                qDebug(ASQL_PG) << "PG read" << this;
                 if (!m_connected) {
                     connFn();
                 } else {
                     if (PQconsumeInput(m_conn) == 1) {
                         while (PQisBusy(m_conn) == 0) {
                             PGresult *result = PQgetResult(m_conn);
-                            qDebug(ASQL_PG) << "Not busy: RESULT" << result << "busy" << PQisBusy(m_conn) << m_queuedQueries.size();
+//                            qDebug(ASQL_PG) << "Not busy: RESULT" << result << "busy" << PQisBusy(m_conn) << m_queuedQueries.size();
                             if (result != nullptr) {
                                 int status = PQresultStatus(result);
                                 APGQuery &pgQuery = m_queuedQueries.head();
-                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << pgQuery.result;
+//                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << pgQuery.result;
                                 if (pgQuery.result->m_result) {
                                     // when we had already had a result it means we should emit the
                                     // first one and keep waiting till a null result is returned
@@ -203,12 +203,12 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                 break;
                             }
                         }
-                        qDebug(ASQL_PG) << "Not busy OUT" << this;
+//                        qDebug(ASQL_PG) << "Not busy OUT" << this;
 
                         PGnotify *notify = nullptr;
                         while ((notify = PQnotifies(m_conn)) != nullptr) {
                             const QString name = QString::fromUtf8(notify->relname);
-                            qDebug(ASQL_PG) << "NOTIFICATION" << name << notify;
+//                            qDebug(ASQL_PG) << "NOTIFICATION" << name << notify;
                             auto it = m_subscribedNotifications.constFind(name);
                             if (it != m_subscribedNotifications.constEnd()) {
                                 QString payload;
@@ -216,7 +216,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                     payload = QString::fromUtf8(notify->extra);
                                 }
                                 bool self = (notify->be_pid == PQbackendPID(m_conn)) ? true : false;
-                                qDebug(ASQL_PG) << "NOTIFICATION" << self << name << payload;
+//                                qDebug(ASQL_PG) << "NOTIFICATION" << self << name << payload;
                                 it.value()(payload, self);
                             } else {
                                 qWarning(ASQL_PG, "received notification for '%s' which isn't subscribed to.", qPrintable(name));
@@ -237,7 +237,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                 }
             });
         }
-        qDebug(ASQL_PG) << "PG Socket" << m_conn << socket;
+//        qDebug(ASQL_PG) << "PG Socket" << m_conn << socket;
     }
 }
 
@@ -468,7 +468,7 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
     for (int i = 0; i < params.size(); ++i) {
         QVariant v = params[i];
         QByteArray data;
-        qDebug(ASQL_PG) << v << v.type() << v.isNull() << "---" << QString::number(v.toInt()).toLatin1().constData() << v.toString().isNull();
+//        qDebug(ASQL_PG) << v << v.type() << v.isNull() << "---" << QString::number(v.toInt()).toLatin1().constData() << v.toString().isNull();
         if (!v.isNull()) {
             switch (v.userType()) {
             case QVariant::String:
@@ -746,7 +746,7 @@ static QVariant::Type qDecodePSQLType(int t)
         type = QVariant::String;
         break;
     }
-    qDebug(ASQL_PG) << "decode pg type" << t << type;
+//    qDebug(ASQL_PG) << "decode pg type" << t << type;
     return type;
 }
 
