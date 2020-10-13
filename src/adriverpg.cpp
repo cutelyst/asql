@@ -163,7 +163,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                             PGresult *result = PQgetResult(m_conn);
 //                            qDebug(ASQL_PG) << "Not busy: RESULT" << result << "busy" << PQisBusy(m_conn) << m_queuedQueries.size();
                             if (result != nullptr) {
-                                int status = PQresultStatus(result);
+//                                int status = PQresultStatus(result);
                                 APGQuery &pgQuery = m_queuedQueries.head();
 //                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << pgQuery.result;
                                 if (pgQuery.result->m_result) {
@@ -847,6 +847,105 @@ QVariant AResultPg::value(int row, int column) const
     return QVariant();
 }
 
+bool AResultPg::toBool(int row, int column) const
+{
+    const char *val = PQgetvalue(m_result, row, column);
+    return val[0] == 't';
+}
+
+int AResultPg::toInt(int row, int column) const
+{
+    const char *val = PQgetvalue(m_result, row, column);
+    return atoi(val);
+}
+
+int AResultPg::toLongLong(int row, int column) const
+{
+    const char *val = PQgetvalue(m_result, row, column);
+    return QString::fromLatin1(val).toLongLong();
+}
+
+int AResultPg::toULongLong(int row, int column) const
+{
+    const char *val = PQgetvalue(m_result, row, column);
+    return QString::fromLatin1(val).toULongLong();
+}
+
+int AResultPg::toDouble(int row, int column) const
+{
+    const char *val = PQgetvalue(m_result, row, column);
+    if (qstricmp(val, "Infinity") == 0)
+        return qInf();
+    if (qstricmp(val, "-Infinity") == 0)
+        return -qInf();
+    return QString::fromLatin1(val).toDouble();
+}
+
+QString AResultPg::toString(int row, int column) const
+{
+    if (PQgetisnull(m_result, row, column) == 1) {
+        return QString();
+    }
+
+    const char *val = PQgetvalue(m_result, row, column);
+    return QString::fromUtf8(val);
+}
+
+QDate AResultPg::toDate(int row, int column) const
+{
+    const char *val = PQgetvalue(m_result, row, column);
+    if (val[0] == '\0') {
+        return QDate();
+    } else {
+#ifndef QT_NO_DATESTRING
+        return QDate::fromString(QString::fromLatin1(val), Qt::ISODate);
+#else
+        return QDate();
+#endif
+    }
+}
+
+QTime AResultPg::toTime(int row, int column) const
+{
+    const char *val = PQgetvalue(m_result, row, column);
+    const QString str = QString::fromLatin1(val);
+#ifndef QT_NO_DATESTRING
+    if (str.isEmpty())
+        return QTime();
+    else
+        return QTime::fromString(str, Qt::ISODate);
+#else
+    return QTime();
+#endif
+}
+
+QDateTime AResultPg::toDateTime(int row, int column) const
+{
+    const char *val = PQgetvalue(m_result, row, column);
+    QString dtval = QString::fromLatin1(val);
+#ifndef QT_NO_DATESTRING
+    if (dtval.length() < 10) {
+        return QDateTime();
+    } else {
+        QChar sign = dtval[dtval.size() - 3];
+        if (sign == QLatin1Char('-') || sign == QLatin1Char('+')) dtval += QLatin1String(":00");
+        return QDateTime::fromString(dtval, Qt::ISODate).toLocalTime();
+    }
+#else
+    return QDateTime();
+#endif
+}
+
+QByteArray AResultPg::toByteArray(int row, int column) const
+{
+    const char *val = PQgetvalue(m_result, row, column);
+    size_t len;
+    unsigned char *data = PQunescapeBytea((const unsigned char*)val, &len);
+    QByteArray ba(reinterpret_cast<const char *>(data), int(len));
+    PQfreemem(data);
+    return ba;
+}
+
 void AResultPg::processResult()
 {
     if (!m_result) {
@@ -889,3 +988,5 @@ void AResultPg::processResult()
     m_error = true;
     m_errorString = QString::fromLocal8Bit(PQresultErrorMessage(m_result));
 }
+
+#include "moc_adriverpg.cpp"

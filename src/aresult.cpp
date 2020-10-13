@@ -2,6 +2,7 @@
 
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QDateTime>
 
 AResult::AResult()
 {
@@ -171,3 +172,9 @@ int AResultPrivate::indexOfField(const QString &name) const
     }
     return -1;
 }
+
+QDate AResult::AColumn::toDate() const  { return d->toDate(row, column); }
+
+QTime AResult::AColumn::toTime() const  { return d->toTime(row, column); }
+
+QDateTime AResult::AColumn::toDateTime() const  { return d->toDateTime(row, column); }

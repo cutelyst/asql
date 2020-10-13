@@ -257,5 +257,6 @@ void AMigrations::migrate(int version, std::function<void(bool, const QString &)
             }, this);
         }, this);
     });
-
 }
+
+#include "moc_amigrations.cpp"

@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
         // Iterators
         auto it = result.begin();
         while (it != result.end()) {
-            qDebug() << "iterator" << it.at() << it.value(0) << it[QStringLiteral("number")].value();
+            qDebug() << "iterator" << it.at() << it.value(0) << it[QStringLiteral("number")].value() << it[0].toInt();
             ++it;
         }
     });
@@ -56,14 +56,14 @@ int main(int argc, char *argv[])
 
         // For range
         for (auto row : result) {
-            qDebug() << "for loop row numbered" << row.value(0) << row[QStringLiteral("number")].value();
+            qDebug() << "for loop row numbered" << row.value(0) << row[QStringLiteral("number")].value() << row[0].toInt();
             series.append(row[0].value());
         }
 
         // Iterators
         auto it = result.begin();
         while (it != result.end()) {
-            qDebug() << "iterator" << it.at() << it[0].value() << it.value(QStringLiteral("number"));
+            qDebug() << "iterator" << it.at() << it[0].value() << it.value(QStringLiteral("number")) << it[0].toInt();
             ++it;
         }
     });
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
         qDebug() << "LOOP 1" << result.errorString() << result.size();
         auto it = result.constBegin();
         while (it != result.constEnd()) {
-            qDebug() << "cached 1" << (*it)[0].value();
+            qDebug() << "cached 1" << it[0].value() << it[0].toDateTime();
             ++it;
 
 //            for (int i = 0; i < result.fields(); ++i) {
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 
             for (auto row : result) {
                 for (int i = 0; i < result.fields(); ++i) {
-                    qDebug() << "cached 3" << row.value(i);
+                    qDebug() << "cached 3" << row.value(i) << row[i].value();
                 }
             }
         }, new QObject);

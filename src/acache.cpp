@@ -108,3 +108,5 @@ void ACache::exec(const QString &query, const QVariantList &params, AResultFn cb
         }
     }
 }
+
+#include "moc_acache.cpp"

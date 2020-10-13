@@ -30,6 +30,17 @@ public:
     virtual QString fieldName(int column) const override;
     virtual QVariant value(int row, int column) const override;
 
+    virtual bool toBool(int row, int column) const override;
+    virtual int toInt(int row, int column) const override;
+    virtual int toLongLong(int row, int column) const override;
+    virtual int toULongLong(int row, int column) const override;
+    virtual int toDouble(int row, int column) const override;
+    virtual QString toString(int row, int column) const override;
+    virtual QDate toDate(int row, int column) const override;
+    virtual QTime toTime(int row, int column) const override;
+    virtual QDateTime toDateTime(int row, int column) const override;
+    virtual QByteArray toByteArray(int row, int column) const override;
+
     void processResult();
 
     QString m_errorString;

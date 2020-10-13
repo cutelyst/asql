@@ -8,12 +8,9 @@
 
 #include <aqsqlexports.h>
 
-class ASQL_EXPORT APool : public QObject
+class ASQL_EXPORT APool
 {
-    Q_OBJECT
 public:
-    explicit APool(QObject *parent = nullptr);
-
     static const char *defaultConnection;
 
     /*!

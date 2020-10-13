@@ -24,11 +24,6 @@ static thread_local QHash<QString, APoolInternal> m_connectionPool;
 
 const char *APool::defaultConnection = const_cast<char *>("asql_default_pool");
 
-APool::APool(QObject *parent) : QObject(parent)
-{
-
-}
-
 void APool::addDatabase(const QString &connectionInfo, const QString &connectionName)
 {
     if (!m_connectionPool.contains(connectionName)) {

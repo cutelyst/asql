@@ -113,3 +113,5 @@ void ADriver::unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, c
     Q_UNUSED(name)
     Q_UNUSED(receiver)
 }
+
+#include "moc_adriver.cpp"

@@ -22,6 +22,17 @@ public:
     int indexOfField(const QString &name) const;
     virtual QString fieldName(int column) const = 0;
     virtual QVariant value(int row, int column) const = 0;
+
+    virtual bool toBool(int row, int column) const = 0;
+    virtual int toInt(int row, int column) const = 0;
+    virtual int toLongLong(int row, int column) const = 0;
+    virtual int toULongLong(int row, int column) const = 0;
+    virtual int toDouble(int row, int column) const = 0;
+    virtual QString toString(int row, int column) const = 0;
+    virtual QDate toDate(int row, int column) const = 0;
+    virtual QTime toTime(int row, int column) const = 0;
+    virtual QDateTime toDateTime(int row, int column) const = 0;
+    virtual QByteArray toByteArray(int row, int column) const = 0;
 };
 
 class ASQL_EXPORT ARow
@@ -102,6 +113,16 @@ public:
         explicit inline AColumn(QSharedPointer<AResultPrivate> data, int _row, int _column) : d(data), row(_row), column(_column) { }
 
         inline QVariant value() const { return d->value(row, column); }
+        inline bool toBool() const { return d->toBool(row, column); }
+        inline int toInt() const { return d->toInt(row, column); };
+        inline int toLongLong() const { return d->toLongLong(row, column); };
+        inline int toULongLong() const { return d->toULongLong(row, column); };
+        inline int toDouble() const { return d->toDouble(row, column); };
+        inline QString toString() const  { return d->toString(row, column); }
+        QDate toDate() const;
+        QTime toTime() const;
+        QDateTime toDateTime() const;
+        inline QByteArray toByteArray() const  { return d->toByteArray(row, column); }
     };
 
     class ARow {
