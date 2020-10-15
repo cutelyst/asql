@@ -20,6 +20,7 @@ public:
     virtual int numRowsAffected() const = 0;
 
     int indexOfField(const QString &name) const;
+    int indexOfField(QLatin1String name) const;
     virtual QString fieldName(int column) const = 0;
     virtual QVariant value(int row, int column) const = 0;
 
@@ -112,6 +113,8 @@ public:
 
         explicit inline AColumn(QSharedPointer<AResultPrivate> data, int _row, int _column) : d(data), row(_row), column(_column) { }
 
+        inline QString fieldName() const { return d->fieldName(column); }
+
         inline QVariant value() const { return d->value(row, column); }
         inline bool toBool() const { return d->toBool(row, column); }
         inline int toInt() const { return d->toInt(row, column); };
@@ -135,8 +138,10 @@ public:
         inline int at() const { return row; }
         inline QVariant value(int column) const { return d->value(row, column); }
         inline QVariant value(const QString &name) const { return d->value(row, d->indexOfField(name)); }
+        inline QVariant value(QLatin1String name) const { return d->value(row, d->indexOfField(name)); }
         inline AColumn operator[](int column) const { return AColumn(d, row, column); }
         inline AColumn operator[](const QString &name) const { return AColumn(d, row, d->indexOfField(name)); }
+        inline AColumn operator[](QLatin1String name) const { return AColumn(d, row, d->indexOfField(name)); }
     };
 
     class const_iterator {
@@ -156,8 +161,10 @@ public:
         inline int at() const { return i; }
         inline QVariant value(int column) const { return d->value(i, column); }
         inline QVariant value(const QString &name) const { return d->value(i, d->indexOfField(name)); }
+        inline QVariant value(QLatin1String name) const { return d->value(i, d->indexOfField(name)); }
         inline AColumn operator[](int column) const { return AColumn(d, i, column); }
         inline AColumn operator[](const QString &name) const { return AColumn(d, i, d->indexOfField(name)); }
+        inline AColumn operator[](QLatin1String name) const { return AColumn(d, i, d->indexOfField(name)); }
 
         inline bool operator==(const const_iterator &o) const { return i == o.i; }
         inline bool operator!=(const const_iterator &o) const { return i != o.i; }

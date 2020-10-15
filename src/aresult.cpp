@@ -173,6 +173,16 @@ int AResultPrivate::indexOfField(const QString &name) const
     return -1;
 }
 
+int AResultPrivate::indexOfField(QLatin1String name) const
+{
+    for (int i = 0; i < fields(); ++i) {
+        if (name == fieldName(i)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 QDate AResult::AColumn::toDate() const  { return d->toDate(row, column); }
 
 QTime AResult::AColumn::toTime() const  { return d->toTime(row, column); }
