@@ -111,14 +111,14 @@ ATransaction t(db);
 t.begin();
 db.exec("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
 {true, QStringLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
-[=] (AResult &result) {
+[=] (AResult &result) mutable {
     if (result.error()) {
         qDebug() << result.errorString();
         return; // Auto rollback
     }
 
-    // Lambdas don't allow for non const methods on t variable, but we can copy it (as it's inplict shared)
-    ATransaction(t).commit();
+    // only mutable lambdas allow for non const methods to be called
+    t.commit();
 });
 ```
 
