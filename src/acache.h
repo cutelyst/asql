@@ -24,6 +24,9 @@ public:
      * \return
      */
     bool clear(const QString &query, const QVariantList &params = QVariantList());
+    bool expire(qint64 maxAgeMs, const QString &query, const QVariantList &params = QVariantList());
+    int expireAll(qint64 maxAgeMs);
+
     void exec(const QString &query, AResultFn cb, QObject *receiver = nullptr);
     void exec(const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
 

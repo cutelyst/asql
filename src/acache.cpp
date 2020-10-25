@@ -2,6 +2,7 @@
 #include "adatabase.h"
 #include "aresult.h"
 
+#include <QDateTime>
 #include <QPointer>
 
 #include <QLoggingCategory>
@@ -19,6 +20,7 @@ typedef struct {
 typedef struct {
     AResult result;
     std::vector<ACacheReceiverCb> receivers;
+    qint64 created = 0;
     bool hasResult = false;
 } ACacheValue;
 
@@ -46,6 +48,39 @@ bool ACache::clear(const QString &query, const QVariantList &params)
     Q_D(ACache);
     int ret = d->cache.remove({query, params});
     qDebug(ASQL_CACHE) << "clearing cache" << ret << query;
+    return ret;
+}
+
+bool ACache::expire(qint64 maxAgeMs, const QString &query, const QVariantList &params)
+{
+    Q_D(ACache);
+    int ret = false;
+    qint64 cutAge = QDateTime::currentMSecsSinceEpoch() - maxAgeMs;
+    auto it = d->cache.find({query, params});
+    if (it != d->cache.end()) {
+        if (it.value().created < cutAge) {
+            ret = true;
+            qDebug(ASQL_CACHE) << "clearing cache" << query;
+            d->cache.erase(it);
+        }
+    }
+    return ret;
+}
+
+int ACache::expireAll(qint64 maxAgeMs)
+{
+    Q_D(ACache);
+    int ret = 0;
+    qint64 cutAge = QDateTime::currentMSecsSinceEpoch() - maxAgeMs;
+    auto it = d->cache.begin();
+    while (it != d->cache.end()) {
+        if (it.value().created < cutAge) {
+            it = d->cache.erase(it);
+            ++ret;
+        } else {
+            ++it;
+        }
+    }
     return ret;
 }
 
@@ -90,6 +125,7 @@ void ACache::exec(const QString &query, const QVariantList &params, AResultFn cb
                  ACacheValue &value = it.value();
                  value.result = result;
                  value.hasResult = true;
+                 value.created = QDateTime::currentMSecsSinceEpoch();
                  qDebug(ASQL_CACHE) << "got request data, dispatching to receivers" << value.receivers.size() << query;
                  for (const ACacheReceiverCb &receiverObj : value.receivers) {
                      if (receiverObj.checkReceiver == nullptr || !receiverObj.receiver.isNull()) {

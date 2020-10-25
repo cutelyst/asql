@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(libasql VERSION 0.18.0 LANGUAGES CXX)
+project(libasql VERSION 0.19.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
