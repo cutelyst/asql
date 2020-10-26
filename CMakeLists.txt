@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+# SPDX-License-Identifier: MIT
+
 cmake_minimum_required(VERSION 3.5)
 project(libasql VERSION 0.19.0 LANGUAGES CXX)
 
