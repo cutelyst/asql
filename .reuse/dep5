@@ -1,0 +1,13 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: asql
+Source: https://github.com/cutelyst/asql.git
+
+# The GitHub administrative files, as well as .gitignore,
+# are purely descriptive and have no copyrightable content.
+# Put them under CC0-1.0 (as a "shut up" for the tool).
+# Since there must be a copyright statement as well,
+# use the text "no" for that.
+Files: .gitignore .github/*
+License: CC0-1.0
+Copyright: no
+
