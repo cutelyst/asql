@@ -49,7 +49,7 @@ Please if you have user input values that you need to pass to your query do your
 ```c++
 {
     auto db = APool::database();
-    db.exec("SELECT * FROM messages LIMIT 5"), [=] (AResult &result) {
+    db.exec("SELECT id, message FROM messages LIMIT 5"), [=] (AResult &result) {
         if (result.error()) {
             qDebug() << result.errorString();
             return;
@@ -60,6 +60,8 @@ Please if you have user input values that you need to pass to your query do your
            for (int i = 0; i < result.fields(); ++i) {
                qDebug() << "data row" << row.at() << "column" << i << "value" << row.value(i);
            }
+           // or explicity select the columns
+           qDebug() << "ROW" << row.at() << "id" << row[0].toInt() << "msg" << row["message"].toString();
         }
     });
 
