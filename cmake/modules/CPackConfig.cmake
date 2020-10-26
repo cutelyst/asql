@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+# SPDX-License-Identifier: MIT
+
 set(CPACK_PACKAGE_VENDOR "Daniel Nicoletti")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Async Sql Qt library.")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
