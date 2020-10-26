@@ -2,9 +2,9 @@
 Qt Async Sql library
 
 ## Features
+* PostgreSQL driver
 * Navigate on your data with iterators
 * Scoped transactions objects
-* PostgreSQL driver
 * Prepared queries
 * Cancellabel queries
 * Thread local Connection pool
@@ -13,6 +13,13 @@ Qt Async Sql library
 * Conveniently converts your query data to JSON or QVariantHash
 * Cache support
 * Single row mode (useful for very large datasets)
+
+## Requirements
+* Qt, 5.10 or later
+* C++11 capable compiler
+
+Currently, there is only one driver, for PostgreSQL, so PostgreSQL
+libraries are required as well.
 
 ## Usage
 
