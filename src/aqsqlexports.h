@@ -1,3 +1,8 @@
+/* 
+ * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-License-Identifier: MIT
+ */
+
 #ifndef ASQL_EXPORT_H
 #define ASQL_EXPORT_H
 

@@ -1,3 +1,8 @@
+/* 
+ * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-License-Identifier: MIT
+ */
+
 #ifndef ARESULT_H
 #define ARESULT_H
 
