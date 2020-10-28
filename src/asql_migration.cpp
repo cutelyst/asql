@@ -102,8 +102,8 @@ int main(int argc, char *argv[])
     }
 
     ADatabase db(conn);
-    db.open([=] (bool error, const QString &errorString) {
-        if (error) {
+    db.open([=] (bool isOpen, const QString &errorString) {
+        if (!isOpen) {
             std::cerr << qPrintable(QCoreApplication::translate("main", "Failed to open database: %1.").arg(errorString)) << std::endl;
             qApp->exit(6);
             return;

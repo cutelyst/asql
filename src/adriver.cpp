@@ -26,7 +26,7 @@ void ADriver::setConnectionInfo(const QString &info)
 void ADriver::open(std::function<void (bool, const QString &)> cb)
 {
     if (cb) {
-        cb(true, INVALID_DRIVER);
+        cb(false, INVALID_DRIVER);
     }
 }
 

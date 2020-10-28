@@ -121,7 +121,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                     qDebug(ASQL_PG) << "PGRES_POLLING_OK 2" << type << m_writeNotify->isEnabled();
                     m_connected = true;
                     if (cb) {
-                        cb(false, QString());
+                        cb(true, QString());
                     }
 
                     setState(ADatabase::Connected, QString());
@@ -243,6 +243,10 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
             });
         }
 //        qDebug(ASQL_PG) << "PG Socket" << m_conn << socket;
+    } else {
+        if (cb) {
+            cb(false, QStringLiteral("PQconnectStart failed"));
+        }
     }
 }
 
