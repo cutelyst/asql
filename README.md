@@ -28,14 +28,16 @@ libraries are required as well.
 ## Usage
 
 ### Creating a Pool
-A connection pool is a convenient way to getting new connections without worrying about configuring it and it's lifetime, once you are done with it the connection returns to the pool.
+A connection pool is a convenient way to getting new connections without worrying about configuring it and it's lifetime, once you are done with it the connection returns to the pool. It's also possible to have a single databse connection without it being attached to a pool, by creating ADatabase object directly and calling open().
 
 ```c++
 // No new connection is created at this moment
 APool::addDatabase("postgres://user:pass@server/dbname?target_session_attrs=read-write");
+APool::addDatabase("postgres://user:pass@server/dbname", "my_read_only_pool");
 
 // Defines the maximum number of idle connections (defaults to 1)
 APool::setDatabaseMaxIdleConnections(10);
+APool::setDatabaseMaxIdleConnections(15, "my_read_only_pool");
 
 // Grabs a connection, it might be a new connection or one from the idle pool
 auto db = APool::database();
