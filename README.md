@@ -32,7 +32,7 @@ A connection pool is a convenient way to getting new connections without worryin
 
 ```c++
 // No new connection is created at this moment
-APool::addDatabase(QStringLiteral("postgres://user:pass@server/dbname?target_session_attrs=read-write"));
+APool::addDatabase("postgres://user:pass@server/dbname?target_session_attrs=read-write");
 
 // Defines the maximum number of idle connections (defaults to 1)
 APool::setDatabaseMaxIdleConnections(10);
@@ -49,7 +49,7 @@ Please if you have user input values that you need to pass to your query do your
 ```c++
 {
     auto db = APool::database();
-    db.exec("SELECT id, message FROM messages LIMIT 5"), [=] (AResult &result) {
+    db.exec("SELECT id, message FROM messages LIMIT 5", [=] (AResult &result) {
         if (result.error()) {
             qDebug() << result.errorString();
             return;
@@ -122,7 +122,7 @@ To make this easier create an ATransaction object in a scoped manner, once it go
 ```c++
 ATransaction t(db);
 t.begin();
-db.exec("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
+db.exec("INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
 {true, QStringLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
 [=] (AResult &result) mutable {
     if (result.error()) {
@@ -141,7 +141,7 @@ or avoid a crash due some invalid pointer captured by the lambda you can pass a 
 query will send a cancelation packet, this doesn't always work (due the packet arriving after the query was done), but your lambda will not be called anymore.
 ```c++
 auto cancelator = new QObject;
-db.exec("SELECT pg_sleep(5)"), [=] (AResult &result) {
+db.exec("SELECT pg_sleep(5)", [=] (AResult &result) {
     // This will never be called but it would crash
     // if cancelator was dangling reference and not passed as last parameter
     cancelator->setProperty("foo");
@@ -161,20 +161,20 @@ Each migration must have a positive integer number with up and down scripts, the
 auto mig = new AMigrations();
 
 // load it from string or filename
-mig->fromString(QStringLiteral(R"V0G0N(
-                                  -- 1 up
-                                  create table messages (message text);
-                                  insert into messages values ('I ♥ Cutelyst!');
-                                  -- 1 down
-                                  drop table messages;
-                                   -- 2 up
-                                   create table log (message text);
-                                   insert into log values ('logged');
-                                   -- 2 down
-                                   drop table log;
-                                   -- 3 up
-                                   create tabsle log (message text);
-                                  )V0G0N"));  
+mig->fromString(R"V0G0N(
+                        -- 1 up
+                        create table messages (message text);
+                        insert into messages values ('I ♥ Cutelyst!');
+                        -- 1 down
+                        drop table messages;
+                        -- 2 up
+                        create table log (message text);
+                        insert into log values ('logged');
+                        -- 2 down
+                        drop table log;
+                        -- 3 up
+                        create table log (message text);
+                        )V0G0N");
                                   
 mig->connect(mig, &AMigrations::ready, [=] (bool error, const QString &erroString) {
     qDebug() << "LOADED" << error << erroString;
@@ -184,7 +184,7 @@ mig->connect(mig, &AMigrations::ready, [=] (bool error, const QString &erroStrin
         qDebug() << "MIGRATED" << error << errorString;
     });
 });
-mig->load(APool::database(), QStringLiteral("my_app_foo"));
+mig->load(APool::database(), "my_app_foo");
 ```
 
 ### Caching
@@ -194,7 +194,7 @@ auto cache = new ACache;
 cache->setDatabase(APool::database());
 
 // This query does not exist in cache so it will arive at the database
-cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+cache->exec("SELECT now()", [=] (AResult &result) {
     qDebug() << "CACHED 1" << result.errorString() << result.size();
     if (result.error()) {
         qDebug() << "Error" << result.errorString();
@@ -209,7 +209,7 @@ cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
 
 QTimer::singleShot(2000, [=] {
     // this query will fetch the cached result, unless 2s were not enough in such case it will be queued
-    cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+    cache->exec("SELECT now()", [=] (AResult &result) {
         qDebug() << "CACHED 2" << result.errorString() << result.size();
         if (result.error()) {
             qDebug() << "Error" << result.errorString();
@@ -223,11 +223,11 @@ QTimer::singleShot(2000, [=] {
     });
 
     // Manually clears the cache
-    bool ret = cache->clear(QStringLiteral("SELECT now()"));
+    bool ret = cache->clear("SELECT now()");
     qDebug() << "CACHED - CLEARED" << ret;
 
     // Since we cleared it this will result in a new db call
-    cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+    cache->exec("SELECT now()", [=] (AResult &result) {
         qDebug() << "CACHED 3" << result.errorString() << result.size();
         if (result.error()) {
             qDebug() << "Error 3" << result.errorString();
