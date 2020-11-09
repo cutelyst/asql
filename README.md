@@ -190,7 +190,7 @@ mig->load(APool::database(), "my_app_foo");
 ```
 
 ### Caching
-ASql can cache AResults int a transparent way, if exec() is called with the same query string or with same query string combined with the same parameters an unique entry is created on the Cache object.
+ASql can cache AResults in a transparent way, if exec() is called with the same query string or with same query string combined with the same parameters an unique entry is created on the Cache object.
 ```c++
 auto cache = new ACache;
 cache->setDatabase(APool::database());
