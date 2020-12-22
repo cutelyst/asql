@@ -52,7 +52,7 @@ bool ACache::clear(const QString &query, const QVariantList &params)
 {
     Q_D(ACache);
     int ret = d->cache.remove({query, params});
-    qDebug(ASQL_CACHE) << "clearing cache" << ret << query;
+    qDebug(ASQL_CACHE) << "cleared" << ret << "cache entries" << query << params;
     return ret;
 }
 
@@ -65,7 +65,7 @@ bool ACache::expire(qint64 maxAgeMs, const QString &query, const QVariantList &p
     if (it != d->cache.end()) {
         if (it.value().created < cutAge) {
             ret = true;
-            qDebug(ASQL_CACHE) << "clearing cache" << query;
+            qDebug(ASQL_CACHE) << "clearing cache" << query << params;
             d->cache.erase(it);
         }
     }
