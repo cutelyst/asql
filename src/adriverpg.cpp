@@ -868,19 +868,19 @@ int AResultPg::toInt(int row, int column) const
     return atoi(val);
 }
 
-int AResultPg::toLongLong(int row, int column) const
+qint64 AResultPg::toLongLong(int row, int column) const
 {
     const char *val = PQgetvalue(m_result, row, column);
     return QString::fromLatin1(val).toLongLong();
 }
 
-int AResultPg::toULongLong(int row, int column) const
+quint64 AResultPg::toULongLong(int row, int column) const
 {
     const char *val = PQgetvalue(m_result, row, column);
     return QString::fromLatin1(val).toULongLong();
 }
 
-int AResultPg::toDouble(int row, int column) const
+double AResultPg::toDouble(int row, int column) const
 {
     const char *val = PQgetvalue(m_result, row, column);
     if (qstricmp(val, "Infinity") == 0)

@@ -37,9 +37,9 @@ public:
 
     virtual bool toBool(int row, int column) const override;
     virtual int toInt(int row, int column) const override;
-    virtual int toLongLong(int row, int column) const override;
-    virtual int toULongLong(int row, int column) const override;
-    virtual int toDouble(int row, int column) const override;
+    virtual qint64 toLongLong(int row, int column) const override;
+    virtual quint64 toULongLong(int row, int column) const override;
+    virtual double toDouble(int row, int column) const override;
     virtual QString toString(int row, int column) const override;
     virtual QDate toDate(int row, int column) const override;
     virtual QTime toTime(int row, int column) const override;

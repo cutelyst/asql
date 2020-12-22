@@ -31,9 +31,9 @@ public:
 
     virtual bool toBool(int row, int column) const = 0;
     virtual int toInt(int row, int column) const = 0;
-    virtual int toLongLong(int row, int column) const = 0;
-    virtual int toULongLong(int row, int column) const = 0;
-    virtual int toDouble(int row, int column) const = 0;
+    virtual qint64 toLongLong(int row, int column) const = 0;
+    virtual quint64 toULongLong(int row, int column) const = 0;
+    virtual double toDouble(int row, int column) const = 0;
     virtual QString toString(int row, int column) const = 0;
     virtual QDate toDate(int row, int column) const = 0;
     virtual QTime toTime(int row, int column) const = 0;
