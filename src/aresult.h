@@ -123,9 +123,9 @@ public:
         inline QVariant value() const { return d->value(row, column); }
         inline bool toBool() const { return d->toBool(row, column); }
         inline int toInt() const { return d->toInt(row, column); };
-        inline int toLongLong() const { return d->toLongLong(row, column); };
-        inline int toULongLong() const { return d->toULongLong(row, column); };
-        inline int toDouble() const { return d->toDouble(row, column); };
+        inline qint64 toLongLong() const { return d->toLongLong(row, column); };
+        inline quint64 toULongLong() const { return d->toULongLong(row, column); };
+        inline double toDouble() const { return d->toDouble(row, column); };
         inline QString toString() const  { return d->toString(row, column); }
         QDate toDate() const;
         QTime toTime() const;
