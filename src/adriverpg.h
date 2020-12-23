@@ -100,9 +100,11 @@ public:
     virtual void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
     virtual void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
 
-    virtual void setLastQuerySingleRowMode();
+    virtual void setLastQuerySingleRowMode() override final;
 
-    virtual void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver) override;
+    virtual void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name) override;
+    virtual void onNotification(QSharedPointer<ADatabasePrivate> db, ANotificationFn cb, QObject *receiver) override final;
+    virtual QStringList subscribedToNotifications() const override;
     virtual void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver) override;
 
 private:
@@ -119,8 +121,11 @@ private:
     bool m_connected = false;
     bool m_flush = false;
     bool m_queryRunning = false;
+    bool m_notificationPtrSet = false;
     std::function<void (ADatabase::State, const QString &)> m_stateChangedCb;
-    QHash<QString, ANotificationFn> m_subscribedNotifications;
+    ANotificationFn m_notificationFn;
+    QPointer<QObject> m_notificationPtr;
+    QStringList m_subscribedNotifications;
     QQueue<APGQuery> m_queuedQueries;
     QSocketNotifier *m_writeNotify = nullptr;
     QSocketNotifier *m_readNotify = nullptr;

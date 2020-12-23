@@ -43,12 +43,8 @@ void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
         d = QSharedPointer<ADatabasePrivate>(new ADatabasePrivate(QString()));
     }
 
-    if (!d->driver->isOpen()) {
+    if (d->driver->state() == ADatabase::Disconnected) {
         d->driver->open(cb);
-    } else {
-        if (cb) {
-            cb(true, QString());
-        }
     }
 }
 
@@ -118,10 +114,22 @@ void ADatabase::setLastQuerySingleRowMode()
     d->driver->setLastQuerySingleRowMode();
 }
 
-void ADatabase::subscribeToNotification(const QString &channel, ANotificationFn cb, QObject *receiver)
+void ADatabase::subscribeToNotification(const QString &channel)
 {
     Q_ASSERT(d);
-    d->driver->subscribeToNotification(d, channel, cb, receiver);
+    d->driver->subscribeToNotification(d, channel);
+}
+
+void ADatabase::onNotification(ANotificationFn cb, QObject *receiver)
+{
+    Q_ASSERT(d);
+    d->driver->onNotification(d, cb, receiver);
+}
+
+QStringList ADatabase::subscribedToNotifications() const
+{
+    Q_ASSERT(d);
+    return d->driver->subscribedToNotifications();
 }
 
 void ADatabase::unsubscribeFromNotification(const QString &channel, QObject *receiver)

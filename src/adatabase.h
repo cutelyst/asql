@@ -16,8 +16,16 @@
 
 class AResult;
 
+class ADatabaseNotification
+{
+public:
+    QString name;
+    QVariant payload;
+    bool self;
+};
+
 typedef std::function<void(AResult &row)> AResultFn;
-typedef std::function<void(const QString &payload, bool self)> ANotificationFn;
+typedef std::function<void(const ADatabaseNotification &payload)> ANotificationFn;
 
 class APreparedQuery;
 class ADatabasePrivate;
@@ -62,16 +70,23 @@ public:
     /*!
      * \brief open the database, the callback is called once the operation is done
      * either by success or failure, with \param describing the error.
+     *
+     * The callback function is only called if current state is Disconnected.
+     *
      * \param cb
      */
     void open(std::function<void(bool isOpen, const QString &error)> cb = {});
 
+    /*!
+     * \brief state
+     * \return database connection state
+     */
     State state() const;
 
     /*!
      * \brief onStateChanged the callback is called once connection state changes
      *
-     * Only one callback can be registeres per database
+     * Only one callback can be registered per database
      *
      * \param cb
      */
@@ -170,14 +185,26 @@ public:
 
     /*!
      * \brief subscribeToNotification will start listening for notifications
-     * described by name, it will register only one callback.
+     * described by name
+     *
+     * \note If the connection is broken the subscription is lost,
+     * it's recommended to always subscribe when state changed to Connected.
      *
      * \note If a subscription is made in a transaction block it can be rolled
      * back, in which case it will not be effective.
+     *
      * \param channel name of the channel
      * \param cb
      */
-    void subscribeToNotification(const QString &channel, ANotificationFn cb, QObject *receiver = nullptr);
+    void subscribeToNotification(const QString &channel);
+
+    void onNotification(ANotificationFn cb, QObject *receiver = nullptr);
+
+    /**
+     * @brief subscribedToNotifications
+     * @return a list of all notifications we subscribed to
+     */
+    QStringList subscribedToNotifications() const;
 
     /*!
      * \brief unsubscribeFromNotification tell the database we are no longer
