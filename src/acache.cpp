@@ -5,6 +5,7 @@
 
 #include "acache.h"
 #include "adatabase.h"
+#include "apool.h"
 #include "aresult.h"
 
 #include <QDateTime>
@@ -32,8 +33,10 @@ typedef struct {
 class ACachePrivate
 {
 public:
+    QString poolName;
     ADatabase db;
     QMap<ACacheKey, ACacheValue> cache;
+    int dbSource = 0; // 0 - unset, 1 - db, 2 - pool
 };
 
 ACache::ACache(QObject *parent) : QObject(parent)
@@ -42,10 +45,20 @@ ACache::ACache(QObject *parent) : QObject(parent)
 
 }
 
+void ACache::setDatabasePool(const QString &poolName)
+{
+    Q_D(ACache);
+    d->poolName = poolName;
+    d->db = ADatabase();
+    d->dbSource = 2;
+}
+
 void ACache::setDatabase(const ADatabase &db)
 {
     Q_D(ACache);
+    d->poolName.clear();
     d->db = db;
+    d->dbSource = 1;
 }
 
 bool ACache::clear(const QString &query, const QVariantList &params)
@@ -142,10 +155,17 @@ void ACache::exec(const QString &query, const QVariantList &params, AResultFn cb
             }
         };
 
+        ADatabase db;
+        if (d->dbSource == 1) {
+            db = d->db;
+        } else if (d->dbSource == 2) {
+            db = APool::database(d->poolName);
+        }
+
         if (params.isEmpty()) {
-            d->db.exec(query, dbFn, this);
+            db.exec(query, dbFn, this);
         } else {
-            d->db.exec(query, params, dbFn, this);
+            db.exec(query, params, dbFn, this);
         }
     }
 }
