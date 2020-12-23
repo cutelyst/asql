@@ -60,12 +60,22 @@ public:
     QString sqlFor(int versionFrom, int versionTo) const;
 
     /*!
+     * \brief sqlFor Get SQL to migrate from one version to another, up or down.
+     * \param versionA
+     * \param versionB
+     * \return
+     */
+    QStringList sqlListFor(int versionFrom, int versionTo) const;
+
+    /*!
      * \brief migrate Migrate from "active" to the latest version.
      * All version numbers need to be positive, with version 0 representing an empty database.
      *
      * \sa finished() signal is emitted with the result.
      * \param cb callback function that is called to inform the result
-     * \param dryRun if set will rollback the transaction instead of committing
+     * \param dryRun if set will rollback the transaction instead of committing, this option diverges
+     * from regular operation as it will perform a single transaction block with all up/down
+     * steps at once, which depending on the operation will fail.
      */
     void migrate(std::function<void(bool error, const QString &errorString)> cb, bool dryRun = false);
 
@@ -76,7 +86,9 @@ public:
      * \sa finished() signal is emitted with the result.
      * \param version to try to apply changes
      * \param cb callback function that is called to inform the result
-     * \param dryRun if set will rollback the transaction instead of committing
+     * \param dryRun if set will rollback the transaction instead of committing, this option diverges
+     * from regular operation as it will perform a single transaction block with all up/down
+     * steps at once, which depending on the operation will fail.
      */
     void migrate(int version, std::function<void(bool error, const QString &errorString)> cb, bool dryRun = false);
 

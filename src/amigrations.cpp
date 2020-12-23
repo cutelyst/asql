@@ -17,6 +17,8 @@ Q_LOGGING_CATEGORY(ASQL_MIG, "asql.migrations", QtInfoMsg)
 class AMigrationsPrivate
 {
 public:
+    std::pair<int, QString> nextQuery(int versionFrom, int versionTo) const;
+
     QString name;
     ADatabase db;
     QString data;
@@ -141,8 +143,13 @@ void AMigrations::fromString(const QString &text)
 
 QString AMigrations::sqlFor(int versionFrom, int versionTo) const
 {
+    return sqlListFor(versionFrom, versionTo).join(QLatin1Char('\n'));
+}
+
+QStringList AMigrations::sqlListFor(int versionFrom, int versionTo) const
+{
+    QStringList ret;
     Q_D(const AMigrations);
-    QString ret;
 
     if (versionFrom < versionTo) {
         // up
@@ -155,16 +162,13 @@ QString AMigrations::sqlFor(int versionFrom, int versionTo) const
         }
     } else {
         // down
-        QStringList downList;
         auto it = d->down.constBegin();
         while (it != d->down.constEnd()) {
             if (it.key() > versionTo && it.key() <= versionFrom) {
-                downList.prepend(it.value());
+                ret.prepend(it.value());
             }
             ++it;
         }
-
-        ret = downList.join(QLatin1Char(' '));
     }
 
     return ret;
@@ -203,65 +207,103 @@ void AMigrations::migrate(int version, std::function<void(bool, const QString &)
 
             int active = 0;
             if (result.size()) {
-                active = result.begin().value(0).toInt();
+                active = result[0][0].toInt();
             }
 
             if (active > latest()) {
-                cb(true, QStringLiteral("Active version %1 is greater than the latest version %2").arg(active).arg(latest()));
+                cb(true, QStringLiteral("Current version %1 is greater than the latest version %2").arg(active).arg(latest()));
                 return;
             }
 
-            const QString query = sqlFor(active, version);
-            if (query.isEmpty()) {
+            const std::pair<int, QString> query = d->nextQuery(active, version);
+            qDebug(ASQL_MIG) << "Migrate current version" << active << "ẗo" << query.first << "target version" << version << !query.second.isEmpty();
+            if (query.second.isEmpty()) {
                 if (cb) {
-                    cb(false, QStringLiteral("Nothing to migrate to"));
+                    cb(false, QStringLiteral("Done."));
                 }
                 return;
             }
 
-            d->db.exec(query, [=] (AResult &result) {
+            d->db.exec(query.second, [=] (AResult &result) {
                 if (result.error()) {
                     if (cb) {
                         cb(true, result.errorString());
                     }
-                    return;
-                }
-            }, this);
-
-            d->db.exec(QStringLiteral(R"V0G0N(
-                                      INSERT INTO asql_migrations VALUES ($1, $2)
-                                      ON CONFLICT (name) DO UPDATE
-                                      SET version=EXCLUDED.version
-                                      RETURNING version
-                                      )V0G0N"),
-            {d->name, version}, [=] (AResult &result) {
-                if (result.error()) {
-                    if (cb) {
-                        cb(true, result.errorString());
-                    }
-                    return;
-                }
-
-                auto tAction = [=] (AResult &result) {
-                    if (result.error()) {
-                        if (cb) {
-                            cb(true, result.errorString());
-                        }
+                } else if (result.lastResulSet()) {
+                    if (!dryRun) {
+                        ATransaction(t).commit([=] (AResult &result) {
+                            if (result.error()) {
+                                if (cb) {
+                                    cb(true, result.errorString());
+                                }
+                            } else {
+                                qInfo(ASQL_MIG) << "Migrated from" << active << "to" << query.first;
+                                if (dryRun) {
+                                    if (cb) {
+                                        cb(false, QStringLiteral("Done."));
+                                    }
+                                } else {
+                                    migrate(version, cb, dryRun);
+                                }
+                            }
+                        }, this);
                     } else {
-                        if (cb) {
-                            cb(false, QString());
-                        }
+                        ATransaction(t).rollback([=] (AResult &result) {
+                            if (cb) {
+                                cb(true, result.errorString());
+                            }
+                        }, this);
                     }
-                };
-
-                if (!dryRun) {
-                    ATransaction(t).commit(tAction, this);
-                } else {
-                    ATransaction(t).rollback(tAction, this);
                 }
             }, this);
         }, this);
     });
+}
+
+std::pair<int, QString> AMigrationsPrivate::nextQuery(int versionFrom, int versionTo) const
+{
+    std::pair<int, QString> ret;
+
+    if (versionFrom < versionTo) {
+        // up
+        auto it = up.constBegin();
+        while (it != up.constEnd()) {
+            if (it.key() <= versionTo && it.key() > versionFrom) {
+                ret = {
+                    it.key(),
+                    QStringLiteral(R"V0G0N(
+                    INSERT INTO asql_migrations VALUES ('%1', %2)
+                    ON CONFLICT (name) DO UPDATE
+                    SET version=EXCLUDED.version
+                    RETURNING version;
+                    %3
+                    )V0G0N").arg(name).arg(it.key()).arg(it.value())
+                };
+                break;
+            }
+            ++it;
+        }
+    } else {
+        // down
+        auto it = down.constBegin();
+        while (it != down.constEnd()) {
+            if (it.key() > versionTo && it.key() <= versionFrom) {
+                ret = {
+                    it.key() - 1,
+                    QStringLiteral(R"V0G0N(
+                    INSERT INTO asql_migrations VALUES ('%1', %2)
+                    ON CONFLICT (name) DO UPDATE
+                    SET version=EXCLUDED.version
+                    RETURNING version;
+                    %3
+                    )V0G0N").arg(name).arg(it.key() - 1).arg(it.value())
+                };
+            }
+            ++it;
+        }
+    }
+
+    return ret;
 }
 
 #include "moc_amigrations.cpp"

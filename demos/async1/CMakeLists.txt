@@ -24,3 +24,9 @@ target_link_libraries(prepared
     ASqlQt5::Core
     Qt5::Core
 )
+
+add_executable(migrations migrations.cpp)
+target_link_libraries(migrations
+    ASqlQt5::Core
+    Qt5::Core
+)
