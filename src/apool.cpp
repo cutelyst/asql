@@ -104,6 +104,7 @@ ADatabase APool::database(const QString &connectionName)
             db.d = QSharedPointer<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
                     pushDatabaseBack(connectionName, priv);
             });
+            db.open();
         }
     } else {
         qCritical(ASQL_POOL) << "Database connection NOT FOUND in pool" << connectionName;
