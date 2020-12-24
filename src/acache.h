@@ -35,6 +35,8 @@ public:
 
     void exec(const QString &query, AResultFn cb, QObject *receiver = nullptr);
     void exec(const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
+    void exec(const QString &query, qint64 maxAgeMs, AResultFn cb, QObject *receiver = nullptr);
+    void exec(const QString &query, qint64 maxAgeMs, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
 
 private:
     ACachePrivate *d_ptr;
