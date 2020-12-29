@@ -34,7 +34,7 @@ set(asql_HEADERS_PRIVATE
 #     common.h
 )
 
-add_library(ASqlQt5 SHARED
+add_library(ASqlQt5
     ${asql_SRC}
     ${asql_HEADERS}
     ${asql_HEADERS_PRIVATE}

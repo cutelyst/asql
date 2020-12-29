@@ -2,13 +2,19 @@
 # SPDX-License-Identifier: MIT
 
 cmake_minimum_required(VERSION 3.5)
-project(libasql VERSION 0.24.0 LANGUAGES CXX)
+project(libasql VERSION 0.25.0 LANGUAGES CXX)
 
-cmake_policy(SET CMP0069 NEW)
+if (POLICY CMP0071)
+  cmake_policy(SET CMP0071 NEW)
+endif()
+if (POLICY CMP0069)
+  cmake_policy(SET CMP0069 NEW)
+endif()
 
 include(GNUInstallDirs)
 
 find_package(PostgreSQL REQUIRED)
+find_package(Qt5 5.10.0 REQUIRED COMPONENTS Core)
 
 set(CMAKE_AUTOMOC ON)
 
@@ -21,10 +27,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
 # As moc files are generated in the binary dir, tell CMake
 # to always look for includes there:
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-option(BUILD_SHARED_LIBS "Build in shared lib mode" ON)
-
-find_package(Qt5 5.10.0 REQUIRED COMPONENTS Core)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -49,12 +51,11 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     "/usr" CACHE PATH "asql default install prefix" FORCE)
 endif()
 
-include(GNUInstallDirs)
-
 add_definitions("-DLOCALSTATEDIR=\"${LOCALSTATEDIR}\"")
 
 set(CMAKE_INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_LIBRARY_ARCHITECTURE}" CACHE PATH "Output directory for libraries")
 
+option(BUILD_SHARED_LIBS "Build in shared lib mode" ON)
 option(BUILD_DEMOS "Build the demos" ON)
 
 #
