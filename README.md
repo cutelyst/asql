@@ -28,7 +28,7 @@ libraries are required as well.
 ## Usage
 
 ### Creating a Pool
-A connection pool is a convenient way to getting new connections without worrying about configuring it and it's lifetime, once you are done with it the connection returns to the pool. It's also possible to have a single databse connection without it being attached to a pool, by creating ADatabase object directly and calling open().
+A connection pool is a convenient way to getting new connections without worrying about configuring it and it's lifetime, once you are done with it the connection returns to the pool. It's also possible to have a single database connection without it being attached to a pool, by creating ADatabase object directly and calling open().
 
 ```c++
 // No new connection is created at this moment
