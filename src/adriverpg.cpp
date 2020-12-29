@@ -313,7 +313,7 @@ void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, 
                 }
                 PQfreeCancel(cancel);
             }
-            qDebug(ASQL_PG) << "destroyed" << m_queryRunning << m_queuedQueries.empty() ;
+//            qDebug(ASQL_PG) << "destroyed" << m_queryRunning << m_queuedQueries.empty() ;
         });
     }
 
@@ -354,7 +354,7 @@ void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &
                 }
                 PQfreeCancel(cancel);
             }
-            qDebug(ASQL_PG) << "destroyed" << m_queryRunning << m_queuedQueries.empty() ;
+//            qDebug(ASQL_PG) << "destroyed" << m_queryRunning << m_queuedQueries.empty() ;
         });
     }
 
