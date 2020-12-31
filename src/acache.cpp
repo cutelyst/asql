@@ -104,20 +104,20 @@ int ACache::expireAll(qint64 maxAgeMs)
 
 void ACache::exec(const QString &query, AResultFn cb, QObject *receiver)
 {
-    exec(query, -1, QVariantList(), cb, receiver);
+    execExpiring(query, -1, QVariantList(), cb, receiver);
 }
 
 void ACache::exec(const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
-    exec(query, -1, params, cb, receiver);
+    execExpiring(query, -1, params, cb, receiver);
 }
 
-void ACache::exec(const QString &query, qint64 maxAgeMs, AResultFn cb, QObject *receiver)
+void ACache::execExpiring(const QString &query, qint64 maxAgeMs, AResultFn cb, QObject *receiver)
 {
-    exec(query, maxAgeMs, QVariantList(), cb, receiver);
+    execExpiring(query, maxAgeMs, QVariantList(), cb, receiver);
 }
 
-void ACache::exec(const QString &query, qint64 maxAgeMs, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_D(ACache);
     auto it = d->cache.find({query, params});
