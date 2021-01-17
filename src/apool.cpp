@@ -10,20 +10,20 @@
 
 Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
 
-typedef struct {
+struct APoolQueuedClient {
     std::function<void (ADatabase &)> cb;
     QPointer<QObject> receiver;
     bool checkReceiver;
-} APoolQueuedClient;
+};
 
-typedef struct {
+struct APoolInternal {
     QString connectionInfo;
     QVector<ADatabasePrivate *> pool;
     QQueue<APoolQueuedClient> connectionQueue;
     int maxIdleConnections = 1;
     int maximuConnections = 0;
     int connectionCount = 0;
-} APoolInternal;
+};
 
 static thread_local QHash<QString, APoolInternal> m_connectionPool;
 
