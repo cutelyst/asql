@@ -15,27 +15,26 @@
 
 Q_LOGGING_CATEGORY(ASQL_CACHE, "asql.cache", QtInfoMsg)
 
-typedef std::pair<QString, QVariantList> ACacheKey;
-
-typedef struct {
+struct ACacheReceiverCb {
     AResultFn cb;
     QPointer<QObject> receiver;
     QObject *checkReceiver = nullptr;
-} ACacheReceiverCb;
+};
 
-typedef struct {
+struct ACacheValue {
+    QVariantList args;
     AResult result;
     std::vector<ACacheReceiverCb> receivers;
     qint64 created = 0;
     bool hasResult = false;
-} ACacheValue;
+};
 
 class ACachePrivate
 {
 public:
     QString poolName;
     ADatabase db;
-    QMap<ACacheKey, ACacheValue> cache;
+    QMultiHash<QString, ACacheValue> cache;
     int dbSource = 0; // 0 - unset, 1 - db, 2 - pool
 };
 
@@ -64,9 +63,16 @@ void ACache::setDatabase(const ADatabase &db)
 bool ACache::clear(const QString &query, const QVariantList &params)
 {
     Q_D(ACache);
-    int ret = d->cache.remove({query, params});
-    qDebug(ASQL_CACHE) << "cleared" << ret << "cache entries" << query << params;
-    return ret;
+    auto it = d->cache.constFind(query);
+    while (it != d->cache.constEnd() && it.key() == query) {
+        if (it.value().args == params) {
+            d->cache.erase(it);
+            return true;
+        }
+        ++it;
+    }
+//    qDebug(ASQL_CACHE) << "cleared" << ret << "cache entries" << query << params;
+    return false;
 }
 
 bool ACache::expire(qint64 maxAgeMs, const QString &query, const QVariantList &params)
@@ -74,13 +80,16 @@ bool ACache::expire(qint64 maxAgeMs, const QString &query, const QVariantList &p
     Q_D(ACache);
     int ret = false;
     const qint64 cutAge = QDateTime::currentMSecsSinceEpoch() - maxAgeMs;
-    auto it = d->cache.find({query, params});
-    if (it != d->cache.end()) {
-        if (it.value().created < cutAge) {
-            ret = true;
-            qDebug(ASQL_CACHE) << "clearing cache" << query << params;
-            d->cache.erase(it);
+    auto it = d->cache.constFind(query);
+    while (it != d->cache.constEnd() && it.key() == query) {
+        if (it.value().args == params) {
+            if (it.value().created < cutAge) {
+                ret = true;
+                qDebug(ASQL_CACHE) << "clearing cache" << query << params;
+                d->cache.erase(it);
+            }
         }
+        ++it;
     }
     return ret;
 }
@@ -120,14 +129,22 @@ void ACache::execExpiring(const QString &query, qint64 maxAgeMs, AResultFn cb, Q
 void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_D(ACache);
-    auto it = d->cache.find({query, params});
-    if (it != d->cache.end()) {
-        ACacheValue &value = it.value();
-        if (value.hasResult) {
-            if (maxAgeMs != -1) {
-                const qint64 cutAge = QDateTime::currentMSecsSinceEpoch() - maxAgeMs;
-                if (it.value().created < cutAge) {
-                    d->cache.erase(it);
+    auto it = d->cache.find(query);
+    while (it != d->cache.end() && it.key() == query) {
+        if (it.value().args == params) {
+            ACacheValue &value = it.value();
+            if (value.hasResult) {
+                if (maxAgeMs != -1) {
+                    const qint64 cutAge = QDateTime::currentMSecsSinceEpoch() - maxAgeMs;
+                    if (it.value().created < cutAge) {
+                        d->cache.erase(it);
+                    } else {
+                        qDebug(ASQL_CACHE) << "cached data ready" << query;
+                        if (cb) {
+                            cb(value.result);
+                        }
+                        return;
+                    }
                 } else {
                     qDebug(ASQL_CACHE) << "cached data ready" << query;
                     if (cb) {
@@ -136,22 +153,17 @@ void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantL
                     return;
                 }
             } else {
-                qDebug(ASQL_CACHE) << "cached data ready" << query;
-                if (cb) {
-                    cb(value.result);
-                }
+                qDebug(ASQL_CACHE) << "data was requested already" << query;
+                // queue another request
+                ACacheReceiverCb receiverObj;
+                receiverObj.cb = cb;
+                receiverObj.receiver = receiver;
+                receiverObj.checkReceiver = receiver;
+                value.receivers.push_back(receiverObj);
                 return;
             }
-        } else {
-            qDebug(ASQL_CACHE) << "data was requested already" << query;
-            // queue another request
-            ACacheReceiverCb receiverObj;
-            receiverObj.cb = cb;
-            receiverObj.receiver = receiver;
-            receiverObj.checkReceiver = receiver;
-            value.receivers.push_back(receiverObj);
-            return;
         }
+        ++it;
     }
 
     qDebug(ASQL_CACHE) << "requesting data" << query;
@@ -160,24 +172,28 @@ void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantL
     receiverObj.cb = cb;
     receiverObj.receiver = receiver;
     receiverObj.checkReceiver = receiver;
+    value.args = params;
     value.receivers.push_back(receiverObj);
-    d->cache.insert({query, params}, value);
+    d->cache.insert(query, value);
 
     auto dbFn = [=] (AResult &result) {
-        auto it = d->cache.find({query, params});
-        if (it != d->cache.end()) {
-            ACacheValue &value = it.value();
-            value.result = result;
-            value.hasResult = true;
-            value.created = QDateTime::currentMSecsSinceEpoch();
-            qDebug(ASQL_CACHE) << "got request data, dispatching to receivers" << value.receivers.size() << query;
-            for (const ACacheReceiverCb &receiverObj : value.receivers) {
-                if (receiverObj.checkReceiver == nullptr || !receiverObj.receiver.isNull()) {
-                    qDebug(ASQL_CACHE) << "dispatching to receiver" << receiverObj.checkReceiver << query;
-                    receiverObj.cb(result);
+        auto it = d->cache.find(query);
+        while (it != d->cache.end() && it.key() == query) {
+            if (it.value().args == params) {
+                ACacheValue &value = it.value();
+                value.result = result;
+                value.hasResult = true;
+                value.created = QDateTime::currentMSecsSinceEpoch();
+                qDebug(ASQL_CACHE) << "got request data, dispatching to receivers" << value.receivers.size() << query;
+                for (const ACacheReceiverCb &receiverObj : value.receivers) {
+                    if (receiverObj.checkReceiver == nullptr || !receiverObj.receiver.isNull()) {
+                        qDebug(ASQL_CACHE) << "dispatching to receiver" << receiverObj.checkReceiver << query;
+                        receiverObj.cb(result);
+                    }
                 }
+                value.receivers.clear();
             }
-            value.receivers.clear();
+            ++it;
         }
     };
 
