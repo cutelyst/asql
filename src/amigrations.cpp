@@ -102,7 +102,7 @@ void AMigrations::fromString(const QString &text)
 
     int version = 0;
     int latest = -1;
-    bool upWay;
+    bool upWay = true;
     d_ptr->data = text;
 
     QTextStream stream(&d_ptr->data);
@@ -113,6 +113,19 @@ void AMigrations::fromString(const QString &text)
         qDebug(ASQL_MIG) << "MIG LINE" << line << upWay << version;
         QRegularExpressionMatch match = re.match(line);
         if (match.hasMatch()) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 2))
+            const QStringView way = match.capturedView(2);
+            qDebug(ASQL_MIG) << "CAPTURE" << way << match.capturedView(1).toInt();
+            if (way.compare(QStringLiteral("up"), Qt::CaseInsensitive) == 0) {
+                upWay = true;
+                version = match.capturedView(1).toInt();
+            } else if (way.compare(QStringLiteral("down"), Qt::CaseInsensitive) == 0) {
+                upWay = false;
+                version = match.capturedView(1).toInt();
+            } else {
+                version = 0;
+            }
+#else
             const QStringRef way = match.capturedRef(2);
             qDebug(ASQL_MIG) << "CAPTURE" << way << match.capturedRef(1).toInt();
             if (way.compare(QStringLiteral("up"), Qt::CaseInsensitive) == 0) {
@@ -124,6 +137,7 @@ void AMigrations::fromString(const QString &text)
             } else {
                 version = 0;
             }
+#endif
             latest = qMax(latest, version);
         } else if (version) {
             if (upWay) {

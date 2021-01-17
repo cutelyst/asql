@@ -34,48 +34,48 @@ set(asql_HEADERS_PRIVATE
 #     common.h
 )
 
-add_library(ASqlQt5
+add_library(ASqlQt${QT_VERSION_MAJOR}
     ${asql_SRC}
     ${asql_HEADERS}
     ${asql_HEADERS_PRIVATE}
 )
 
 #Add an alias so that library can be used inside the build tree, e.g. when testing
-add_library(ASqlQt5::Core ALIAS ASqlQt5)
+add_library(ASqlQt${QT_VERSION_MAJOR}::Core ALIAS ASqlQt${QT_VERSION_MAJOR})
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
-  set_property(TARGET ASqlQt5 PROPERTY DEBUG_POSTFIX "d")
+  set_property(TARGET ASqlQt${QT_VERSION_MAJOR} PROPERTY DEBUG_POSTFIX "d")
 endif()
 
-target_compile_definitions(ASqlQt5
+target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}
   PRIVATE
     PLUGINS_PREFER_DEBUG_POSTFIX=$<CONFIG:Debug>
 )
 
-target_include_directories(ASqlQt5 PUBLIC
+target_include_directories(ASqlQt${QT_VERSION_MAJOR} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include/asql-qt5/ASql>
+  $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
 )
 
-set_target_properties(ASqlQt5 PROPERTIES
+set_target_properties(ASqlQt${QT_VERSION_MAJOR} PROPERTIES
     EXPORT_NAME Core
     VERSION ${PROJECT_VERSION}
     SOVERSION 0
 )
 
-target_link_libraries(ASqlQt5
+target_link_libraries(ASqlQt${QT_VERSION_MAJOR}
     PUBLIC
-        Qt5::Core
+        Qt${QT_VERSION_MAJOR}::Core
     PRIVATE
         PostgreSQL::PostgreSQL
 )
 
-set_property(TARGET ASqlQt5 PROPERTY PUBLIC_HEADER ${asql_HEADERS})
-install(TARGETS ASqlQt5
+set_property(TARGET ASqlQt${QT_VERSION_MAJOR} PROPERTY PUBLIC_HEADER ${asql_HEADERS})
+install(TARGETS ASqlQt${QT_VERSION_MAJOR}
     EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION bin COMPONENT runtime
     ARCHIVE DESTINATION lib COMPONENT devel
-    PUBLIC_HEADER DESTINATION include/asql-qt5/ASql COMPONENT devel
+    PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
 )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/asql-qt5.pc.in
@@ -89,7 +89,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt5.pc
 add_executable(asql-migration asql_migration.cpp)
 target_link_libraries(asql-migration
     PUBLIC
-        Qt5::Core
-        ASqlQt5::Core
+        Qt${QT_VERSION_MAJOR}::Core
+        ASqlQt${QT_VERSION_MAJOR}::Core
 )
 install(TARGETS asql-migration DESTINATION ${CMAKE_INSTALL_BINDIR})

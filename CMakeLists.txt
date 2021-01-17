@@ -14,7 +14,8 @@ endif()
 include(GNUInstallDirs)
 
 find_package(PostgreSQL REQUIRED)
-find_package(Qt5 5.10.0 REQUIRED COMPONENTS Core)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Core REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} 5.10.0 COMPONENTS Core REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 
