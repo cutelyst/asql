@@ -19,7 +19,7 @@ Qt Async Sql library
 * Single row mode (useful for very large datasets)
 
 ## Requirements
-* Qt, 5.10 or later
+* Qt, 5.10 or later (including Qt6)
 * C++11 capable compiler
 
 Currently, there is only one driver, for PostgreSQL, so PostgreSQL
