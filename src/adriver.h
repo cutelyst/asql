@@ -33,8 +33,8 @@ public:
     virtual bool isOpen() const;
 
     virtual void begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver);
-    virtual void commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver);
-    virtual void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver);
+    virtual void commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver);
+    virtual void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver);
 
     virtual void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver);
     virtual void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver);

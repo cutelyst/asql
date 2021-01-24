@@ -189,8 +189,8 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                     if (pgQuery.result->error()) {
                                         // PREPARE OR PREPARED QUERY ERROR
                                         m_queuedQueries.dequeue();
-                                        nextQuery();
                                         pgQuery.done();
+                                        nextQuery(); // Must be after it's done so that a FORCED COMMIT/ROLLBACK can get in before next queries
                                     } else {
                                         // Query prepared
                                         m_preparedQueries.append(pgQuery.preparedQuery.identification());
@@ -200,8 +200,8 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                     }
                                 } else {
                                     APGQuery pgQuery = m_queuedQueries.dequeue();
-                                    nextQuery();
                                     pgQuery.done();
+                                    nextQuery(); // Must be after it's done so that a FORCED COMMIT/ROLLBACK can get in before next queries
                                 }
                                 break;
                             } else {
@@ -280,14 +280,24 @@ void ADriverPg::begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject
     exec(db, QStringLiteral("BEGIN"), QVariantList(), cb, receiver);
 }
 
-void ADriverPg::commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver)
+void ADriverPg::commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver)
 {
     exec(db, QStringLiteral("COMMIT"), QVariantList(), cb, receiver);
+    if (now && m_queuedQueries.size() > 1) {
+        // 0 - next query, .... LAST - COMMIT
+        auto last = m_queuedQueries.takeLast();
+        m_queuedQueries.insert(m_queryRunning ? 1 : 0, last);
+    }
 }
 
-void ADriverPg::rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver)
+void ADriverPg::rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver)
 {
     exec(db, QStringLiteral("ROLLBACK"), QVariantList(), cb, receiver);
+    if (now && m_queuedQueries.size() > 1) {
+        // 0 - next query, .... LAST - COMMIT
+        auto last = m_queuedQueries.takeLast();
+        m_queuedQueries.insert(m_queryRunning ? 1 : 0, last);
+    }
 }
 
 void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)

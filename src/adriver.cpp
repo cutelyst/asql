@@ -55,9 +55,10 @@ void ADriver::begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *
     }
 }
 
-void ADriver::commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver)
+void ADriver::commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver)
 {
     Q_UNUSED(db)
+    Q_UNUSED(now)
     Q_UNUSED(receiver)
     if (cb) {
         AResult result;
@@ -65,9 +66,10 @@ void ADriver::commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject 
     }
 }
 
-void ADriver::rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver)
+void ADriver::rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver)
 {
     Q_UNUSED(db)
+    Q_UNUSED(now)
     Q_UNUSED(receiver)
     if (cb) {
         AResult result;

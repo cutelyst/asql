@@ -79,7 +79,7 @@ public:
     }
 };
 
-class ADriverPg : public ADriver
+class ADriverPg final : public ADriver
 {
     Q_OBJECT
 public:
@@ -94,8 +94,8 @@ public:
     virtual void onStateChanged(std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
     virtual void begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
-    virtual void commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
-    virtual void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
+    virtual void commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
+    virtual void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
 
     virtual void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
     virtual void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;

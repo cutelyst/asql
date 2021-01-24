@@ -37,6 +37,7 @@ public:
     /*!
      * \brief commit a transaction, this operation usually succeeds,
      * but one can hook up a callback to check it's result.
+     * \note the commit will get into the front of the query queue as best as possible
      *
      * \param cb
      */
@@ -45,6 +46,7 @@ public:
     /*!
      * \brief rollback a transaction, this operation usually succeeds,
      * but one can hook up a callback to check it's result.
+     * \note the commit will get into the front of the query queue as best as possible
      *
      * \param cb
      */
