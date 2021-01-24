@@ -329,7 +329,7 @@ void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, 
 
     m_queuedQueries.append(pgQuery);
 
-    if (m_queryRunning || !m_conn || !m_connected) {
+    if (m_queryRunning || !m_conn || !m_connected || m_queuedQueries.size() > 1) {
         return;
     }
 
@@ -370,7 +370,7 @@ void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &
 
     m_queuedQueries.append(pgQuery);
 
-    if (m_queryRunning || !m_conn || !m_connected) {
+    if (m_queryRunning || !m_conn || !m_connected || m_queuedQueries.size() > 1) {
         return;
     }
 
