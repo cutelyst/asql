@@ -86,26 +86,26 @@ public:
     ADriverPg();
     virtual ~ADriverPg();
 
-    virtual void open(std::function<void(bool isOpen, const QString &error)> cb) override;
-    virtual bool isOpen() const override;
+    void open(std::function<void(bool isOpen, const QString &error)> cb) override;
+    bool isOpen() const override;
 
     void setState(ADatabase::State state, const QString &status);
-    virtual ADatabase::State state() const override;
-    virtual void onStateChanged(std::function<void(ADatabase::State state, const QString &status)> cb) override;
+    ADatabase::State state() const override;
+    void onStateChanged(std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
-    virtual void begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
-    virtual void commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
-    virtual void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
+    void begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
+    void commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
+    void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
 
-    virtual void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
-    virtual void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
 
-    virtual void setLastQuerySingleRowMode() override final;
+    void setLastQuerySingleRowMode() override;
 
-    virtual void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name) override;
-    virtual void onNotification(QSharedPointer<ADatabasePrivate> db, ANotificationFn cb, QObject *receiver) override final;
-    virtual QStringList subscribedToNotifications() const override;
-    virtual void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver) override;
+    void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name) override;
+    void onNotification(QSharedPointer<ADatabasePrivate> db, ANotificationFn cb, QObject *receiver) override;
+    QStringList subscribedToNotifications() const override;
+    void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver) override;
 
 private:
     void nextQuery();

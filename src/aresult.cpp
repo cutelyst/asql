@@ -9,20 +9,14 @@
 #include <QJsonObject>
 #include <QDateTime>
 
-AResult::AResult()
-{
-
-}
+AResult::AResult() = default;
 
 AResult::AResult(const AResult &other)
 {
     d = other.d;
 }
 
-AResult::~AResult()
-{
-
-}
+AResult::~AResult() = default;
 
 bool AResult::lastResulSet() const
 {
@@ -55,6 +49,11 @@ int AResult::numRowsAffected() const
 }
 
 int AResult::indexOfField(const QString &name) const
+{
+    return d->indexOfField(name);
+}
+
+int AResult::indexOfField(QStringView name) const
 {
     return d->indexOfField(name);
 }
@@ -163,12 +162,19 @@ AResult::AResult(const QSharedPointer<AResultPrivate> &priv) : d(priv)
 
 }
 
-AResultPrivate::~AResultPrivate()
-{
-
-}
+AResultPrivate::~AResultPrivate() = default;
 
 int AResultPrivate::indexOfField(const QString &name) const
+{
+    for (int i = 0; i < fields(); ++i) {
+        if (name == fieldName(i)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int AResultPrivate::indexOfField(QStringView name) const
 {
     for (int i = 0; i < fields(); ++i) {
         if (name == fieldName(i)) {

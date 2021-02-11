@@ -25,6 +25,7 @@ public:
     virtual int numRowsAffected() const = 0;
 
     int indexOfField(const QString &name) const;
+    int indexOfField(QStringView name) const;
     int indexOfField(QLatin1String name) const;
     virtual QString fieldName(int column) const = 0;
     virtual QVariant value(int row, int column) const = 0;
@@ -39,17 +40,6 @@ public:
     virtual QTime toTime(int row, int column) const = 0;
     virtual QDateTime toDateTime(int row, int column) const = 0;
     virtual QByteArray toByteArray(int row, int column) const = 0;
-};
-
-class ASQL_EXPORT ARow
-{
-public:
-    ARow();
-    ARow(const QSharedPointer<AResultPrivate> &priv, int index) : d(priv), row(index) {}
-
-private:
-    QSharedPointer<AResultPrivate> d;
-    int row;
 };
 
 class ASQL_EXPORT AResult
@@ -69,6 +59,7 @@ public:
     int numRowsAffected() const;
 
     int indexOfField(const QString &name) const;
+    int indexOfField(QStringView name) const;
     QString fieldName(int column) const;
 
     /*!
@@ -147,6 +138,7 @@ public:
         inline AColumn operator[](int column) const { return AColumn(d, row, column); }
         inline AColumn operator[](const QString &name) const { return AColumn(d, row, d->indexOfField(name)); }
         inline AColumn operator[](QLatin1String name) const { return AColumn(d, row, d->indexOfField(name)); }
+        inline AColumn operator[](QStringView name) const { return AColumn(d, row, d->indexOfField(name)); }
     };
 
     class const_iterator {
@@ -170,6 +162,7 @@ public:
         inline AColumn operator[](int column) const { return AColumn(d, i, column); }
         inline AColumn operator[](const QString &name) const { return AColumn(d, i, d->indexOfField(name)); }
         inline AColumn operator[](QLatin1String name) const { return AColumn(d, i, d->indexOfField(name)); }
+        inline AColumn operator[](QStringView name) const { return AColumn(d, i, d->indexOfField(name)); }
 
         inline bool operator==(const const_iterator &o) const { return i == o.i; }
         inline bool operator!=(const const_iterator &o) const { return i != o.i; }
