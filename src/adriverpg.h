@@ -24,27 +24,27 @@ public:
     AResultPg();
     virtual ~AResultPg();
 
-    virtual bool lastResulSet() const override;
-    virtual bool error() const override;
-    virtual QString errorString() const override;
+    bool lastResulSet() const override;
+    bool error() const override;
+    QString errorString() const override;
 
-    virtual int size() const override;
-    virtual int fields() const override;
-    virtual int numRowsAffected() const override;
+    int size() const override;
+    int fields() const override;
+    int numRowsAffected() const override;
 
-    virtual QString fieldName(int column) const override;
-    virtual QVariant value(int row, int column) const override;
+    QString fieldName(int column) const override;
+    QVariant value(int row, int column) const override;
 
-    virtual bool toBool(int row, int column) const override;
-    virtual int toInt(int row, int column) const override;
-    virtual qint64 toLongLong(int row, int column) const override;
-    virtual quint64 toULongLong(int row, int column) const override;
-    virtual double toDouble(int row, int column) const override;
-    virtual QString toString(int row, int column) const override;
-    virtual QDate toDate(int row, int column) const override;
-    virtual QTime toTime(int row, int column) const override;
-    virtual QDateTime toDateTime(int row, int column) const override;
-    virtual QByteArray toByteArray(int row, int column) const override;
+    bool toBool(int row, int column) const override;
+    int toInt(int row, int column) const override;
+    qint64 toLongLong(int row, int column) const override;
+    quint64 toULongLong(int row, int column) const override;
+    double toDouble(int row, int column) const override;
+    QString toString(int row, int column) const override;
+    QDate toDate(int row, int column) const override;
+    QTime toTime(int row, int column) const override;
+    QDateTime toDateTime(int row, int column) const override;
+    QByteArray toByteArray(int row, int column) const override;
 
     void processResult();
 
