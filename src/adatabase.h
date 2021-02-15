@@ -140,6 +140,8 @@ public:
      */
     void exec(const QString &query, AResultFn cb, QObject *receiver = nullptr);
 
+    void exec(QStringView query, AResultFn cb, QObject *receiver = nullptr);
+
     /*!
      * \brief exec executes a prepared \param query against this database connection,
      * once done AResult object will have the retrieved data if any, always
@@ -163,6 +165,8 @@ public:
      * \param cb
      */
     void exec(const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
+
+    void exec(QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
 
     /*!
      * \brief exec executes a prepared \param query against this database connection

@@ -68,6 +68,7 @@ int main(int argc, char *argv[])
                     ATransaction(t).commit();
                 }
             });
+            qDebug() << "Got db2" << db.isOpen() << db.state();
         });
 
     }
@@ -76,12 +77,12 @@ int main(int argc, char *argv[])
     static APreparedQuery query(QStringLiteral("SELECT now()"));
     db.execPrepared(query, [=] (AResult &result) {
         if (result.error()) {
-            qDebug() << "SELECT error" << result.errorString();
+            qDebug() << "SELECT 1 error" << result.errorString();
             return;
         }
 
         if (result.size()) {
-            qDebug() << "SELECT value" << result.begin().value(0);
+            qDebug() << "SELECT 1 value" << result.begin().value(0);
         }
     });
 

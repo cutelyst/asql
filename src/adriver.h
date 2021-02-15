@@ -37,6 +37,7 @@ public:
     virtual void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver);
 
     virtual void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver);
+    virtual void exec(QSharedPointer<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver);
     virtual void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver);
 
     virtual void setLastQuerySingleRowMode();

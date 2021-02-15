@@ -300,18 +300,10 @@ void ADriverPg::rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool
     }
 }
 
-void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriverPg::queryConstructed(APGQuery &pgQuery)
 {
-    APGQuery pgQuery;
-    pgQuery.query = query;
-    pgQuery.params = params;
-    pgQuery.cb = cb;
-    pgQuery.db = db;
-    pgQuery.receiver = receiver;
-    pgQuery.checkReceiver = receiver;
-
-    if (receiver) {
-        connect(receiver, &QObject::destroyed, this, [=] (QObject *obj) {
+    if (pgQuery.checkReceiver) {
+        connect(pgQuery.checkReceiver, &QObject::destroyed, this, [=] (QObject *obj) {
             if (m_queryRunning && !m_queuedQueries.empty() && m_queuedQueries.head().checkReceiver == obj) {
                 PGcancel *cancel = PQgetCancel(m_conn);
                 char errbuf[256];
@@ -333,11 +325,37 @@ void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, 
         return;
     }
 
-    if (params.isEmpty()) {
+    if (pgQuery.params.isEmpty()) {
         doExec(pgQuery);
     } else {
         doExecParams(pgQuery);
     }
+}
+
+void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+{
+    APGQuery pgQuery;
+    pgQuery.query = query;
+    pgQuery.params = params;
+    pgQuery.cb = cb;
+    pgQuery.db = db;
+    pgQuery.receiver = receiver;
+    pgQuery.checkReceiver = receiver;
+
+    queryConstructed(pgQuery);
+}
+
+void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+{
+    APGQuery pgQuery;
+    pgQuery.query = query;
+    pgQuery.params = params;
+    pgQuery.cb = cb;
+    pgQuery.db = db;
+    pgQuery.receiver = receiver;
+    pgQuery.checkReceiver = receiver;
+
+    queryConstructed(pgQuery);
 }
 
 void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
@@ -351,30 +369,7 @@ void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &
     pgQuery.checkReceiver = receiver;
     pgQuery.prepared = true;
 
-    if (receiver) {
-        connect(receiver, &QObject::destroyed, this, [=] (QObject *obj) {
-            if (m_queryRunning && !m_queuedQueries.empty() && m_queuedQueries.head().checkReceiver == obj) {
-                PGcancel *cancel = PQgetCancel(m_conn);
-                char errbuf[256];
-                int ret = PQcancel(cancel, errbuf, 256);
-                if (ret == 1) {
-                    qDebug(ASQL_PG) << "PQcancel sent";
-                } else {
-                    qDebug(ASQL_PG) << "PQcancel failed" << ret << errbuf;
-                }
-                PQfreeCancel(cancel);
-            }
-//            qDebug(ASQL_PG) << "destroyed" << m_queryRunning << m_queuedQueries.empty() ;
-        });
-    }
-
-    m_queuedQueries.append(pgQuery);
-
-    if (m_queryRunning || !m_conn || !m_connected || m_queuedQueries.size() > 1) {
-        return;
-    }
-
-    doExecParams(pgQuery);
+    queryConstructed(pgQuery);
 }
 
 void ADriverPg::setLastQuerySingleRowMode()
@@ -433,7 +428,7 @@ void ADriverPg::nextQuery()
         if (pgQuery.checkReceiver && pgQuery.receiver.isNull()) {
             m_queuedQueries.dequeue();
         } else {
-            if (pgQuery.params.isEmpty() && !pgQuery.prepared) {
+            if (pgQuery.params.isEmpty()) {
                 doExec(pgQuery);
             } else {
                 doExecParams(pgQuery);
@@ -476,7 +471,37 @@ void ADriverPg::finishQueries(const QString &error)
 
 void ADriverPg::doExec(APGQuery &pgQuery)
 {
-    int ret = PQsendQuery(m_conn, pgQuery.query.toUtf8().constData());
+    int ret;
+    if (pgQuery.prepared) {
+        if (m_preparedQueries.contains(pgQuery.preparedQuery.identification())) {
+            ret = PQsendQueryPrepared(m_conn,
+                                      pgQuery.preparedQuery.identification().toUtf8().constData(),
+                                      0,
+                                      nullptr,
+                                      nullptr,
+                                      nullptr,
+                                      0); // perhaps later use binary results
+            if (pgQuery.setSingleRow) {
+                setSingleRowMode();
+            }
+        } else {
+            m_queuedQueries.head().preparing = true;
+            ret = PQsendPrepare(m_conn,
+                                pgQuery.preparedQuery.identification().toUtf8().constData(),
+                                pgQuery.preparedQuery.query().toUtf8().constData(),
+                                0,
+                                nullptr); // perhaps later use binary results
+        }
+    } else {
+        QByteArray query;
+        if (pgQuery.query.index() == 0) {
+            query = std::get<0>(pgQuery.query).toUtf8();
+        } else {
+            query = std::get<1>(pgQuery.query).toUtf8();
+        }
+        ret = PQsendQuery(m_conn, query.constData());
+    }
+
     if (ret == 1) {
         m_queryRunning = true;
         if (pgQuery.setSingleRow) {
@@ -650,8 +675,14 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
                                 paramTypes); // perhaps later use binary results
         }
     } else {
+        QByteArray query;
+        if (pgQuery.query.index() == 0) {
+            query = std::get<0>(pgQuery.query).toUtf8();
+        } else {
+            query = std::get<1>(pgQuery.query).toUtf8();
+        }
         ret = PQsendQueryParams(m_conn,
-                                pgQuery.query.toUtf8().constData(),
+                                query.constData(),
                                 params.size(),
                                 paramTypes,
                                 paramValues,

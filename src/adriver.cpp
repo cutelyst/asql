@@ -89,6 +89,18 @@ void ADriver::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, co
     }
 }
 
+void ADriver::exec(QSharedPointer<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+{
+    Q_UNUSED(db)
+    Q_UNUSED(query)
+    Q_UNUSED(params)
+    Q_UNUSED(receiver)
+    if (cb) {
+        AResult result;
+        cb(result);
+    }
+}
+
 void ADriver::exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_UNUSED(db)

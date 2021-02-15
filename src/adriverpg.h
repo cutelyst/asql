@@ -59,7 +59,7 @@ class APGQuery
 public:
     APGQuery() : result(QSharedPointer<AResultPg>(new AResultPg))
     { }
-    QString query;
+    std::variant<QString, QStringView> query;
     APreparedQuery preparedQuery;
     QSharedPointer<AResultPg> result;
     QVariantList params;
@@ -98,6 +98,7 @@ public:
     void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
 
     void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    void exec(QSharedPointer<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
     void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
 
     void setLastQuerySingleRowMode() override;
@@ -108,6 +109,7 @@ public:
     void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver) override;
 
 private:
+    inline void queryConstructed(APGQuery &pgQuery);
     void nextQuery();
     void finishConnection();
     void finishQueries(const QString &error);
