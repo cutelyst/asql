@@ -59,7 +59,7 @@ class APGQuery
 public:
     APGQuery() : result(QSharedPointer<AResultPg>(new AResultPg))
     { }
-    std::variant<QString, QStringView> query;
+    QByteArray query;
     APreparedQuery preparedQuery;
     QSharedPointer<AResultPg> result;
     QVariantList params;
@@ -131,7 +131,7 @@ private:
     QQueue<APGQuery> m_queuedQueries;
     QSocketNotifier *m_writeNotify = nullptr;
     QSocketNotifier *m_readNotify = nullptr;
-    QStringList m_preparedQueries;
+    QByteArrayList m_preparedQueries;
 };
 
 #endif // ADRIVERPG_H

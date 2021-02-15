@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
 
     auto db1 = APool::database();
     for (int i = 0; i < 100000; ++i) {
-        db1.execPrepared(APreparedQueryLiteral("SELECT * from world"),
+        db1.execPrepared(APreparedQueryLiteral(u"SELECT * from world"),
                          {},
                          [&count, t] (AResult &result) mutable {
             (*count)++;

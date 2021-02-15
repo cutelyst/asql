@@ -12,7 +12,7 @@
 
 #define APreparedQueryLiteral(str) \
     ([]() Q_DECL_NOEXCEPT -> APreparedQuery { \
-        static const APreparedQuery aprepared_literal_temp(QStringLiteral(str)); \
+        static const APreparedQuery aprepared_literal_temp(str); \
         return aprepared_literal_temp; \
     }()) \
     /**/
@@ -50,17 +50,23 @@ public:
     APreparedQuery(const QString &query);
 
     /*!
+     * \brief APreparedQuery constructs a prepared \p query with an automatic unique identification
+     * \param query
+     */
+    APreparedQuery(QStringView query);
+
+    /*!
      * \brief APreparedQuery constructs a prepared \p query with a manual \p identification
      * \param query
      */
     APreparedQuery(const QString &query, const QString &identification);
 
-    QString query() const;
-    QString identification() const;
+    QByteArray query() const;
+    QByteArray identification() const;
 
 private:
-    QString m_query;
-    QString m_identification;
+    QByteArray m_query;
+    QByteArray m_identification;
 };
 
 #endif // APREPAREDQUERY_H

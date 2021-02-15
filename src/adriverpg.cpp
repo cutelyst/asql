@@ -335,7 +335,7 @@ void ADriverPg::queryConstructed(APGQuery &pgQuery)
 void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     APGQuery pgQuery;
-    pgQuery.query = query;
+    pgQuery.query = query.toUtf8();
     pgQuery.params = params;
     pgQuery.cb = cb;
     pgQuery.db = db;
@@ -348,7 +348,7 @@ void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, 
 void ADriverPg::exec(QSharedPointer<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     APGQuery pgQuery;
-    pgQuery.query = query;
+    pgQuery.query = query.toUtf8();
     pgQuery.params = params;
     pgQuery.cb = cb;
     pgQuery.db = db;
@@ -475,7 +475,7 @@ void ADriverPg::doExec(APGQuery &pgQuery)
     if (pgQuery.prepared) {
         if (m_preparedQueries.contains(pgQuery.preparedQuery.identification())) {
             ret = PQsendQueryPrepared(m_conn,
-                                      pgQuery.preparedQuery.identification().toUtf8().constData(),
+                                      pgQuery.preparedQuery.identification().constData(),
                                       0,
                                       nullptr,
                                       nullptr,
@@ -487,19 +487,13 @@ void ADriverPg::doExec(APGQuery &pgQuery)
         } else {
             m_queuedQueries.head().preparing = true;
             ret = PQsendPrepare(m_conn,
-                                pgQuery.preparedQuery.identification().toUtf8().constData(),
-                                pgQuery.preparedQuery.query().toUtf8().constData(),
+                                pgQuery.preparedQuery.identification().constData(),
+                                pgQuery.preparedQuery.query().constData(),
                                 0,
                                 nullptr); // perhaps later use binary results
         }
     } else {
-        QByteArray query;
-        if (pgQuery.query.index() == 0) {
-            query = std::get<0>(pgQuery.query).toUtf8();
-        } else {
-            query = std::get<1>(pgQuery.query).toUtf8();
-        }
-        ret = PQsendQuery(m_conn, query.constData());
+        ret = PQsendQuery(m_conn, pgQuery.query.constData());
     }
 
     if (ret == 1) {
@@ -657,7 +651,7 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
     if (pgQuery.prepared) {
         if (m_preparedQueries.contains(pgQuery.preparedQuery.identification())) {
             ret = PQsendQueryPrepared(m_conn,
-                                      pgQuery.preparedQuery.identification().toUtf8().constData(),
+                                      pgQuery.preparedQuery.identification().constData(),
                                       params.size(),
                                       paramValues,
                                       paramLengths,
@@ -669,20 +663,14 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
         } else {
             m_queuedQueries.head().preparing = true;
             ret = PQsendPrepare(m_conn,
-                                pgQuery.preparedQuery.identification().toUtf8().constData(),
-                                pgQuery.preparedQuery.query().toUtf8().constData(),
+                                pgQuery.preparedQuery.identification().constData(),
+                                pgQuery.preparedQuery.query().constData(),
                                 params.size(),
                                 paramTypes); // perhaps later use binary results
         }
     } else {
-        QByteArray query;
-        if (pgQuery.query.index() == 0) {
-            query = std::get<0>(pgQuery.query).toUtf8();
-        } else {
-            query = std::get<1>(pgQuery.query).toUtf8();
-        }
         ret = PQsendQueryParams(m_conn,
-                                query.constData(),
+                                pgQuery.query.constData(),
                                 params.size(),
                                 paramTypes,
                                 paramValues,

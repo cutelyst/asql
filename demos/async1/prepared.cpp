@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
     });
 
     auto loopFn = [=] {
-        auto queryStatic = APreparedQueryLiteral("SELECT $1, now()");
+        auto queryStatic = APreparedQueryLiteral(u"SELECT $1, now()");
         ADatabase(db).execPrepared(queryStatic,
                                    { qint64(12345) }, [=] (AResult &result) {
             if (result.error()) {
