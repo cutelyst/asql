@@ -14,7 +14,7 @@ APreparedQuery::APreparedQuery()
 
 }
 
-QByteArray identification() {
+static QByteArray identificationCounter() {
     QByteArray ret;
     static QBasicAtomicInt qPreparedStmtCount = Q_BASIC_ATOMIC_INITIALIZER(0);
     ret = "asql_" + QByteArray::number(qPreparedStmtCount.fetchAndAddRelaxed(1) + 1, 16);
@@ -24,13 +24,13 @@ QByteArray identification() {
 
 APreparedQuery::APreparedQuery(const QString &query)
     : m_query(query.toUtf8())
-    , m_identification(identification())
+    , m_identification(identificationCounter())
 {
 }
 
 APreparedQuery::APreparedQuery(QStringView query)
     : m_query(query.toUtf8())
-    , m_identification(identification())
+    , m_identification(identificationCounter())
 {
 }
 
