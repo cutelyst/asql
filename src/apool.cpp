@@ -89,26 +89,24 @@ ADatabase APool::database(const QString &connectionName)
         if (iPool.pool.empty()) {
             if (iPool.maximuConnections && iPool.connectionCount >= iPool.maximuConnections) {
                 qWarning(ASQL_POOL) << "Maximum number of connections reached" << connectionName << iPool.connectionCount << iPool.maximuConnections;
-                db.open();
-                return db;
-            }
-            ++iPool.connectionCount;
-            qDebug(ASQL_POOL) << "Creating a database connection for pool" << connectionName << iPool.connectionInfo;
-            db.d = QSharedPointer<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
+            } else {
+                ++iPool.connectionCount;
+                qDebug(ASQL_POOL) << "Creating a database connection for pool" << connectionName << iPool.connectionInfo;
+                db.d = QSharedPointer<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
                     pushDatabaseBack(connectionName, priv);
-            });
-            db.open();
+                });
+            }
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << connectionName;
             ADatabasePrivate *priv = iPool.pool.takeLast();
             db.d = QSharedPointer<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
-                    pushDatabaseBack(connectionName, priv);
+                pushDatabaseBack(connectionName, priv);
             });
-            db.open();
         }
     } else {
         qCritical(ASQL_POOL) << "Database connection NOT FOUND in pool" << connectionName;
     }
+    db.open();
     return db;
 }
 
@@ -133,7 +131,6 @@ void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, co
             db.d = QSharedPointer<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
                     pushDatabaseBack(connectionName, priv);
             });
-            db.open();
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << connectionName;
             ADatabasePrivate *priv = iPool.pool.takeLast();
@@ -144,6 +141,7 @@ void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, co
     } else {
         qCritical(ASQL_POOL) << "Database connection NOT FOUND in pool" << connectionName;
     }
+    db.open();
 
     if (cb) {
         cb(db);
