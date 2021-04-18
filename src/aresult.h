@@ -188,10 +188,7 @@ public:
     inline const_iterator end() const { return const_iterator(d, size()); }
     inline const_iterator constEnd() const { return const_iterator(d, size()); }
 
-    inline ARow operator[](int column) const { return ARow(d, column); }
-    inline ARow operator[](const QString &name) const { return ARow(d, d->indexOfField(name)); }
-    inline ARow operator[](QLatin1String name) const { return ARow(d, d->indexOfField(name)); }
-    inline ARow operator[](QStringView name) const { return ARow(d, d->indexOfField(name)); }
+    inline ARow operator[](int row) const { return ARow(d, row); }
 
 protected:
     QSharedPointer<AResultPrivate> d;
