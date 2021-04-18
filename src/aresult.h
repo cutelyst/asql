@@ -190,6 +190,8 @@ public:
 
     inline ARow operator[](int column) const { return ARow(d, column); }
     inline ARow operator[](const QString &name) const { return ARow(d, d->indexOfField(name)); }
+    inline ARow operator[](QLatin1String name) const { return ARow(d, d->indexOfField(name)); }
+    inline ARow operator[](QStringView name) const { return ARow(d, d->indexOfField(name)); }
 
 protected:
     QSharedPointer<AResultPrivate> d;
