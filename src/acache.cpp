@@ -82,10 +82,13 @@ bool ACache::expire(qint64 maxAgeMs, const QString &query, const QVariantList &p
     auto it = d->cache.constFind(query);
     while (it != d->cache.constEnd() && it.key() == query) {
         const ACacheValue &value = *it;
-        if (value.args == params && value.hasResultTs && value.hasResultTs < cutAge) {
-            ret = true;
-            qDebug(ASQL_CACHE) << "clearing cache" << query << params;
-            d->cache.erase(it);
+        if (value.args == params) {
+            if (value.hasResultTs && value.hasResultTs < cutAge) {
+                ret = true;
+                qDebug(ASQL_CACHE) << "clearing cache" << query << params;
+                d->cache.erase(it);
+            }
+            break;
         }
         ++it;
     }
@@ -142,14 +145,12 @@ void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantL
                         if (cb) {
                             cb(value.result);
                         }
-                        return;
                     }
                 } else {
                     qDebug(ASQL_CACHE) << "cached data ready" << query;
                     if (cb) {
                         cb(value.result);
                     }
-                    return;
                 }
             } else {
                 qDebug(ASQL_CACHE) << "data was requested already" << query;
@@ -159,8 +160,9 @@ void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantL
                 receiverObj.receiver = receiver;
                 receiverObj.checkReceiver = receiver;
                 value.receivers.push_back(receiverObj);
-                return;
             }
+
+            return;
         }
         ++it;
     }
