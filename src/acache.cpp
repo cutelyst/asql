@@ -140,6 +140,7 @@ void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantL
                     const qint64 cutAge = QDateTime::currentMSecsSinceEpoch() - maxAgeMs;
                     if (value.hasResultTs < cutAge) {
                         d->cache.erase(it);
+                        break;
                     } else {
                         qDebug(ASQL_CACHE) << "cached data ready" << query;
                         if (cb) {
@@ -153,7 +154,7 @@ void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantL
                     }
                 }
             } else {
-                qDebug(ASQL_CACHE) << "data was requested already" << query;
+                qDebug(ASQL_CACHE) << "queuing request" << query;
                 // queue another request
                 ACacheReceiverCb receiverObj;
                 receiverObj.cb = cb;
