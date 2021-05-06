@@ -215,15 +215,16 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                             const QString name = QString::fromUtf8(notify->relname);
 //                            qDebug(ASQL_PG) << "NOTIFICATION" << name << notify;
 
-                            if (m_subscribedNotifications.contains(name)) {
-                                if (m_notificationFn && (!m_notificationPtrSet || !m_notificationPtr.isNull())) {
+                            auto it = m_subscribedNotifications.constFind(name);
+                            if (it != m_subscribedNotifications.constEnd()) {
+                                if (it.value()) {
                                     QString payload;
                                     if (notify->extra) {
                                         payload = QString::fromUtf8(notify->extra);
                                     }
                                     const bool self = (notify->be_pid == PQbackendPID(m_conn)) ? true : false;
 //                                qDebug(ASQL_PG) << "NOTIFICATION" << self << name << payload;
-                                    m_notificationFn(ADatabaseNotification{name, payload, self});
+                                    it.value()(ADatabaseNotification{name, payload, self});
                                 }
                             } else {
                                 qWarning(ASQL_PG, "received notification for '%s' which isn't subscribed to.", qPrintable(name));
@@ -386,38 +387,37 @@ void ADriverPg::setLastQuerySingleRowMode()
     }
 }
 
-void ADriverPg::subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name)
+void ADriverPg::subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver)
 {
     if (m_subscribedNotifications.contains(name)) {
         qWarning(ASQL_PG) << "Already subscribed to notification" << name;
         return;
     }
 
-    exec(db, QStringLiteral("LISTEN %1").arg(name), {}, [=] (AResult &result) {
+    m_subscribedNotifications.insert(name, cb);
+    exec(db, QLatin1String("LISTEN ") + name, {}, [=] (AResult &result) {
         qDebug(ASQL_PG) << "subscribed" << result.error() << result.errorString();
-        m_subscribedNotifications.append(name);
-    }, this);
-}
+        if (result.error()) {
+            m_subscribedNotifications.remove(name);
+        }
+    }, receiver);
 
-void ADriverPg::onNotification(QSharedPointer<ADatabasePrivate> db, ANotificationFn cb, QObject *receiver)
-{
-    Q_UNUSED(db)
-    m_notificationFn = cb;
-    m_notificationPtrSet = receiver;
-    m_notificationPtr = receiver;
+    connect(receiver, &QObject::destroyed, this, [=] {
+        m_subscribedNotifications.remove(name);
+    });
 }
 
 QStringList ADriverPg::subscribedToNotifications() const
 {
-    return m_subscribedNotifications;
+    return m_subscribedNotifications.keys();
 }
 
-void ADriverPg::unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver)
+void ADriverPg::unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name)
 {
-    if (m_subscribedNotifications.removeOne(name)) {
-        exec(db, QStringLiteral("UNLISTEN %1").arg(name), {}, [=] (AResult &result) {
+    if (m_subscribedNotifications.remove(name)) {
+        exec(db, QLatin1String("UNLISTEN ") + name, {}, [=] (AResult &result) {
             qDebug(ASQL_PG) << "unsubscribed" << result.error() << result.errorString();
-        }, receiver);
+        }, this);
     }
 }
 

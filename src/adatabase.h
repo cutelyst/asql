@@ -202,9 +202,7 @@ public:
      * \param channel name of the channel
      * \param cb
      */
-    void subscribeToNotification(const QString &channel);
-
-    void onNotification(ANotificationFn cb, QObject *receiver = nullptr);
+    void subscribeToNotification(const QString &channel, ANotificationFn cb, QObject *receiver = nullptr);
 
     /**
      * @brief subscribedToNotifications
@@ -221,7 +219,7 @@ public:
      *
      * \param channel name of the channel
      */
-    void unsubscribeFromNotification(const QString &channel, QObject *receiver = nullptr);
+    void unsubscribeFromNotification(const QString &channel);
 
     ADatabase &operator =(const ADatabase &copy);
 

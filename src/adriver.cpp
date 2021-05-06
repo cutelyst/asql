@@ -118,15 +118,10 @@ void ADriver::setLastQuerySingleRowMode()
 
 }
 
-void ADriver::subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name)
+void ADriver::subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver)
 {
     Q_UNUSED(db)
     Q_UNUSED(name)
-}
-
-void ADriver::onNotification(QSharedPointer<ADatabasePrivate> db, ANotificationFn cb, QObject *receiver)
-{
-    Q_UNUSED(db)
     Q_UNUSED(cb)
     Q_UNUSED(receiver)
 }
@@ -136,11 +131,10 @@ QStringList ADriver::subscribedToNotifications() const
     return {};
 }
 
-void ADriver::unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver)
+void ADriver::unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name)
 {
     Q_UNUSED(db)
     Q_UNUSED(name)
-    Q_UNUSED(receiver)
 }
 
 #include "moc_adriver.cpp"

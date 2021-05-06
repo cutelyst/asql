@@ -103,10 +103,9 @@ public:
 
     void setLastQuerySingleRowMode() override;
 
-    void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name) override;
-    void onNotification(QSharedPointer<ADatabasePrivate> db, ANotificationFn cb, QObject *receiver) override;
+    void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver) override;
     QStringList subscribedToNotifications() const override;
-    void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver) override;
+    void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name) override;
 
 private:
     inline void queryConstructed(APGQuery &pgQuery);
@@ -125,9 +124,7 @@ private:
     bool m_queryRunning = false;
     bool m_notificationPtrSet = false;
     std::function<void (ADatabase::State, const QString &)> m_stateChangedCb;
-    ANotificationFn m_notificationFn;
-    QPointer<QObject> m_notificationPtr;
-    QStringList m_subscribedNotifications;
+    QHash<QString, ANotificationFn> m_subscribedNotifications;
     QQueue<APGQuery> m_queuedQueries;
     QSocketNotifier *m_writeNotify = nullptr;
     QSocketNotifier *m_readNotify = nullptr;

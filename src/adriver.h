@@ -42,10 +42,9 @@ public:
 
     virtual void setLastQuerySingleRowMode();
 
-    virtual void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name);
-    virtual void onNotification(QSharedPointer<ADatabasePrivate> db, ANotificationFn cb, QObject *receiver);
+    virtual void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver);
     virtual QStringList subscribedToNotifications() const;
-    virtual void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, QObject *receiver);
+    virtual void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name);
 
 private:
     QString m_info;

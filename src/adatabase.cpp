@@ -126,16 +126,10 @@ void ADatabase::setLastQuerySingleRowMode()
     d->driver->setLastQuerySingleRowMode();
 }
 
-void ADatabase::subscribeToNotification(const QString &channel)
+void ADatabase::subscribeToNotification(const QString &channel, ANotificationFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->driver->subscribeToNotification(d, channel);
-}
-
-void ADatabase::onNotification(ANotificationFn cb, QObject *receiver)
-{
-    Q_ASSERT(d);
-    d->driver->onNotification(d, cb, receiver);
+    d->driver->subscribeToNotification(d, channel, cb, receiver);
 }
 
 QStringList ADatabase::subscribedToNotifications() const
@@ -144,10 +138,10 @@ QStringList ADatabase::subscribedToNotifications() const
     return d->driver->subscribedToNotifications();
 }
 
-void ADatabase::unsubscribeFromNotification(const QString &channel, QObject *receiver)
+void ADatabase::unsubscribeFromNotification(const QString &channel)
 {
     Q_ASSERT(d);
-    d->driver->unsubscribeFromNotification(d, channel, receiver);
+    d->driver->unsubscribeFromNotification(d, channel);
 }
 
 ADatabase &ADatabase::operator =(const ADatabase &copy)
