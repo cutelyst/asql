@@ -199,3 +199,21 @@ QDate AResult::AColumn::toDate() const  { return d->toDate(row, column); }
 QTime AResult::AColumn::toTime() const  { return d->toTime(row, column); }
 
 QDateTime AResult::AColumn::toDateTime() const  { return d->toDateTime(row, column); }
+
+QVariantHash AResult::ARow::hash() const
+{
+    QVariantHash ret;
+    for (int i = 0; i < d->fields(); ++i) {
+        ret.insert(d->fieldName(i), value(i));
+    }
+    return ret;
+}
+
+QJsonObject AResult::ARow::jsonObject() const
+{
+    QJsonObject ret;
+    for (int i = 0; i < d->fields(); ++i) {
+        ret.insert(d->fieldName(i), QJsonValue::fromVariant(value(i)));
+    }
+    return ret;
+}

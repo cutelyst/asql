@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -131,10 +131,23 @@ public:
 
         explicit inline ARow(QSharedPointer<AResultPrivate> data, int index) : d(data), row(index) { }
 
+        /*!
+         * \brief hash returns the row as a QHash object
+         * \return
+         */
+        QVariantHash hash() const;
+
+        /*!
+         * \brief jsonObject returns the row as a JSON object
+         * \return
+         */
+        QJsonObject jsonObject() const;
+
         inline int at() const { return row; }
         inline QVariant value(int column) const { return d->value(row, column); }
         inline QVariant value(const QString &name) const { return d->value(row, d->indexOfField(name)); }
         inline QVariant value(QLatin1String name) const { return d->value(row, d->indexOfField(name)); }
+        inline QVariant value(QStringView name) const { return d->value(row, d->indexOfField(name)); }
         inline AColumn operator[](int column) const { return AColumn(d, row, column); }
         inline AColumn operator[](const QString &name) const { return AColumn(d, row, d->indexOfField(name)); }
         inline AColumn operator[](QLatin1String name) const { return AColumn(d, row, d->indexOfField(name)); }
