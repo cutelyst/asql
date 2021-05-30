@@ -34,13 +34,13 @@ ADatabase::~ADatabase()
 
 bool ADatabase::isValid()
 {
-    return !d.isNull();
+    return d != nullptr;
 }
 
 void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
 {
-    if (d.isNull()) {
-        d = QSharedPointer<ADatabasePrivate>(new ADatabasePrivate(QString()));
+    if (!d) {
+        d = std::shared_ptr<ADatabasePrivate>(new ADatabasePrivate(QString()));
     }
 
     if (d->driver->state() == ADatabase::Disconnected) {

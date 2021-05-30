@@ -6,8 +6,6 @@
 #ifndef ATRANSACTION_H
 #define ATRANSACTION_H
 
-#include <QSharedPointer>
-
 #include <adatabase.h>
 #include <aqsqlexports.h>
 
@@ -53,7 +51,7 @@ public:
     void rollback(AResultFn cb = {}, QObject *receiver = nullptr);
 
 private:
-    QSharedPointer<ATransactionPrivate> d;
+    std::shared_ptr<ATransactionPrivate> d;
 };
 
 #endif // ATRANSACTION_H

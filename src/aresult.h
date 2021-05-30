@@ -7,7 +7,7 @@
 #define ARESULT_H
 
 #include <QVariant>
-#include <QSharedPointer>
+#include <memory>
 
 #include <aqsqlexports.h>
 
@@ -46,7 +46,7 @@ class ASQL_EXPORT AResult
 {
 public:
     AResult();
-    AResult(const QSharedPointer<AResultPrivate> &priv);
+    AResult(const std::shared_ptr<AResultPrivate> &priv);
     AResult(const AResult &other);
     virtual ~AResult();
 
@@ -103,11 +103,11 @@ public:
 
     class AColumn {
     public:
-        QSharedPointer<AResultPrivate> d;
+        std::shared_ptr<AResultPrivate> d;
         int row;
         int column;
 
-        explicit inline AColumn(QSharedPointer<AResultPrivate> data, int _row, int _column) : d(data), row(_row), column(_column) { }
+        explicit inline AColumn(std::shared_ptr<AResultPrivate> data, int _row, int _column) : d(data), row(_row), column(_column) { }
 
         inline QString fieldName() const { return d->fieldName(column); }
 
@@ -126,10 +126,10 @@ public:
 
     class ARow {
     public:
-        QSharedPointer<AResultPrivate> d;
+        std::shared_ptr<AResultPrivate> d;
         int row;
 
-        explicit inline ARow(QSharedPointer<AResultPrivate> data, int index) : d(data), row(index) { }
+        explicit inline ARow(std::shared_ptr<AResultPrivate> data, int index) : d(data), row(index) { }
 
         /*!
          * \brief hash returns the row as a QHash object
@@ -156,14 +156,14 @@ public:
 
     class const_iterator {
     public:
-        QSharedPointer<AResultPrivate> d;
+        std::shared_ptr<AResultPrivate> d;
         int i;
-        typedef std::random_access_iterator_tag  iterator_category;
-        typedef ARow value_type;
-        typedef ARow reference;
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type = ARow;
+        using reference = ARow;
 
         inline const_iterator() : i(0) { }
-        explicit inline const_iterator(QSharedPointer<AResultPrivate> data, int index) : d(data), i(index) { }
+        explicit inline const_iterator(std::shared_ptr<AResultPrivate> data, int index) : d(data), i(index) { }
         inline const_iterator(const const_iterator &o) : d(o.d), i(o.i) {}
 
         inline ARow operator*() const { return ARow(d, i); }
@@ -204,7 +204,7 @@ public:
     inline ARow operator[](int row) const { return ARow(d, row); }
 
 protected:
-    QSharedPointer<AResultPrivate> d;
+    std::shared_ptr<AResultPrivate> d;
 };
 
 Q_DECLARE_METATYPE(AResult)

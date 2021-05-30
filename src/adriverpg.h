@@ -16,7 +16,7 @@
 #include <QPointer>
 #include <QHash>
 
-typedef struct pg_conn PGconn;
+using PGconn = struct pg_conn;
 
 class AResultPg : public AResultPrivate
 {
@@ -57,14 +57,14 @@ public:
 class APGQuery
 {
 public:
-    APGQuery() : result(QSharedPointer<AResultPg>(new AResultPg))
+    APGQuery() : result(std::shared_ptr<AResultPg>(new AResultPg))
     { }
     QByteArray query;
     APreparedQuery preparedQuery;
-    QSharedPointer<AResultPg> result;
+    std::shared_ptr<AResultPg> result;
     QVariantList params;
     AResultFn cb;
-    QSharedPointer<ADatabasePrivate> db;
+    std::shared_ptr<ADatabasePrivate> db;
     QPointer<QObject> receiver;
     QObject *checkReceiver;
     bool preparing = false;
@@ -93,19 +93,19 @@ public:
     ADatabase::State state() const override;
     void onStateChanged(std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
-    void begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
-    void commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
-    void rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
+    void begin(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
+    void commit(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
+    void rollback(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
 
-    void exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
-    void exec(QSharedPointer<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
-    void exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    void exec(std::shared_ptr<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    void exec(std::shared_ptr<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    void exec(std::shared_ptr<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
 
     void setLastQuerySingleRowMode() override;
 
-    void subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver) override;
+    void subscribeToNotification(std::shared_ptr<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver) override;
     QStringList subscribedToNotifications() const override;
-    void unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name) override;
+    void unsubscribeFromNotification(std::shared_ptr<ADatabasePrivate> db, const QString &name) override;
 
 private:
     inline void queryConstructed(APGQuery &pgQuery);

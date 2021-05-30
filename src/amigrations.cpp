@@ -44,18 +44,18 @@ void AMigrations::load(const ADatabase &db, const QString &name)
 {
     d_ptr->name = name;
     d_ptr->db = db;
-    d_ptr->db.exec(QStringLiteral(R"V0G0N(
-                                  CREATE TABLE IF NOT EXISTS asql_migrations (
-                                  name    text primary key,
-                                  version bigint not null check (version >= 0)
-                                  )
-                                  )V0G0N"),
+    d_ptr->db.exec(uR"V0G0N(
+CREATE TABLE IF NOT EXISTS asql_migrations (
+name text primary key,
+version bigint not null check (version >= 0)
+)
+)V0G0N",
                    [=] (AResult &result) {
         if (result.error()) {
             qDebug(ASQL_MIG) << "Create migrations table" << result.errorString();
         }
 
-        d_ptr->db.exec(QStringLiteral("SELECT version FROM asql_migrations WHERE name=$1"),
+        d_ptr->db.exec(u"SELECT version FROM asql_migrations WHERE name=$1",
                        {name}, [=] (AResult &result2) {
             if (result2.error()) {
                 Q_EMIT ready(true, result2.errorString());
@@ -116,10 +116,10 @@ void AMigrations::fromString(const QString &text)
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 2))
             const QStringView way = match.capturedView(2);
             qDebug(ASQL_MIG) << "CAPTURE" << way << match.capturedView(1).toInt();
-            if (way.compare(QStringLiteral("up"), Qt::CaseInsensitive) == 0) {
+            if (way.compare(u"up", Qt::CaseInsensitive) == 0) {
                 upWay = true;
                 version = match.capturedView(1).toInt();
-            } else if (way.compare(QStringLiteral("down"), Qt::CaseInsensitive) == 0) {
+            } else if (way.compare(u"down", Qt::CaseInsensitive) == 0) {
                 upWay = false;
                 version = match.capturedView(1).toInt();
             } else {
@@ -128,10 +128,10 @@ void AMigrations::fromString(const QString &text)
 #else
             const QStringRef way = match.capturedRef(2);
             qDebug(ASQL_MIG) << "CAPTURE" << way << match.capturedRef(1).toInt();
-            if (way.compare(QStringLiteral("up"), Qt::CaseInsensitive) == 0) {
+            if (way.compare(QLatin1String("up"), Qt::CaseInsensitive) == 0) {
                 upWay = true;
                 version = match.capturedRef(1).toInt();
-            } else if (way.compare(QStringLiteral("down"), Qt::CaseInsensitive) == 0) {
+            } else if (way.compare(QLatin1String("down"), Qt::CaseInsensitive) == 0) {
                 upWay = false;
                 version = match.capturedRef(1).toInt();
             } else {

@@ -45,7 +45,7 @@ bool ADriver::isOpen() const
     return false;
 }
 
-void ADriver::begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *receiver)
+void ADriver::begin(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, QObject *receiver)
 {
     Q_UNUSED(db)
     Q_UNUSED(receiver)
@@ -55,18 +55,7 @@ void ADriver::begin(QSharedPointer<ADatabasePrivate> db, AResultFn cb, QObject *
     }
 }
 
-void ADriver::commit(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver)
-{
-    Q_UNUSED(db)
-    Q_UNUSED(now)
-    Q_UNUSED(receiver)
-    if (cb) {
-        AResult result;
-        cb(result);
-    }
-}
-
-void ADriver::rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver)
+void ADriver::commit(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver)
 {
     Q_UNUSED(db)
     Q_UNUSED(now)
@@ -77,7 +66,18 @@ void ADriver::rollback(QSharedPointer<ADatabasePrivate> db, AResultFn cb, bool n
     }
 }
 
-void ADriver::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriver::rollback(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver)
+{
+    Q_UNUSED(db)
+    Q_UNUSED(now)
+    Q_UNUSED(receiver)
+    if (cb) {
+        AResult result;
+        cb(result);
+    }
+}
+
+void ADriver::exec(std::shared_ptr<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_UNUSED(db)
     Q_UNUSED(query)
@@ -89,7 +89,7 @@ void ADriver::exec(QSharedPointer<ADatabasePrivate> db, const QString &query, co
     }
 }
 
-void ADriver::exec(QSharedPointer<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriver::exec(std::shared_ptr<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_UNUSED(db)
     Q_UNUSED(query)
@@ -101,7 +101,7 @@ void ADriver::exec(QSharedPointer<ADatabasePrivate> db, QStringView query, const
     }
 }
 
-void ADriver::exec(QSharedPointer<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriver::exec(std::shared_ptr<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_UNUSED(db)
     Q_UNUSED(query)
@@ -118,7 +118,7 @@ void ADriver::setLastQuerySingleRowMode()
 
 }
 
-void ADriver::subscribeToNotification(QSharedPointer<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver)
+void ADriver::subscribeToNotification(std::shared_ptr<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver)
 {
     Q_UNUSED(db)
     Q_UNUSED(name)
@@ -131,7 +131,7 @@ QStringList ADriver::subscribedToNotifications() const
     return {};
 }
 
-void ADriver::unsubscribeFromNotification(QSharedPointer<ADatabasePrivate> db, const QString &name)
+void ADriver::unsubscribeFromNotification(std::shared_ptr<ADatabasePrivate> db, const QString &name)
 {
     Q_UNUSED(db)
     Q_UNUSED(name)

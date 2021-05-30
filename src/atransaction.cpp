@@ -36,7 +36,7 @@ ATransaction::ATransaction(const ADatabase &db)
 {
     auto priv = new ATransactionPrivate;
     priv->db = db;
-    d = QSharedPointer<ATransactionPrivate>(priv);
+    d = std::shared_ptr<ATransactionPrivate>(priv);
 }
 
 ATransaction::ATransaction(const ATransaction &other)
@@ -57,7 +57,7 @@ ATransaction &ATransaction::operator =(const ATransaction &copy)
 
 void ATransaction::begin(AResultFn cb, QObject *receiver)
 {
-    Q_ASSERT(!d.isNull());
+    Q_ASSERT(!d);
     if (!d->running) {
         d->running = true;
         d->db.begin(cb, receiver);
@@ -68,7 +68,7 @@ void ATransaction::begin(AResultFn cb, QObject *receiver)
 
 void ATransaction::commit(AResultFn cb, QObject *receiver)
 {
-    Q_ASSERT(!d.isNull());
+    Q_ASSERT(!d);
     if (d->running) {
         d->running = false;
         d->db.commit(true, cb, receiver);
@@ -79,7 +79,7 @@ void ATransaction::commit(AResultFn cb, QObject *receiver)
 
 void ATransaction::rollback(AResultFn cb, QObject *receiver)
 {
-    Q_ASSERT(!d.isNull());
+    Q_ASSERT(!d);
     if (d->running) {
         d->running = false;
         d->db.rollback(true, cb, receiver);

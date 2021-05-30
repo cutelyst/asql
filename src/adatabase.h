@@ -7,10 +7,10 @@
 #define ADATABASE_H
 
 #include <QObject>
-#include <QSharedPointer>
 #include <QVariantList>
 
 #include <functional>
+#include <memory>
 
 #include <aqsqlexports.h>
 
@@ -24,8 +24,8 @@ public:
     bool self;
 };
 
-typedef std::function<void(AResult &row)> AResultFn;
-typedef std::function<void(const ADatabaseNotification &payload)> ANotificationFn;
+using AResultFn = std::function<void(AResult &row)>;
+using ANotificationFn = std::function<void(const ADatabaseNotification &payload)>;
 
 class APreparedQuery;
 class ADatabasePrivate;
@@ -225,7 +225,7 @@ public:
 
 protected:
     friend class APool;
-    QSharedPointer<ADatabasePrivate> d;
+    std::shared_ptr<ADatabasePrivate> d;
 };
 
 #endif // ADATABASE_H

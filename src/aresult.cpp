@@ -25,12 +25,12 @@ bool AResult::lastResulSet() const
 
 bool AResult::error() const
 {
-    return d.isNull() || d->error();
+    return d == nullptr || d->error();
 }
 
 QString AResult::errorString() const
 {
-    return !d.isNull() ? d->errorString() : QStringLiteral("INVALID DRIVER");
+    return !d ? d->errorString() : QStringLiteral("INVALID DRIVER");
 }
 
 int AResult::size() const
@@ -157,7 +157,7 @@ bool AResult::operator==(const AResult &other) const
     return d == other.d;
 }
 
-AResult::AResult(const QSharedPointer<AResultPrivate> &priv) : d(priv)
+AResult::AResult(const std::shared_ptr<AResultPrivate> &priv) : d(priv)
 {
 
 }

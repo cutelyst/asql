@@ -60,7 +60,7 @@ void APool::pushDatabaseBack(const QString &connectionName, ADatabasePrivate *pr
             }
 
             ADatabase db;
-            db.d = QSharedPointer<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
+            db.d = std::shared_ptr<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
                     pushDatabaseBack(connectionName, priv);
             });
             client.cb(db);
@@ -92,14 +92,14 @@ ADatabase APool::database(const QString &connectionName)
             } else {
                 ++iPool.connectionCount;
                 qDebug(ASQL_POOL) << "Creating a database connection for pool" << connectionName << iPool.connectionInfo;
-                db.d = QSharedPointer<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
+                db.d = std::shared_ptr<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
                     pushDatabaseBack(connectionName, priv);
                 });
             }
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << connectionName;
             ADatabasePrivate *priv = iPool.pool.takeLast();
-            db.d = QSharedPointer<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
+            db.d = std::shared_ptr<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
                 pushDatabaseBack(connectionName, priv);
             });
         }
@@ -128,13 +128,13 @@ void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, co
             }
             ++iPool.connectionCount;
             qDebug(ASQL_POOL) << "Creating a database connection for pool" << connectionName << iPool.connectionInfo;
-            db.d = QSharedPointer<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
+            db.d = std::shared_ptr<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
                     pushDatabaseBack(connectionName, priv);
             });
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << connectionName;
             ADatabasePrivate *priv = iPool.pool.takeLast();
-            db.d = QSharedPointer<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
+            db.d = std::shared_ptr<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
                     pushDatabaseBack(connectionName, priv);
             });
         }
