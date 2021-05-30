@@ -131,12 +131,18 @@ int main(int argc, char *argv[])
                          << qPrintable(mig->sqlFor(mig->active(), newVersion)) << std::endl;
             }
 
-            if (!confirm) {
-                std::cout << qPrintable(QCoreApplication::translate("main", "Do you wanto to migrate the database from %1 to %2? [y/n] ")
-                                        .arg(QString::number(mig->active())).arg(QString::number(newVersion)));
+            if (!confirm || newVersion < mig->active()) {
+                if (newVersion < mig->active()) {
+                    std::cout << qPrintable(QCoreApplication::translate("main", "Do you wanto to migrate the database from %1 to %2? [yes/no] ")
+                                            .arg(QString::number(mig->active()), QString::number(newVersion)));
+                } else {
+                    std::cout << qPrintable(QCoreApplication::translate("main", "Do you wanto to migrate the database from %1 to %2? [y/n] ")
+                                            .arg(QString::number(mig->active()), QString::number(newVersion)));
+                }
+
                 std::string value;
                 std::cin >> value;
-                if (value != "y") {
+                if ((newVersion < mig->active() && value != "yes") || (newVersion > mig->active() && value != "y")) {
                     qApp->exit(8);
                     return;
                 }
