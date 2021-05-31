@@ -153,7 +153,7 @@ public:
      * \param query
      * \param cb
      */
-    void execPrepared(const APreparedQuery &query, AResultFn cb, QObject *receiver = nullptr);
+    void exec(const APreparedQuery &query, AResultFn cb, QObject *receiver = nullptr);
 
     /*!
      * \brief exec executes a \param query against this database connection,
@@ -180,7 +180,7 @@ public:
      * \param query
      * \param cb
      */
-    void execPrepared(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
+    void exec(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
 
     /**
      * @brief setSingleRowMode

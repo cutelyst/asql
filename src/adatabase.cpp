@@ -96,7 +96,7 @@ void ADatabase::exec(QStringView query, AResultFn cb, QObject *receiver)
     d->driver->exec(d, query, QVariantList(), cb, receiver);
 }
 
-void ADatabase::execPrepared(const APreparedQuery &query, AResultFn cb, QObject *receiver)
+void ADatabase::exec(const APreparedQuery &query, AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
     d->driver->exec(d, query, QVariantList(), cb, receiver);
@@ -114,7 +114,7 @@ void ADatabase::exec(QStringView query, const QVariantList &params, AResultFn cb
     d->driver->exec(d, query, params, cb, receiver);
 }
 
-void ADatabase::execPrepared(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADatabase::exec(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
     d->driver->exec(d, query, params, cb, receiver);
