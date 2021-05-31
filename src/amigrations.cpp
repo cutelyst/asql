@@ -45,7 +45,7 @@ void AMigrations::load(const ADatabase &db, const QString &name)
     d_ptr->name = name;
     d_ptr->db = db;
     d_ptr->db.exec(uR"V0G0N(
-CREATE TABLE IF NOT EXISTS asql_migrations (
+CREATE TABLE IF NOT EXISTS public.asql_migrations (
 name text primary key,
 version bigint not null check (version >= 0)
 )
@@ -55,7 +55,7 @@ version bigint not null check (version >= 0)
             qDebug(ASQL_MIG) << "Create migrations table" << result.errorString();
         }
 
-        d_ptr->db.exec(u"SELECT version FROM asql_migrations WHERE name=$1",
+        d_ptr->db.exec(u"SELECT version FROM public.asql_migrations WHERE name=$1",
                        {name}, [=] (AResult &result2) {
             if (result2.error()) {
                 Q_EMIT ready(true, result2.errorString());
@@ -212,7 +212,7 @@ void AMigrations::migrate(int version, std::function<void(bool, const QString &)
             return;
         }
 
-        d->db.exec(QStringLiteral("SELECT version FROM asql_migrations WHERE name=$1 FOR UPDATE"),
+        d->db.exec(QStringLiteral("SELECT version FROM public.asql_migrations WHERE name=$1 FOR UPDATE"),
         {d->name}, [=] (AResult &result) {
             if (result.error()) {
                 cb(true, result.errorString());
@@ -286,7 +286,7 @@ std::pair<int, QString> AMigrationsPrivate::nextQuery(int versionFrom, int versi
                 ret = {
                     it.key(),
                     QStringLiteral(R"V0G0N(
-                    INSERT INTO asql_migrations VALUES ('%1', %2)
+                    INSERT INTO public.asql_migrations VALUES ('%1', %2)
                     ON CONFLICT (name) DO UPDATE
                     SET version=EXCLUDED.version
                     RETURNING version;
@@ -305,7 +305,7 @@ std::pair<int, QString> AMigrationsPrivate::nextQuery(int versionFrom, int versi
                 ret = {
                     it.key() - 1,
                     QStringLiteral(R"V0G0N(
-                    INSERT INTO asql_migrations VALUES ('%1', %2)
+                    INSERT INTO public.asql_migrations VALUES ('%1', %2)
                     ON CONFLICT (name) DO UPDATE
                     SET version=EXCLUDED.version
                     RETURNING version;
