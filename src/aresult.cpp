@@ -25,12 +25,12 @@ bool AResult::lastResulSet() const
 
 bool AResult::error() const
 {
-    return d == nullptr || d->error();
+    return !d || d->error();
 }
 
 QString AResult::errorString() const
 {
-    return !d ? d->errorString() : QStringLiteral("INVALID DRIVER");
+    return !d ? QStringLiteral("INVALID DRIVER") : d->errorString();
 }
 
 int AResult::size() const

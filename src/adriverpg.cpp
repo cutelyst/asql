@@ -396,7 +396,7 @@ void ADriverPg::subscribeToNotification(std::shared_ptr<ADatabasePrivate> db, co
 
     m_subscribedNotifications.insert(name, cb);
     exec(db, QLatin1String("LISTEN ") + name, {}, [=] (AResult &result) {
-        qDebug(ASQL_PG) << "subscribed" << result.error() << result.errorString();
+        qDebug(ASQL_PG) << "subscribed" << !result.error() << result.errorString();
         if (result.error()) {
             m_subscribedNotifications.remove(name);
         }
@@ -416,7 +416,7 @@ void ADriverPg::unsubscribeFromNotification(std::shared_ptr<ADatabasePrivate> db
 {
     if (m_subscribedNotifications.remove(name)) {
         exec(db, QLatin1String("UNLISTEN ") + name, {}, [=] (AResult &result) {
-            qDebug(ASQL_PG) << "unsubscribed" << result.error() << result.errorString();
+            qDebug(ASQL_PG) << "unsubscribed" << !result.error() << result.errorString();
         }, this);
     }
 }
