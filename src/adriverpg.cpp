@@ -808,7 +808,7 @@ QVariant AResultPg::value(int row, int column) const
 {
     if (column >= PQnfields(m_result)) {
         qWarning(ASQL_PG, "column %d out of range", column);
-        return QVariant();
+        return {};
     }
 
     int ptype = PQftype(m_result, column);
@@ -854,21 +854,21 @@ QVariant AResultPg::value(int row, int column) const
     }
     case QVariant::Date:
         if (val[0] == '\0') {
-            return QVariant(QDate());
+            return QDate();
         } else {
 #ifndef QT_NO_DATESTRING
-            return QVariant(QDate::fromString(QString::fromLatin1(val), Qt::ISODate));
+            return QDate::fromString(QString::fromLatin1(val), Qt::ISODate);
 #else
-            return QVariant(QString::fromLatin1(val));
+            return QString::fromLatin1(val);
 #endif
         }
     case QVariant::Time: {
         const QString str = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
         if (str.isEmpty())
-            return QVariant(QTime());
+            return QTime();
         else
-            return QVariant(QTime::fromString(str, Qt::ISODate));
+            return QTime::fromString(str, Qt::ISODate);
 #else
         return QVariant(str);
 #endif
@@ -877,14 +877,14 @@ QVariant AResultPg::value(int row, int column) const
         QString dtval = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
         if (dtval.length() < 10) {
-            return QVariant(QDateTime());
+            return QDateTime();
         } else {
             QChar sign = dtval[dtval.size() - 3];
             if (sign == QLatin1Char('-') || sign == QLatin1Char('+')) dtval += QLatin1String(":00");
-            return QVariant(QDateTime::fromString(dtval, Qt::ISODate).toLocalTime());
+            return QDateTime::fromString(dtval, Qt::ISODate);
         }
 #else
-        return QVariant(dtval);
+        return dtval;
 #endif
     }
     case QVariant::ByteArray: {
@@ -898,7 +898,7 @@ QVariant AResultPg::value(int row, int column) const
     case QVariant::Invalid:
         qWarning(ASQL_PG, "unknown data type");
     }
-    return QVariant();
+    return {};
 }
 
 bool AResultPg::toBool(int row, int column) const
@@ -949,12 +949,12 @@ QDate AResultPg::toDate(int row, int column) const
 {
     const char *val = PQgetvalue(m_result, row, column);
     if (val[0] == '\0') {
-        return QDate();
+        return {};
     } else {
 #ifndef QT_NO_DATESTRING
         return QDate::fromString(QString::fromLatin1(val), Qt::ISODate);
 #else
-        return QDate();
+        return {};
 #endif
     }
 }
@@ -965,11 +965,11 @@ QTime AResultPg::toTime(int row, int column) const
     const QString str = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
     if (str.isEmpty())
-        return QTime();
+        return {};
     else
         return QTime::fromString(str, Qt::ISODate);
 #else
-    return QTime();
+    return {};
 #endif
 }
 
@@ -979,14 +979,14 @@ QDateTime AResultPg::toDateTime(int row, int column) const
     QString dtval = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
     if (dtval.length() < 10) {
-        return QDateTime();
+        return {};
     } else {
         QChar sign = dtval[dtval.size() - 3];
         if (sign == QLatin1Char('-') || sign == QLatin1Char('+')) dtval += QLatin1String(":00");
-        return QDateTime::fromString(dtval, Qt::ISODate).toLocalTime();
+        return QDateTime::fromString(dtval, Qt::ISODate);
     }
 #else
-    return QDateTime();
+    return {};
 #endif
 }
 
