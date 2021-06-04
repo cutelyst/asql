@@ -18,7 +18,7 @@
 
 using PGconn = struct pg_conn;
 
-class AResultPg : public AResultPrivate
+class AResultPg final : public AResultPrivate
 {
 public:
     AResultPg();
@@ -32,6 +32,7 @@ public:
     int fields() const override;
     int numRowsAffected() const override;
 
+    int indexOfField(QLatin1String name) const override;
     QString fieldName(int column) const override;
     QVariant value(int row, int column) const override;
 

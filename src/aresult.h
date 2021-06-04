@@ -24,9 +24,9 @@ public:
     virtual int fields() const = 0;
     virtual int numRowsAffected() const = 0;
 
-    int indexOfField(const QString &name) const;
-    int indexOfField(QStringView name) const;
-    int indexOfField(QLatin1String name) const;
+    virtual int indexOfField(const QString &name) const;
+    virtual int indexOfField(QStringView name) const;
+    virtual int indexOfField(QLatin1String name) const;
     virtual QString fieldName(int column) const = 0;
     virtual QVariant value(int row, int column) const = 0;
 

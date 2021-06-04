@@ -752,6 +752,16 @@ int AResultPg::numRowsAffected() const
     return QString::fromLatin1(PQcmdTuples(m_result)).toInt();
 }
 
+int AResultPg::indexOfField(QLatin1String name) const
+{
+    for (int i = 0; i < fields(); ++i) {
+        if (qstrcmp(name.data(), PQfname(m_result, i)) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 QString AResultPg::fieldName(int column) const
 {
     return QString::fromUtf8(PQfname(m_result, column));

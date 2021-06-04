@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 cmake_minimum_required(VERSION 3.5)
-project(libasql VERSION 0.40.0 LANGUAGES CXX)
+project(libasql VERSION 0.41.0 LANGUAGES CXX)
 
 if (POLICY CMP0071)
   cmake_policy(SET CMP0071 NEW)
