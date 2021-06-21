@@ -42,6 +42,7 @@ public:
     quint64 toULongLong(int row, int column) const override;
     double toDouble(int row, int column) const override;
     QString toString(int row, int column) const override;
+    std::string toStdString(int row, int column) const override;
     QDate toDate(int row, int column) const override;
     QTime toTime(int row, int column) const override;
     QDateTime toDateTime(int row, int column) const override;

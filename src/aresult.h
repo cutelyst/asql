@@ -36,6 +36,7 @@ public:
     virtual quint64 toULongLong(int row, int column) const = 0;
     virtual double toDouble(int row, int column) const = 0;
     virtual QString toString(int row, int column) const = 0;
+    virtual std::string toStdString(int row, int column) const = 0;
     virtual QDate toDate(int row, int column) const = 0;
     virtual QTime toTime(int row, int column) const = 0;
     virtual QDateTime toDateTime(int row, int column) const = 0;
@@ -118,6 +119,7 @@ public:
         inline quint64 toULongLong() const { return d->toULongLong(row, column); };
         inline double toDouble() const { return d->toDouble(row, column); };
         inline QString toString() const  { return d->toString(row, column); }
+        inline std::string toStdString() const  { return d->toStdString(row, column); }
         QDate toDate() const;
         QTime toTime() const;
         QDateTime toDateTime() const;

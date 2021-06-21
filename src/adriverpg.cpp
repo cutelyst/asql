@@ -944,11 +944,21 @@ double AResultPg::toDouble(int row, int column) const
 QString AResultPg::toString(int row, int column) const
 {
     if (PQgetisnull(m_result, row, column) == 1) {
-        return QString();
+        return {};
     }
 
     const char *val = PQgetvalue(m_result, row, column);
     return QString::fromUtf8(val);
+}
+
+std::string AResultPg::toStdString(int row, int column) const
+{
+    if (PQgetisnull(m_result, row, column) == 1) {
+        return {};
+    }
+
+    const char *val = PQgetvalue(m_result, row, column);
+    return std::string(val);
 }
 
 QDate AResultPg::toDate(int row, int column) const
