@@ -188,8 +188,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                 if (pgQuery.prepared && pgQuery.preparing) {
                                     if (pgQuery.result->error()) {
                                         // PREPARE OR PREPARED QUERY ERROR
-                                        m_queuedQueries.dequeue();
-                                        pgQuery.done();
+                                        m_queuedQueries.dequeue().done();
                                         nextQuery(); // Must be after it's done so that a FORCED COMMIT/ROLLBACK can get in before next queries
                                     } else {
                                         // Query prepared
@@ -199,8 +198,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                         nextQuery();
                                     }
                                 } else {
-                                    APGQuery pgQuery = m_queuedQueries.dequeue();
-                                    pgQuery.done();
+                                    m_queuedQueries.dequeue().done();
                                     nextQuery(); // Must be after it's done so that a FORCED COMMIT/ROLLBACK can get in before next queries
                                 }
                                 break;
@@ -503,10 +501,9 @@ void ADriverPg::doExec(APGQuery &pgQuery)
         }
         cmdFlush();
     } else {
-        m_queuedQueries.dequeue();
         pgQuery.result->m_error = true;
         pgQuery.result->m_errorString = QString::fromLocal8Bit(PQerrorMessage(m_conn));
-        pgQuery.done();
+        m_queuedQueries.dequeue().done();
     }
 }
 
@@ -688,8 +685,7 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
     } else {
         pgQuery.result->m_error = true;
         pgQuery.result->m_errorString = QString::fromLocal8Bit(PQerrorMessage(m_conn));
-        pgQuery.done();
-        m_queuedQueries.dequeue();
+        m_queuedQueries.dequeue().done();
     }
 }
 
