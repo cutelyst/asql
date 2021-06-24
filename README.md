@@ -28,7 +28,7 @@ libraries are required as well.
 ## Usage
 
 ### Creating a Pool
-A connection pool is a convenient way to getting new connections without worrying about configuring it and it's lifetime, once you are done with it the connection returns to the pool. It's also possible to have a single database connection without it being attached to a pool, by creating ADatabase object directly and calling open().
+A connection pool is a convenient way of getting new connections without worrying about configuring it and it's lifetime, once you are done with it the connection returns to the pool. It's also possible to have a single database connection without it being attached to a pool, by creating ADatabase object directly and calling open().
 
 ```c++
 // No new connection is created at this moment
@@ -47,7 +47,7 @@ auto dbRO = APool::database("my_read_only_pool");
 ```
 
 ### Performing a query without params
-Please if you have user input values that you need to pass to your query do yourself a favour and pass it as parameters, thus reducing the risk of SQL injection attacks.  
+Please if you have user input values that you need to pass to your query, do yourself a favour and pass it as parameters, thus reducing the risk of SQL injection attacks.  
 ```c++
 {
     auto db = APool::database();
@@ -104,7 +104,7 @@ it holds an unique identification for your query, in order to make this easier o
 manually create a static APreparedQuery object or by having your query as a member of a class that isn't going to be deleted soon.
 ```c++
 // PostgreSQL uses numered place holders, and yes you can repeat them :)
-db.execPrepared(APreparedQueryLiteral(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
+db.exec(APreparedQueryLiteral(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
 {true, QStringLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
 [=] (AResult &result) {
     if (result.error()) {
