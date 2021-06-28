@@ -19,6 +19,7 @@ class ASQL_EXPORT ACache : public QObject
     Q_DECLARE_PRIVATE(ACache)
 public:
     explicit ACache(QObject *parent = nullptr);
+    virtual ~ACache();
 
     void setDatabasePool(const QString &poolName);
     void setDatabase(const ADatabase &db);

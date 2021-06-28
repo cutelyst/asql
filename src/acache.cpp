@@ -23,6 +23,7 @@ struct ACacheReceiverCb {
 
 struct ACacheValue {
     QVariantList args;
+    std::shared_ptr<QObject> cancellable;
     AResult result;
     std::vector<ACacheReceiverCb> receivers;
     qint64 hasResultTs = 0;
@@ -42,6 +43,8 @@ ACache::ACache(QObject *parent) : QObject(parent)
 {
 
 }
+
+ACache::~ACache() = default;
 
 void ACache::setDatabasePool(const QString &poolName)
 {
@@ -169,20 +172,24 @@ void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantL
     }
 
     qDebug(ASQL_CACHE) << "requesting data" << query;
-    ACacheValue value;
     ACacheReceiverCb receiverObj;
     receiverObj.cb = cb;
     receiverObj.receiver = receiver;
     receiverObj.checkReceiver = receiver;
-    value.args = params;
-    value.receivers.push_back(receiverObj);
-    d->cache.insert(query, value);
 
-    auto dbFn = [=] (AResult &result) {
+    auto cancellable = new QObject;
+
+    ACacheValue _value;
+    _value.args = params;
+    _value.cancellable = std::make_shared<QObject>(cancellable);
+    _value.receivers.push_back(receiverObj);
+    d->cache.insert(query, _value);
+
+    auto dbFn = [query, d, params] (AResult &result) {
         auto it = d->cache.find(query);
         while (it != d->cache.end() && it.key() == query) {
-            if (it.value().args == params) {
-                ACacheValue &value = it.value();
+            ACacheValue &value = it.value();
+            if (value.args == params) {
                 value.result = result;
                 value.hasResultTs = QDateTime::currentMSecsSinceEpoch();
                 qDebug(ASQL_CACHE) << "got request data, dispatching to" << value.receivers.size() << "receivers" << query;
@@ -206,9 +213,9 @@ void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantL
     }
 
     if (params.isEmpty()) {
-        db.exec(query, dbFn, this);
+        db.exec(query, dbFn, cancellable);
     } else {
-        db.exec(query, params, dbFn, this);
+        db.exec(query, params, dbFn, cancellable);
     }
 }
 
