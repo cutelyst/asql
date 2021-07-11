@@ -79,17 +79,17 @@ install(TARGETS ASqlQt${QT_VERSION_MAJOR}
 )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/asql-qt5.pc.in
-  ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt5.pc
+  ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}.pc
   @ONLY
 )
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt5.pc
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
 
-add_executable(asql-migration asql_migration.cpp)
-target_link_libraries(asql-migration
+add_executable(asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR} asql_migration.cpp)
+target_link_libraries(asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}
     PUBLIC
         Qt${QT_VERSION_MAJOR}::Core
         ASqlQt${QT_VERSION_MAJOR}::Core
 )
-install(TARGETS asql-migration DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR} DESTINATION ${CMAKE_INSTALL_BINDIR})

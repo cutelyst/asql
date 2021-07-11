@@ -90,22 +90,22 @@ include_directories(
 
 # cmake config files
 configure_file(${CMAKE_MODULE_PATH}/asqlqt5-config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt5Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}Config.cmake
     @ONLY
 )
 configure_file(${CMAKE_MODULE_PATH}/asqlqt5-config-version.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt5ConfigVersion.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}ConfigVersion.cmake
     @ONLY
 )
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt5Config.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt5ConfigVersion.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ASqlQt5/
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}ConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ASqlQt${QT_VERSION_MAJOR}/
 )
 
 install(EXPORT ASqlTargets
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ASqlQt5/
-    FILE ASql${PROJECT_VERSION_MAJOR}Qt5Targets.cmake
-    NAMESPACE ASqlQt5::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ASqlQt${QT_VERSION_MAJOR}/
+    FILE ASql${PROJECT_VERSION_MAJOR}Qt${QT_VERSION_MAJOR}Targets.cmake
+    NAMESPACE ASqlQt${QT_VERSION_MAJOR}::
     COMPONENT Devel
 )
 
