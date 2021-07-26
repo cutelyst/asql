@@ -43,6 +43,10 @@ int main(int argc, char *argv[])
         }, obj);
     }
 
+    APool::database().exec(u"SELECT now()", [] (AResult &result) {
+        qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.size();
+    }, obj);
+
     QTimer::singleShot(2000, [=] {
         qDebug() << "Delete Obj";
         delete obj;

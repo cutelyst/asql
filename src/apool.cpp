@@ -104,7 +104,7 @@ ADatabase APool::database(const QString &connectionName)
             });
         }
     } else {
-        qCritical(ASQL_POOL) << "Database connection NOT FOUND in pool" << connectionName;
+        qCritical(ASQL_POOL) << "Database pool NOT FOUND" << connectionName;
     }
     db.open();
     return db;
@@ -118,7 +118,7 @@ void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, co
         APoolInternal &iPool = it.value();
         if (iPool.pool.empty()) {
             if (iPool.maximuConnections && iPool.connectionCount >= iPool.maximuConnections) {
-                qInfo(ASQL_POOL) << "Maximum number of connections reached, reached" << connectionName << iPool.connectionCount << iPool.maximuConnections;
+                qInfo(ASQL_POOL) << "Maximum number of connections reached, queuing" << connectionName << iPool.connectionCount << iPool.maximuConnections;
                 APoolQueuedClient queued;
                 queued.cb = cb;
                 queued.receiver = receiver;
@@ -139,7 +139,7 @@ void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, co
             });
         }
     } else {
-        qCritical(ASQL_POOL) << "Database connection NOT FOUND in pool" << connectionName;
+        qCritical(ASQL_POOL) << "Database pool NOT FOUND" << connectionName;
     }
     db.open();
 
@@ -154,7 +154,7 @@ void APool::setDatabaseMaxIdleConnections(int max, const QString &connectionName
     if (it != m_connectionPool.end()) {
         it.value().maxIdleConnections = max;
     } else {
-        qCritical(ASQL_POOL) << "Database connection NOT FOUND in pool" << connectionName;
+        qCritical(ASQL_POOL) << "Failed to set maximum idle connections: Database pool NOT FOUND" << connectionName;
     }
 }
 
@@ -164,6 +164,6 @@ void APool::setDatabaseMaximumConnections(int max, const QString &connectionName
     if (it != m_connectionPool.end()) {
         it.value().maximuConnections = max;
     } else {
-        qCritical(ASQL_POOL) << "Database connection NOT FOUND in pool" << connectionName;
+        qCritical(ASQL_POOL) << "Failed to set maximum connections: Database pool NOT FOUND" << connectionName;
     }
 }

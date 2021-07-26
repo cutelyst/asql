@@ -40,7 +40,7 @@ bool ADatabase::isValid()
 void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
 {
     if (!d) {
-        d = std::shared_ptr<ADatabasePrivate>(new ADatabasePrivate(QString()));
+        d = std::shared_ptr<ADatabasePrivate>(new ADatabasePrivate({}));
     }
 
     if (d->driver->state() == ADatabase::Disconnected) {
