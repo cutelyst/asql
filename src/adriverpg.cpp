@@ -522,7 +522,7 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
 //        qDebug(ASQL_PG) << v << v.type() << v.isNull() << "---" << QString::number(v.toInt()).toLatin1().constData() << v.toString().isNull();
         if (!v.isNull()) {
             switch (v.userType()) {
-            case QVariant::String:
+            case QMetaType::QString:
             {
                 const QString text = v.toString();
                 paramTypes[i] = !text.isNull() ? QTEXTOID : QUNKNOWNOID;
@@ -530,12 +530,12 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
                 data = text.toUtf8();
             }
                 break;
-            case QVariant::ByteArray:
+            case QMetaType::QByteArray:
                 paramTypes[i] = QBYTEAOID;
                 paramFormats[i] = 1;
                 data = v.toByteArray();
                 break;
-            case QVariant::Int:
+            case QMetaType::Int:
                 paramTypes[i] = QINT4OID;
                 paramFormats[i] = 1;
             {
@@ -544,7 +544,7 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
                 qToBigEndian<qint32>(number, data.data());
             }
                 break;
-            case QVariant::LongLong:
+            case QMetaType::LongLong:
                 paramTypes[i] = QINT8OID;
                 paramFormats[i] = 1;
             {
@@ -553,17 +553,17 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
                 qToBigEndian<qint64>(number, data.data());
             }
                 break;
-            case QVariant::Uuid:
+            case QMetaType::QUuid:
                 paramTypes[i] = QUUIDOID;
                 paramFormats[i] = 1;
                 data = v.toUuid().toRfc4122();
                 break;
-            case QVariant::Bool:
+            case QMetaType::Bool:
                 paramTypes[i] = QBOOLOID;
                 paramFormats[i] = 1;
                 data.append(v.toBool() ? 0x01 : 0x00);
                 break;
-            case QVariant::Invalid:
+            case QMetaType::UnknownType:
                 paramTypes[i] = QUNKNOWNOID;
                 paramFormats[i] = 0;
                 break;
@@ -763,15 +763,15 @@ QString AResultPg::fieldName(int column) const
     return QString::fromUtf8(PQfname(m_result, column));
 }
 
-static QVariant::Type qDecodePSQLType(int t)
+static QMetaType::Type qDecodePSQLType(int t)
 {
-    QVariant::Type type = QVariant::Invalid;
+    QMetaType::Type type = QMetaType::UnknownType;
     switch (t) {
     case QBOOLOID:
-        type = QVariant::Bool;
+        type = QMetaType::Bool;
         break;
     case QINT8OID:
-        type = QVariant::LongLong;
+        type = QMetaType::LongLong;
         break;
     case QINT2OID:
     case QINT4OID:
@@ -779,31 +779,31 @@ static QVariant::Type qDecodePSQLType(int t)
     case QREGPROCOID:
     case QXIDOID:
     case QCIDOID:
-        type = QVariant::Int;
+        type = QMetaType::Int;
         break;
     case QNUMERICOID:
     case QFLOAT4OID:
     case QFLOAT8OID:
-        type = QVariant::Double;
+        type = QMetaType::Double;
         break;
     case QABSTIMEOID:
     case QRELTIMEOID:
     case QDATEOID:
-        type = QVariant::Date;
+        type = QMetaType::QDate;
         break;
     case QTIMEOID:
     case QTIMETZOID:
-        type = QVariant::Time;
+        type = QMetaType::QTime;
         break;
     case QTIMESTAMPOID:
     case QTIMESTAMPTZOID:
-        type = QVariant::DateTime;
+        type = QMetaType::QDateTime;
         break;
     case QBYTEAOID:
-        type = QVariant::ByteArray;
+        type = QMetaType::QByteArray;
         break;
     default:
-        type = QVariant::String;
+        type = QMetaType::QString;
         break;
     }
 //    qDebug(ASQL_PG) << "decode pg type" << t << type;
@@ -818,23 +818,23 @@ QVariant AResultPg::value(int row, int column) const
     }
 
     int ptype = PQftype(m_result, column);
-    QVariant::Type type = qDecodePSQLType(ptype);
+    QMetaType::Type type = qDecodePSQLType(ptype);
     if (PQgetisnull(m_result, row, column))
-        return QVariant(type);
+        return QVariant(static_cast<QVariant::Type>(type));
     const char *val = PQgetvalue(m_result, row, column);
     switch (type) {
-    case QVariant::Bool:
+    case QMetaType::Bool:
         return QVariant((bool)(val[0] == 't'));
-    case QVariant::String:
+    case QMetaType::QString:
         return QString::fromUtf8(val);
-    case QVariant::LongLong:
+    case QMetaType::LongLong:
         if (val[0] == '-')
             return QString::fromLatin1(val).toLongLong();
         else
             return QString::fromLatin1(val).toULongLong();
-    case QVariant::Int:
+    case QMetaType::Int:
         return atoi(val);
-    case QVariant::Double: {
+    case QMetaType::Double: {
 //        if (ptype == QNUMERICOID) {
 //            if (numericalPrecisionPolicy() != QSql::HighPrecision) {
 //                QVariant retval;
@@ -858,7 +858,7 @@ QVariant AResultPg::value(int row, int column) const
             return -qInf();
         return QString::fromLatin1(val).toDouble();
     }
-    case QVariant::Date:
+    case QMetaType::QDate:
         if (val[0] == '\0') {
             return QDate();
         } else {
@@ -868,7 +868,7 @@ QVariant AResultPg::value(int row, int column) const
             return QString::fromLatin1(val);
 #endif
         }
-    case QVariant::Time: {
+    case QMetaType::QTime: {
         const QString str = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
         if (str.isEmpty())
@@ -879,7 +879,7 @@ QVariant AResultPg::value(int row, int column) const
         return QVariant(str);
 #endif
     }
-    case QVariant::DateTime: {
+    case QMetaType::QDateTime: {
         QString dtval = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
         if (dtval.length() < 10) {
@@ -893,7 +893,7 @@ QVariant AResultPg::value(int row, int column) const
         return dtval;
 #endif
     }
-    case QVariant::ByteArray: {
+    case QMetaType::QByteArray: {
         size_t len;
         unsigned char *data = PQunescapeBytea((const unsigned char*)val, &len);
         QByteArray ba(reinterpret_cast<const char *>(data), int(len));
@@ -901,7 +901,7 @@ QVariant AResultPg::value(int row, int column) const
         return QVariant(ba);
     }
     default:
-    case QVariant::Invalid:
+    case QMetaType::UnknownType:
         qWarning(ASQL_PG, "unknown data type");
     }
     return {};
