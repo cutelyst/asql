@@ -75,12 +75,6 @@ add_definitions(
     -DQT_DISABLE_DEPRECATED_BEFORE=0x050c00
 )
 
-include_directories(
-    ${CMAKE_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/ASql
-    ${CMAKE_CURRENT_BINARY_DIR}
-)
-
 # cmake config files
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/asqlqt5-config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}Config.cmake
