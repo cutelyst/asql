@@ -909,35 +909,35 @@ QVariant AResultPg::value(int row, int column) const
 
 bool AResultPg::toBool(int row, int column) const
 {
-    Q_ASSERT_X(column >= PQnfields(m_result), "toBool", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toBool", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
     return val[0] == 't';
 }
 
 int AResultPg::toInt(int row, int column) const
 {
-    Q_ASSERT_X(column >= PQnfields(m_result), "toInt", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toInt", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
     return atoi(val);
 }
 
 qint64 AResultPg::toLongLong(int row, int column) const
 {
-    Q_ASSERT_X(column >= PQnfields(m_result), "toLongLong", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toLongLong", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
     return QString::fromLatin1(val).toLongLong();
 }
 
 quint64 AResultPg::toULongLong(int row, int column) const
 {
-    Q_ASSERT_X(column >= PQnfields(m_result), "toULongLong", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toULongLong", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
     return QString::fromLatin1(val).toULongLong();
 }
 
 double AResultPg::toDouble(int row, int column) const
 {
-    Q_ASSERT_X(column >= PQnfields(m_result), "toDouble", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toDouble", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
     if (qstricmp(val, "Infinity") == 0)
         return qInf();
@@ -948,7 +948,7 @@ double AResultPg::toDouble(int row, int column) const
 
 QString AResultPg::toString(int row, int column) const
 {
-    Q_ASSERT_X(column >= PQnfields(m_result), "toString", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toString", "column out of range");
     if (PQgetisnull(m_result, row, column) == 1) {
         return {};
     }
@@ -959,7 +959,7 @@ QString AResultPg::toString(int row, int column) const
 
 std::string AResultPg::toStdString(int row, int column) const
 {
-    Q_ASSERT_X(column >= PQnfields(m_result), "toStdString", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toStdString", "column out of range");
     if (PQgetisnull(m_result, row, column) == 1) {
         return {};
     }
@@ -970,7 +970,7 @@ std::string AResultPg::toStdString(int row, int column) const
 
 QDate AResultPg::toDate(int row, int column) const
 {
-    Q_ASSERT_X(column >= PQnfields(m_result), "toDate", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toDate", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
     if (val[0] == '\0') {
         return {};
@@ -985,7 +985,7 @@ QDate AResultPg::toDate(int row, int column) const
 
 QTime AResultPg::toTime(int row, int column) const
 {
-    Q_ASSERT_X(column >= PQnfields(m_result), "toTime", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toTime", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
     const QString str = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
@@ -1000,7 +1000,7 @@ QTime AResultPg::toTime(int row, int column) const
 
 QDateTime AResultPg::toDateTime(int row, int column) const
 {
-    Q_ASSERT_X(column >= PQnfields(m_result), "toDateTime", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toDateTime", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
     QString dtval = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
@@ -1019,7 +1019,7 @@ QDateTime AResultPg::toDateTime(int row, int column) const
 QJsonValue AResultPg::toJsonValue(int row, int column) const
 {
     QJsonValue ret;
-    Q_ASSERT_X(column >= PQnfields(m_result), "toJsonValue", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toJsonValue", "column out of range");
     if (PQgetisnull(m_result, row, column) == 1) {
         return ret;
     }
@@ -1036,7 +1036,7 @@ QJsonValue AResultPg::toJsonValue(int row, int column) const
 
 QByteArray AResultPg::toByteArray(int row, int column) const
 {
-    Q_ASSERT_X(column >= PQnfields(m_result), "toByteArray", "column out of range");
+    Q_ASSERT_X(column < PQnfields(m_result), "toByteArray", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
     size_t len;
     unsigned char *data = PQunescapeBytea((const unsigned char*)val, &len);
