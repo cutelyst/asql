@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -1014,6 +1014,24 @@ QDateTime AResultPg::toDateTime(int row, int column) const
 #else
     return {};
 #endif
+}
+
+QJsonValue AResultPg::toJsonValue(int row, int column) const
+{
+    QJsonValue ret;
+    Q_ASSERT_X(column >= PQnfields(m_result), "toJsonValue", "column out of range");
+    if (PQgetisnull(m_result, row, column) == 1) {
+        return ret;
+    }
+
+    const char *val = PQgetvalue(m_result, row, column);
+    auto doc = QJsonDocument::fromJson(val);
+    if (doc.isObject()) {
+        ret = doc.object();
+    } else if (doc.isArray()) {
+        ret = doc.array();
+    }
+    return ret;
 }
 
 QByteArray AResultPg::toByteArray(int row, int column) const

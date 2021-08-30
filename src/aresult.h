@@ -40,6 +40,7 @@ public:
     virtual QDate toDate(int row, int column) const = 0;
     virtual QTime toTime(int row, int column) const = 0;
     virtual QDateTime toDateTime(int row, int column) const = 0;
+    virtual QJsonValue toJsonValue(int row, int column) const = 0;
     virtual QByteArray toByteArray(int row, int column) const = 0;
 };
 
@@ -123,6 +124,7 @@ public:
         QDate toDate() const;
         QTime toTime() const;
         QDateTime toDateTime() const;
+        QJsonValue toJsonValue() const;
         inline QByteArray toByteArray() const  { return d->toByteArray(row, column); }
     };
 

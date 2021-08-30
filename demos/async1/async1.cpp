@@ -87,6 +87,17 @@ int main(int argc, char *argv[])
         qDebug() << "JSON result" << result.array();
     });
 
+    APool::database().exec(QStringLiteral("select jsonb_build_object('foo', now());"),
+                           [] (AResult &result) mutable {
+        qDebug() << "=====iterator JSON" << result.errorString() << result.size() << "last" << result[0][0].toJsonValue();
+        if (result.error()) {
+            qDebug() << "Error" << result.errorString();
+        }
+
+        // For range
+        qDebug() << "JSON result" << result.array();
+    });
+
     auto cache = new ACache;
     cache->setDatabase(APool::database());
     cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {

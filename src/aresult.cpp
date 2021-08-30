@@ -200,6 +200,11 @@ QTime AResult::AColumn::toTime() const  { return d->toTime(row, column); }
 
 QDateTime AResult::AColumn::toDateTime() const  { return d->toDateTime(row, column); }
 
+QJsonValue AResult::AColumn::toJsonValue() const
+{
+    return d->toJsonValue(row, column);
+}
+
 QVariantHash AResult::ARow::hash() const
 {
     QVariantHash ret;

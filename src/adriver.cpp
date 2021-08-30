@@ -7,6 +7,7 @@
 #include "aresult.h"
 
 #include <QDate>
+#include <QJsonValue>
 
 class AResultInvalid : public AResultPrivate
 {
@@ -32,6 +33,7 @@ public:
     QDate toDate(int row, int column) const final { return {}; };
     QTime toTime(int row, int column) const final { return {}; };
     QDateTime toDateTime(int row, int column) const final { return {}; };
+    QJsonValue toJsonValue(int row, int column) const final { return  {}; };
     QByteArray toByteArray(int row, int column) const final { return {}; };
 };
 
