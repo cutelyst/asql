@@ -90,7 +90,8 @@ When you are not sending parameters PostgreSQL allows for multiple queries, this
            }
         }
     });
-} // The scope is over, now once ADatabase db variable is done with the queries it will return to the pool
+} // The scope is over, now once ADatabase db variable is
+  // done with the queries it will return to the pool
 ```
 
 ### Performing a prepared query
@@ -179,7 +180,8 @@ ADatabase db;
 auto subscribe = [=] () mutable {
    db.subscribeToNotification(QStringLiteral("my_awesome_notification"),
      [=] (const ADatabaseNotification &notification) {
-       qDebug() << "DB notification:" << notification.self << notification.name << notification.payload;
+       qDebug() << "DB notification:" << notification.self << notification.name
+                << notification.payload;
    }, this);
 };
 
@@ -209,19 +211,19 @@ auto mig = new AMigrations();
 
 // load it from string or filename
 mig->fromString(uR"V0G0N(
-                        -- 1 up
-                        create table messages (message text);
-                        insert into messages values ('I ♥ Cutelyst!');
-                        -- 1 down
-                        drop table messages;
-                        -- 2 up
-                        create table log (message text);
-                        insert into log values ('logged');
-                        -- 2 down
-                        drop table log;
-                        -- 3 up
-                        create table log (message text);
-                        )V0G0N");
+-- 1 up
+create table messages (message text);
+insert into messages values ('I ♥ Cutelyst!');
+-- 1 down
+drop table messages;
+-- 2 up
+create table log (message text);
+insert into log values ('logged');
+-- 2 down
+drop table log;
+-- 3 up
+create table log (message text);
+)V0G0N");
                                   
 mig->connect(mig, &AMigrations::ready, [=] (bool error, const QString &erroString) {
     qDebug() << "LOADED" << error << erroString;
