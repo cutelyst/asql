@@ -105,8 +105,17 @@ manually create a static APreparedQuery object or by having your query as a memb
 ```c++
 // PostgreSQL uses numered place holders, and yes you can repeat them :)
 db.exec(APreparedQueryLiteral(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
-{true, QStringLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
-[=] (AResult &result) {
+{
+     true,
+     QStringLiteral("foo"),
+     qint64(1234),
+     QDateTime::currentDateTime(),
+     123456.78,
+     QUuid::createUuid(),
+     QJsonObject{
+          {"foo", true}
+     }
+}, [=] (AResult &result) {
     if (result.error()) {
         qDebug() << result.errorString();
         return;
@@ -125,8 +134,17 @@ To make this easier create an ATransaction object in a scoped manner, once it go
 ATransaction t(db);
 t.begin();
 db.exec(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
-{true, QStringLiteral("foo"), qint64(1234), QDateTime::currentDateTime(), 123456.78, QUuid::createUuid(), QJsonObject{ {"foo", true} } },
-[=] (AResult &result) mutable {
+{
+     true,
+     QStringLiteral("foo"),
+     qint64(1234),
+     QDateTime::currentDateTime(),
+     123456.78,
+     QUuid::createUuid(),
+     QJsonObject{
+          {"foo", true}
+     }
+}, [=] (AResult &result) mutable {
     if (result.error()) {
         qDebug() << result.errorString();
         return; // Auto rollback
@@ -151,6 +169,33 @@ db.exec(u"SELECT pg_sleep(5)", [=] (AResult &result) {
 }, cancelator); // notice the object being passed here
     
 delete cancelator;
+```
+### Notifications (Postgres only)
+
+Each Database object can have a single function subscribed to one notification, if the connection is closed the subscription is cleared and a new subscription has to be made, this it's handy to have the subcription call on a named lambda:
+
+```c++
+ADatabase db;
+auto subscribe = [=] () mutable {
+   db.subscribeToNotification(QStringLiteral("my_awesome_notification"),
+     [=] (const ADatabaseNotification &notification) {
+       qDebug() << "DB notification:" << notification.self << notification.name << notification.payload;
+   }, this);
+};
+
+db.onStateChanged([=] (ADatabase::State state, const QString &status) mutable {
+   qDebug() << "state changed" << state << status << db.isOpen();
+
+   if (state == ADatabase::Disconnected) {
+       qDebug() << "state disconnected";
+       db.open(); // Try to reconnect
+   } else if (state == ADatabase::Connected) {
+       // subscribe to the notification again
+       subscribe();
+   }
+});
+
+db.open();
 ```
 
 ### Migrations
