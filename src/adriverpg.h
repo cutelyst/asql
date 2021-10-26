@@ -60,7 +60,7 @@ public:
 class APGQuery
 {
 public:
-    APGQuery() : result(std::shared_ptr<AResultPg>(new AResultPg))
+    APGQuery() : result(std::make_shared<AResultPg>())
     { }
     QByteArray query;
     APreparedQuery preparedQuery;

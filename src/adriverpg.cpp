@@ -178,7 +178,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                     pgQuery.done();
 
                                     // allocate a new result
-                                    pgQuery.result = std::shared_ptr<AResultPg>(new AResultPg());
+                                    pgQuery.result = std::make_shared<AResultPg>();
                                 }
                                 pgQuery.result->m_result = result;
                                 pgQuery.result->processResult();
@@ -193,7 +193,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                     } else {
                                         // Query prepared
                                         m_preparedQueries.append(pgQuery.preparedQuery.identification());
-                                        pgQuery.result = std::shared_ptr<AResultPg>(new AResultPg());
+                                        pgQuery.result = std::make_shared<AResultPg>();
                                         pgQuery.preparing = false;
                                         nextQuery();
                                     }

@@ -12,6 +12,7 @@ Q_LOGGING_CATEGORY(ASQL_TRANSACTION, "asql.transaction", QtInfoMsg)
 class ATransactionPrivate
 {
 public:
+    ATransactionPrivate(ADatabase _db) : db(_db) {}
     ~ATransactionPrivate() {
         if (running && db.isValid()) {
             qInfo(ASQL_TRANSACTION, "Rolling back transaction");
@@ -32,16 +33,12 @@ ATransaction::~ATransaction()
 
 }
 
-ATransaction::ATransaction(const ADatabase &db)
+ATransaction::ATransaction(const ADatabase &db) : d(std::make_shared<ATransactionPrivate>(db))
 {
-    auto priv = new ATransactionPrivate;
-    priv->db = db;
-    d = std::shared_ptr<ATransactionPrivate>(priv);
 }
 
-ATransaction::ATransaction(const ATransaction &other)
+ATransaction::ATransaction(const ATransaction &other) : d(other.d)
 {
-    d = other.d;
 }
 
 ADatabase ATransaction::database() const
