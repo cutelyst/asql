@@ -177,11 +177,9 @@ void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantL
     receiverObj.receiver = receiver;
     receiverObj.checkReceiver = receiver;
 
-    auto cancellable = new QObject;
-
     ACacheValue _value;
     _value.args = params;
-    _value.cancellable = std::make_shared<QObject>(cancellable);
+    _value.cancellable = std::make_shared<QObject>();
     _value.receivers.push_back(receiverObj);
     d->cache.insert(query, _value);
 
@@ -213,9 +211,9 @@ void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantL
     }
 
     if (params.isEmpty()) {
-        db.exec(query, dbFn, cancellable);
+        db.exec(query, dbFn, _value.cancellable.get());
     } else {
-        db.exec(query, params, dbFn, cancellable);
+        db.exec(query, params, dbFn, _value.cancellable.get());
     }
 }
 
