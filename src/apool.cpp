@@ -45,7 +45,7 @@ void APool::pushDatabaseBack(const QString &connectionName, ADatabasePrivate *pr
     auto it = m_connectionPool.find(connectionName);
     if (it != m_connectionPool.end()) {
         APoolInternal &iPool = it.value();
-        if (priv->driver->state() == ADatabase::Disconnected) {
+        if (priv->driver->state() == ADatabase::State::Disconnected) {
             qDebug(ASQL_POOL) << "Deleting database connection as is not open" << priv->driver->isOpen();
             delete priv;
             --iPool.connectionCount;

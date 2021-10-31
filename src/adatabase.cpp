@@ -43,7 +43,7 @@ void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
         d = std::make_shared<ADatabasePrivate>(QString{});
     }
 
-    if (d->driver->state() == ADatabase::Disconnected) {
+    if (d->driver->state() == ADatabase::State::Disconnected) {
         d->driver->open(cb);
     }
 }

@@ -63,7 +63,7 @@ void ADriver::open(std::function<void (bool, const QString &)> cb)
 
 ADatabase::State ADriver::state() const
 {
-    return ADatabase::Disconnected;
+    return ADatabase::State::Disconnected;
 }
 
 void ADriver::onStateChanged(std::function<void (ADatabase::State, const QString &)> cb)

@@ -33,7 +33,7 @@ class ASQL_EXPORT ADatabase
 {
     Q_GADGET
 public:
-    enum State {
+    enum class State {
         Disconnected,
         Connecting,
         Connected

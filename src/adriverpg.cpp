@@ -101,7 +101,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
             m_readNotify = new QSocketNotifier(socket, QSocketNotifier::Read, this);
 
             const QString error = QString::fromLocal8Bit(PQerrorMessage(m_conn));
-            setState(ADatabase::Connecting, error);
+            setState(ADatabase::State::Connecting, error);
 
             auto connFn = [=]  {
                 PostgresPollingStatusType type = PQconnectPoll(m_conn);
@@ -124,7 +124,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                         cb(true, QString());
                     }
 
-                    setState(ADatabase::Connected, QString());
+                    setState(ADatabase::State::Connected, QString());
 
                     // see if we have queue queries
                     nextQuery();
@@ -138,7 +138,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                     if (cb) {
                         cb(false, error);
                     }
-                    setState(ADatabase::Disconnected, error);
+                    setState(ADatabase::State::Disconnected, error);
                     return;
                 }
                 default:
@@ -237,7 +237,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                             finishConnection();
                             finishQueries(error);
 
-                            setState(ADatabase::Disconnected, error);
+                            setState(ADatabase::State::Disconnected, error);
                         }
                     }
                 }
@@ -376,7 +376,7 @@ void ADriverPg::setLastQuerySingleRowMode()
     if (m_queuedQueries.size() == 1) {
         APGQuery &pgQuery = m_queuedQueries.head();
         pgQuery.setSingleRow = true;
-        if (!pgQuery.preparing && m_state == ADatabase::Connected) {
+        if (!pgQuery.preparing && m_state == ADatabase::State::Connected) {
             setSingleRowMode();
         }
     } else if (m_queuedQueries.size() > 1) {

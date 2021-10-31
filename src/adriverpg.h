@@ -121,7 +121,7 @@ private:
     inline void cmdFlush();
 
     PGconn *m_conn = nullptr;
-    ADatabase::State m_state = ADatabase::Disconnected;
+    ADatabase::State m_state = ADatabase::State::Disconnected;
     bool m_connected = false;
     bool m_flush = false;
     bool m_queryRunning = false;
