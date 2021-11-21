@@ -20,19 +20,20 @@
 #include "../../src/amigrations.h"
 #include "../../src/acache.h"
 #include "../../src/apreparedquery.h"
+#include "../../src/apg.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
 //    APool::addDatabase(QStringLiteral("postgres://server.com,server2.com/mydb?target_session_attrs=read-write"));
-    APool::addDatabase(QStringLiteral("postgres:///"));
+    APool::addDatabase(APg::factory(QStringLiteral("postgres:///")));
     APool::setDatabaseMaxIdleConnections(10);
 
     QVariantList series;
     {
         auto db = APool::database();
-        qDebug() << "";
+        qDebug() << "123";
         db.exec(u"SELECT generate_series(1, 10) AS number", [&series] (AResult &result) mutable {
             qDebug() << "=====iterator single row" << result.errorString() << result.size() << "last" << result.lastResulSet() << "mutable" << series.size();
             if (result.error()) {

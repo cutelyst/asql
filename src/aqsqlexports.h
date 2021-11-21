@@ -14,4 +14,10 @@
 #define ASQL_EXPORT Q_DECL_IMPORT
 #endif
 
+#if defined(ASqlQt5Pg_EXPORTS)
+#define ASQL_PG_EXPORT Q_DECL_EXPORT
+#else
+#define ASQL_PG_EXPORT Q_DECL_IMPORT
+#endif
+
 #endif

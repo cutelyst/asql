@@ -13,6 +13,7 @@
 
 #include "adatabase.h"
 #include "amigrations.h"
+#include "apg.h"
 
 int main(int argc, char *argv[])
 {
@@ -101,7 +102,14 @@ int main(int argc, char *argv[])
         }
     }
 
-    ADatabase db(conn);
+    ADatabase db;
+    if (conn.startsWith(u"postgres://") || conn.startsWith(u"postgresql://")) {
+        db = APg(conn).database();
+    } else {
+        std::cerr << qPrintable(QCoreApplication::translate("main", "No driver for uri: %1.").arg(conn)) << std::endl;
+        return 5;
+    }
+
     db.open([=] (bool isOpen, const QString &errorString) {
         if (!isOpen) {
             std::cerr << qPrintable(QCoreApplication::translate("main", "Failed to open database: %1.").arg(errorString)) << std::endl;

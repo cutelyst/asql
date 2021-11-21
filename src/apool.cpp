@@ -4,11 +4,14 @@
  */
 
 #include "apool.h"
-#include "adatabase_p.h"
+#include "adriverfactory.h"
 
+#include <QPointer>
+#include <QQueue>
+#include <QObject>
 #include <QLoggingCategory>
 
-Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
+Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool"/*, QtInfoMsg*/)
 
 struct APoolQueuedClient {
     std::function<void (ADatabase &)> cb;
@@ -17,8 +20,8 @@ struct APoolQueuedClient {
 };
 
 struct APoolInternal {
-    QString connectionInfo;
-    QVector<ADatabasePrivate *> pool;
+    std::shared_ptr<ADriverFactory> driverFactory;
+    QVector<ADriver *> pool;
     QQueue<APoolQueuedClient> connectionQueue;
     int maxIdleConnections = 1;
     int maximuConnections = 0;
@@ -29,25 +32,25 @@ static thread_local QHash<QString, APoolInternal> m_connectionPool;
 
 const char *APool::defaultConnection = const_cast<char *>("asql_default_pool");
 
-void APool::addDatabase(const QString &connectionInfo, const QString &connectionName)
+void APool::addDatabase(const std::shared_ptr<ADriverFactory> &factory, const QString &connectionName)
 {
     if (!m_connectionPool.contains(connectionName)) {
         APoolInternal pool;
-        pool.connectionInfo = connectionInfo;
+        pool.driverFactory = factory;
         m_connectionPool.insert(connectionName, pool);
     } else {
         qWarning(ASQL_POOL) << "Ignoring addDatabase, connectionName already available" << connectionName;
     }
 }
 
-void APool::pushDatabaseBack(const QString &connectionName, ADatabasePrivate *priv)
+void APool::pushDatabaseBack(const QString &connectionName, ADriver *driver)
 {
     auto it = m_connectionPool.find(connectionName);
     if (it != m_connectionPool.end()) {
         APoolInternal &iPool = it.value();
-        if (priv->driver->state() == ADatabase::State::Disconnected) {
-            qDebug(ASQL_POOL) << "Deleting database connection as is not open" << priv->driver->isOpen();
-            delete priv;
+        if (driver->state() == ADatabase::State::Disconnected) {
+            qDebug(ASQL_POOL) << "Deleting database connection as is not open" << driver->isOpen();
+            delete driver;
             --iPool.connectionCount;
             return;
         }
@@ -60,8 +63,8 @@ void APool::pushDatabaseBack(const QString &connectionName, ADatabasePrivate *pr
             }
 
             ADatabase db;
-            db.d = std::shared_ptr<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
-                    pushDatabaseBack(connectionName, priv);
+            db.d = std::shared_ptr<ADriver>(driver, [connectionName] (ADriver *driver) {
+                    pushDatabaseBack(connectionName, driver);
             });
             client.cb(db);
             return;
@@ -69,14 +72,14 @@ void APool::pushDatabaseBack(const QString &connectionName, ADatabasePrivate *pr
 
         if (iPool.pool.size() >= iPool.maxIdleConnections) {
             qDebug(ASQL_POOL) << "Deleting database connection due max idle connections" << iPool.maxIdleConnections << iPool.pool.size();
-            delete priv;
+            delete driver;
             --iPool.connectionCount;
         } else {
-            qDebug(ASQL_POOL) << "Returning database connection to pool" << connectionName << priv;
-            iPool.pool.push_back(priv);
+            qDebug(ASQL_POOL) << "Returning database connection to pool" << connectionName << driver;
+            iPool.pool.push_back(driver);
         }
     } else {
-        delete priv;
+        delete driver;
     }
 }
 
@@ -91,16 +94,17 @@ ADatabase APool::database(const QString &connectionName)
                 qWarning(ASQL_POOL) << "Maximum number of connections reached" << connectionName << iPool.connectionCount << iPool.maximuConnections;
             } else {
                 ++iPool.connectionCount;
-                qDebug(ASQL_POOL) << "Creating a database connection for pool" << connectionName << iPool.connectionInfo;
-                db.d = std::shared_ptr<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
-                    pushDatabaseBack(connectionName, priv);
+                auto driver = iPool.driverFactory->createRawDriver();
+                qDebug(ASQL_POOL) << "Creating a database connection for pool" << connectionName << driver;
+                db.d = std::shared_ptr<ADriver>(driver, [connectionName] (ADriver *driver) {
+                    pushDatabaseBack(connectionName, driver);
                 });
             }
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << connectionName;
-            ADatabasePrivate *priv = iPool.pool.takeLast();
-            db.d = std::shared_ptr<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
-                pushDatabaseBack(connectionName, priv);
+            ADriver *driver = iPool.pool.takeLast();
+            db.d = std::shared_ptr<ADriver>(driver, [connectionName] (ADriver *driver) {
+                pushDatabaseBack(connectionName, driver);
             });
         }
     } else {
@@ -127,15 +131,15 @@ void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, co
                 return;
             }
             ++iPool.connectionCount;
-            qDebug(ASQL_POOL) << "Creating a database connection for pool" << connectionName << iPool.connectionInfo;
-            db.d = std::shared_ptr<ADatabasePrivate>(new ADatabasePrivate(iPool.connectionInfo), [connectionName] (ADatabasePrivate *priv) {
-                    pushDatabaseBack(connectionName, priv);
+            qDebug(ASQL_POOL) << "Creating a database connection for pool" << connectionName;
+            db.d = std::shared_ptr<ADriver>(iPool.driverFactory->createRawDriver(), [connectionName] (ADriver *driver) {
+                    pushDatabaseBack(connectionName, driver);
             });
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << connectionName;
-            ADatabasePrivate *priv = iPool.pool.takeLast();
-            db.d = std::shared_ptr<ADatabasePrivate>(priv, [connectionName] (ADatabasePrivate *priv) {
-                    pushDatabaseBack(connectionName, priv);
+            ADriver *priv = iPool.pool.takeLast();
+            db.d = std::shared_ptr<ADriver>(priv, [connectionName] (ADriver *driver) {
+                    pushDatabaseBack(connectionName, driver);
             });
         }
     } else {

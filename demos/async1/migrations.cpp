@@ -20,13 +20,14 @@
 #include "../../src/amigrations.h"
 #include "../../src/acache.h"
 #include "../../src/apreparedquery.h"
+#include "../../src/apg.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
 //    APool::addDatabase(QStringLiteral("postgres://server.com,server2.com/mydb?target_session_attrs=read-write"));
-    APool::addDatabase(QStringLiteral("postgres:///"));
+    APool::addDatabase(APg::factory(QStringLiteral("postgres:///")));
 
     auto mig = new AMigrations();
     mig->connect(mig, &AMigrations::ready, [=] (bool error, const QString &erroString) {

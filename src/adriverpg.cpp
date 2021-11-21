@@ -51,7 +51,7 @@ Q_LOGGING_CATEGORY(ASQL_PG, "asql.pg", QtInfoMsg)
 
 #define VARHDRSZ 4
 
-ADriverPg::ADriverPg()
+ADriverPg::ADriverPg(const QString &connInfo) : ADriver(connInfo)
 {
 
 }
@@ -274,12 +274,12 @@ void ADriverPg::onStateChanged(std::function<void (ADatabase::State, const QStri
     m_stateChangedCb = cb;
 }
 
-void ADriverPg::begin(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, QObject *receiver)
+void ADriverPg::begin(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
 {
     exec(db, QStringLiteral("BEGIN"), QVariantList(), cb, receiver);
 }
 
-void ADriverPg::commit(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, bool now, QObject *receiver)
+void ADriverPg::commit(const std::shared_ptr<ADriver> &db, AResultFn cb, bool now, QObject *receiver)
 {
     exec(db, QStringLiteral("COMMIT"), QVariantList(), cb, receiver);
     if (now && m_queuedQueries.size() > 1) {
@@ -289,7 +289,7 @@ void ADriverPg::commit(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb
     }
 }
 
-void ADriverPg::rollback(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, bool now, QObject *receiver)
+void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, bool now, QObject *receiver)
 {
     exec(db, QStringLiteral("ROLLBACK"), QVariantList(), cb, receiver);
     if (now && m_queuedQueries.size() > 1) {
@@ -331,39 +331,39 @@ void ADriverPg::queryConstructed(APGQuery &pgQuery)
     }
 }
 
-void ADriverPg::exec(const std::shared_ptr<ADatabasePrivate> &db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriverPg::exec(const std::shared_ptr<ADriver> &db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     APGQuery pgQuery;
     pgQuery.query = query.toUtf8();
     pgQuery.params = params;
     pgQuery.cb = cb;
-    pgQuery.db = db;
+    selfDriver = db;
     pgQuery.receiver = receiver;
     pgQuery.checkReceiver = receiver;
 
     queryConstructed(pgQuery);
 }
 
-void ADriverPg::exec(const std::shared_ptr<ADatabasePrivate> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     APGQuery pgQuery;
     pgQuery.query = query.toUtf8();
     pgQuery.params = params;
     pgQuery.cb = cb;
-    pgQuery.db = db;
+    selfDriver = db;
     pgQuery.receiver = receiver;
     pgQuery.checkReceiver = receiver;
 
     queryConstructed(pgQuery);
 }
 
-void ADriverPg::exec(const std::shared_ptr<ADatabasePrivate> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriverPg::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     APGQuery pgQuery;
     pgQuery.preparedQuery = query;
     pgQuery.params = params;
     pgQuery.cb = cb;
-    pgQuery.db = db;
+    selfDriver = db;
     pgQuery.receiver = receiver;
     pgQuery.checkReceiver = receiver;
     pgQuery.prepared = true;
@@ -385,7 +385,7 @@ void ADriverPg::setLastQuerySingleRowMode()
     }
 }
 
-void ADriverPg::subscribeToNotification(const std::shared_ptr<ADatabasePrivate> &db, const QString &name, ANotificationFn cb, QObject *receiver)
+void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, ANotificationFn cb, QObject *receiver)
 {
     if (m_subscribedNotifications.contains(name)) {
         qWarning(ASQL_PG) << "Already subscribed to notification" << name;
@@ -410,7 +410,7 @@ QStringList ADriverPg::subscribedToNotifications() const
     return m_subscribedNotifications.keys();
 }
 
-void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADatabasePrivate> &db, const QString &name)
+void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name)
 {
     if (m_subscribedNotifications.remove(name)) {
         exec(db, QLatin1String("UNLISTEN ") + name, {}, [=] (AResult &result) {
@@ -432,6 +432,10 @@ void ADriverPg::nextQuery()
                 doExecParams(pgQuery);
             }
         }
+    }
+
+    if (m_queuedQueries.isEmpty()) {
+        selfDriver = {};
     }
 }
 
@@ -465,6 +469,7 @@ void ADriverPg::finishQueries(const QString &error)
         pgQuery.result->m_errorString = error;
         pgQuery.done();
     }
+    selfDriver = {};
 }
 
 void ADriverPg::doExec(APGQuery &pgQuery)
@@ -504,6 +509,9 @@ void ADriverPg::doExec(APGQuery &pgQuery)
         pgQuery.result->m_error = true;
         pgQuery.result->m_errorString = QString::fromLocal8Bit(PQerrorMessage(m_conn));
         m_queuedQueries.dequeue().done();
+        if (m_queuedQueries.isEmpty()) {
+            selfDriver = {};
+        }
     }
 }
 
@@ -686,6 +694,9 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
         pgQuery.result->m_error = true;
         pgQuery.result->m_errorString = QString::fromLocal8Bit(PQerrorMessage(m_conn));
         m_queuedQueries.dequeue().done();
+        if (m_queuedQueries.isEmpty()) {
+            selfDriver = {};
+        }
     }
 }
 

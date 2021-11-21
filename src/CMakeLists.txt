@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: MIT
 
 set(asql_SRC
-    adatabase_p.h
     adatabase.cpp
     adatabase.h
     amigrations.cpp
@@ -10,12 +9,11 @@ set(asql_SRC
     atransaction.cpp
     adriver.cpp
     adriver.h
+    adriverfactory.cpp
     aresult.cpp
     acache.cpp
     apreparedquery.cpp
     apreparedquery.h
-    adriverpg.cpp
-    adriverpg.h
 )
 
 set(asql_HEADERS
@@ -26,8 +24,19 @@ set(asql_HEADERS
     atransaction.h
     aresult.h
     adriver.h
+    adriverfactory.h
     acache.h
     aqsqlexports.h
+)
+
+set(asql_pg_SRC
+    adriverpg.cpp
+    adriverpg.h
+    apg.cpp
+)
+
+set(asql_pg_HEADERS
+    apg.h
 )
 
 set(asql_HEADERS_PRIVATE
@@ -66,9 +75,52 @@ set_target_properties(ASqlQt${QT_VERSION_MAJOR} PROPERTIES
 target_link_libraries(ASqlQt${QT_VERSION_MAJOR}
     PUBLIC
         Qt${QT_VERSION_MAJOR}::Core
+)
+
+## Postgres Driver
+add_library(ASqlQt${QT_VERSION_MAJOR}Pg
+    ${asql_pg_SRC}
+    ${asql_pg_HEADERS}
+)
+
+add_library(ASqlQt${QT_VERSION_MAJOR}::Pg ALIAS ASqlQt${QT_VERSION_MAJOR}Pg)
+
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+  set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Pg PROPERTY DEBUG_POSTFIX "d")
+endif()
+
+target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}Pg
+  PRIVATE
+    PLUGINS_PREFER_DEBUG_POSTFIX=$<CONFIG:Debug>
+)
+
+target_include_directories(ASqlQt${QT_VERSION_MAJOR}Pg PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
+)
+
+set_target_properties(ASqlQt${QT_VERSION_MAJOR}Pg PROPERTIES
+    EXPORT_NAME Pg
+    VERSION ${PROJECT_VERSION}
+    SOVERSION 0
+)
+
+target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Pg
+    PUBLIC
+        Qt${QT_VERSION_MAJOR}::Core
     PRIVATE
         PostgreSQL::PostgreSQL
 )
+
+set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Pg PROPERTY PUBLIC_HEADER ${asql_pg_HEADERS})
+install(TARGETS ASqlQt${QT_VERSION_MAJOR}Pg
+    EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION bin COMPONENT runtime
+    ARCHIVE DESTINATION lib COMPONENT devel
+    PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
+)
+
+## End Postgres Driver
 
 set_property(TARGET ASqlQt${QT_VERSION_MAJOR} PROPERTY PUBLIC_HEADER ${asql_HEADERS})
 install(TARGETS ASqlQt${QT_VERSION_MAJOR}
@@ -91,5 +143,6 @@ target_link_libraries(asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJO
     PUBLIC
         Qt${QT_VERSION_MAJOR}::Core
         ASqlQt${QT_VERSION_MAJOR}::Core
+        ASqlQt${QT_VERSION_MAJOR}::Pg
 )
 install(TARGETS asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR} DESTINATION ${CMAKE_INSTALL_BINDIR})

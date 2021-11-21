@@ -13,17 +13,19 @@
 
 #include <functional>
 
+#include <aqsqlexports.h>
+
 class AResult;
 class APreparedQuery;
-class ADriver : public QObject
+class ASQL_EXPORT ADriver : public QObject
 {
     Q_OBJECT
 public:
     ADriver();
+    ADriver(const QString &connectionInfo);
     virtual ~ADriver() = default;
 
     QString connectionInfo() const;
-    void setConnectionInfo(const QString &connectionInfo);
 
     virtual void open(std::function<void(bool isOpen, const QString &error)> cb);
 
@@ -32,19 +34,19 @@ public:
 
     virtual bool isOpen() const;
 
-    virtual void begin(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, QObject *receiver);
-    virtual void commit(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, bool now, QObject *receiver);
-    virtual void rollback(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, bool now, QObject *receiver);
+    virtual void begin(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver);
+    virtual void commit(const std::shared_ptr<ADriver> &db, AResultFn cb, bool now, QObject *receiver);
+    virtual void rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, bool now, QObject *receiver);
 
-    virtual void exec(const std::shared_ptr<ADatabasePrivate> &db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver);
-    virtual void exec(const std::shared_ptr<ADatabasePrivate> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver);
-    virtual void exec(const std::shared_ptr<ADatabasePrivate> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver);
+    virtual void exec(const std::shared_ptr<ADriver> &db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver);
+    virtual void exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver);
+    virtual void exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver);
 
     virtual void setLastQuerySingleRowMode();
 
-    virtual void subscribeToNotification(const std::shared_ptr<ADatabasePrivate> &db, const QString &name, ANotificationFn cb, QObject *receiver);
+    virtual void subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, ANotificationFn cb, QObject *receiver);
     virtual QStringList subscribedToNotifications() const;
-    virtual void unsubscribeFromNotification(const std::shared_ptr<ADatabasePrivate> &db, const QString &name);
+    virtual void unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name);
 
 private:
     QString m_info;

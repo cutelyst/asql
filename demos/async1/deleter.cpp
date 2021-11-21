@@ -19,6 +19,7 @@
 #include "../../src/aresult.h"
 #include "../../src/amigrations.h"
 #include "../../src/acache.h"
+#include "../../src/apg.h"
 
 int main(int argc, char *argv[])
 {
@@ -26,7 +27,7 @@ int main(int argc, char *argv[])
 
     auto obj = new QObject;
     {
-        ADatabase db(QStringLiteral("postgres:///?target_session_attrs=read-write"));
+        ADatabase db(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
         db.open([] (bool ok, const QString &status) {
             qDebug() << "OPEN value" << ok << status;
 
@@ -43,7 +44,7 @@ int main(int argc, char *argv[])
         }, obj);
     }
 
-    APool::database().exec(u"SELECT now()", [] (AResult &result) {
+    APool::database().exec(u"SELECT pg_sleep(5)", [] (AResult &result) {
         qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.size();
     }, obj);
 

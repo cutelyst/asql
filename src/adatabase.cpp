@@ -4,10 +4,9 @@
  */
 
 #include "adatabase.h"
-#include "adatabase_p.h"
 
 #include "adriver.h"
-#include "adriverpg.h"
+#include "adriverfactory.h"
 
 #include <QLoggingCategory>
 
@@ -16,8 +15,12 @@ ADatabase::ADatabase()
 
 }
 
-ADatabase::ADatabase(const QString &connectionInfo)
-    : d(std::make_shared<ADatabasePrivate>(connectionInfo))
+ADatabase::ADatabase(const std::shared_ptr<ADriver> &driver) : d(driver)
+{
+
+}
+
+ADatabase::ADatabase(const std::shared_ptr<ADriverFactory> &factory) : d(factory->createDriver())
 {
 
 }
@@ -27,10 +30,7 @@ ADatabase::ADatabase(const ADatabase &other)
     d = other.d;
 }
 
-ADatabase::~ADatabase()
-{
-
-}
+ADatabase::~ADatabase() = default;
 
 bool ADatabase::isValid()
 {
@@ -40,108 +40,108 @@ bool ADatabase::isValid()
 void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
 {
     if (!d) {
-        d = std::make_shared<ADatabasePrivate>(QString{});
+        d = std::make_shared<ADriver>();
     }
 
-    if (d->driver->state() == ADatabase::State::Disconnected) {
-        d->driver->open(cb);
+    if (d->state() == ADatabase::State::Disconnected) {
+        d->open(cb);
     }
 }
 
 ADatabase::State ADatabase::state() const
 {
     Q_ASSERT(d);
-    return d->driver->state();
+    return d->state();
 }
 
 void ADatabase::onStateChanged(std::function<void (ADatabase::State, const QString &)> cb)
 {
     Q_ASSERT(d);
-    d->driver->onStateChanged(cb);
+    d->onStateChanged(cb);
 }
 
 bool ADatabase::isOpen() const
 {
     Q_ASSERT(d);
-    return d->driver->isOpen();
+    return d->isOpen();
 }
 
 void ADatabase::begin(AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->driver->begin(d, cb, receiver);
+    d->begin(d, cb, receiver);
 }
 
 void ADatabase::commit(bool now, AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->driver->commit(d, cb, now, receiver);
+    d->commit(d, cb, now, receiver);
 }
 
 void ADatabase::rollback(bool now, AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->driver->rollback(d, cb, now, receiver);
+    d->rollback(d, cb, now, receiver);
 }
 
 void ADatabase::exec(const QString &query, AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->driver->exec(d, query, QVariantList(), cb, receiver);
+    d->exec(d, query, QVariantList(), cb, receiver);
 }
 
 void ADatabase::exec(QStringView query, AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->driver->exec(d, query, QVariantList(), cb, receiver);
+    d->exec(d, query, QVariantList(), cb, receiver);
 }
 
 void ADatabase::exec(const APreparedQuery &query, AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->driver->exec(d, query, QVariantList(), cb, receiver);
+    d->exec(d, query, QVariantList(), cb, receiver);
 }
 
 void ADatabase::exec(const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->driver->exec(d, query, params, cb, receiver);
+    d->exec(d, query, params, cb, receiver);
 }
 
 void ADatabase::exec(QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->driver->exec(d, query, params, cb, receiver);
+    d->exec(d, query, params, cb, receiver);
 }
 
 void ADatabase::exec(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->driver->exec(d, query, params, cb, receiver);
+    d->exec(d, query, params, cb, receiver);
 }
 
 void ADatabase::setLastQuerySingleRowMode()
 {
     Q_ASSERT(d);
-    d->driver->setLastQuerySingleRowMode();
+    d->setLastQuerySingleRowMode();
 }
 
 void ADatabase::subscribeToNotification(const QString &channel, ANotificationFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->driver->subscribeToNotification(d, channel, cb, receiver);
+    d->subscribeToNotification(d, channel, cb, receiver);
 }
 
 QStringList ADatabase::subscribedToNotifications() const
 {
     Q_ASSERT(d);
-    return d->driver->subscribedToNotifications();
+    return d->subscribedToNotifications();
 }
 
 void ADatabase::unsubscribeFromNotification(const QString &channel)
 {
     Q_ASSERT(d);
-    d->driver->unsubscribeFromNotification(d, channel);
+    d->unsubscribeFromNotification(d, channel);
 }
 
 ADatabase &ADatabase::operator =(const ADatabase &copy)
@@ -150,20 +150,3 @@ ADatabase &ADatabase::operator =(const ADatabase &copy)
     return *this;
 }
 
-ADatabasePrivate::ADatabasePrivate(const QString &ci)
-    : connectionInfo(ci)
-{
-    if (ci.startsWith(QStringLiteral("postgres://")) || ci.startsWith(QStringLiteral("postgresql://"))) {
-        driver = new ADriverPg;
-        driver->setConnectionInfo(ci);
-    } else {
-        driver = new ADriver;
-    }
-}
-
-ADatabasePrivate::~ADatabasePrivate()
-{
-    if (driver) {
-        driver->deleteLater();
-    }
-}

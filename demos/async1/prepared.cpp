@@ -21,12 +21,13 @@
 #include "../../src/aresult.h"
 #include "../../src/amigrations.h"
 #include "../../src/acache.h"
+#include "../../src/apg.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    APool::addDatabase(QStringLiteral("postgres:///?target_session_attrs=read-write"));
+    APool::addDatabase(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
     APool::setDatabaseMaxIdleConnections(2);
     APool::setDatabaseMaximumConnections(4);
 

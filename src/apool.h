@@ -10,6 +10,7 @@
 #include <QUrl>
 
 #include <adatabase.h>
+#include <adriverfactory.h>
 
 #include <aqsqlexports.h>
 
@@ -27,7 +28,7 @@ public:
      * \param connectionInfo is a driver url such as postgresql://user:pass@host:port/dbname
      * \param connectionName is an identifier for such connections, for example "read-write" or "read-only-replicas"
      */
-    static void addDatabase(const QString &connectionInfo, const QString &connectionName = QLatin1String(defaultConnection));
+    static void addDatabase(const std::shared_ptr<ADriverFactory> &factory, const QString &connectionName = QLatin1String(defaultConnection));
     static ADatabase database(const QString &connectionName = QLatin1String(defaultConnection));
 
     /*!
@@ -47,7 +48,7 @@ public:
     static void setDatabaseMaximumConnections(int max, const QString &connectionName = QLatin1String(defaultConnection));
 
 private:
-    inline static void pushDatabaseBack(const QString &connectionName, ADatabasePrivate *priv);
+    inline static void pushDatabaseBack(const QString &connectionName, ADriver *driver);
 };
 
 #endif // APOOL_H

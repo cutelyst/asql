@@ -15,6 +15,8 @@
 #include <aqsqlexports.h>
 
 class AResult;
+class ADriver;
+class ADriverFactory;
 
 class ADatabaseNotification
 {
@@ -28,7 +30,6 @@ using AResultFn = std::function<void(AResult &row)>;
 using ANotificationFn = std::function<void(const ADatabaseNotification &payload)>;
 
 class APreparedQuery;
-class ADatabasePrivate;
 class ASQL_EXPORT ADatabase
 {
     Q_GADGET
@@ -54,7 +55,9 @@ public:
      * * Username and database "postgresql://username@/db2"
      * * Username, host, database and options "postgresql://username@example.com/db3/bng?target_session_attrs=read-write"
      */
-    ADatabase(const QString &connectionInfo);
+    ADatabase(const std::shared_ptr<ADriver> &driver);
+
+    ADatabase(const std::shared_ptr<ADriverFactory> &factory);
 
     ADatabase(const ADatabase &other);
 
@@ -225,7 +228,7 @@ public:
 
 protected:
     friend class APool;
-    std::shared_ptr<ADatabasePrivate> d;
+    std::shared_ptr<ADriver> d;
 };
 
 #endif // ADATABASE_H
