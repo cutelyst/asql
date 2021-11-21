@@ -32,19 +32,19 @@ public:
 
     virtual bool isOpen() const;
 
-    virtual void begin(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, QObject *receiver);
-    virtual void commit(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver);
-    virtual void rollback(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver);
+    virtual void begin(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, QObject *receiver);
+    virtual void commit(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, bool now, QObject *receiver);
+    virtual void rollback(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, bool now, QObject *receiver);
 
-    virtual void exec(std::shared_ptr<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver);
-    virtual void exec(std::shared_ptr<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver);
-    virtual void exec(std::shared_ptr<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver);
+    virtual void exec(const std::shared_ptr<ADatabasePrivate> &db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver);
+    virtual void exec(const std::shared_ptr<ADatabasePrivate> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver);
+    virtual void exec(const std::shared_ptr<ADatabasePrivate> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver);
 
     virtual void setLastQuerySingleRowMode();
 
-    virtual void subscribeToNotification(std::shared_ptr<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver);
+    virtual void subscribeToNotification(const std::shared_ptr<ADatabasePrivate> &db, const QString &name, ANotificationFn cb, QObject *receiver);
     virtual QStringList subscribedToNotifications() const;
-    virtual void unsubscribeFromNotification(std::shared_ptr<ADatabasePrivate> db, const QString &name);
+    virtual void unsubscribeFromNotification(const std::shared_ptr<ADatabasePrivate> &db, const QString &name);
 
 private:
     QString m_info;

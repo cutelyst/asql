@@ -274,12 +274,12 @@ void ADriverPg::onStateChanged(std::function<void (ADatabase::State, const QStri
     m_stateChangedCb = cb;
 }
 
-void ADriverPg::begin(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, QObject *receiver)
+void ADriverPg::begin(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, QObject *receiver)
 {
     exec(db, QStringLiteral("BEGIN"), QVariantList(), cb, receiver);
 }
 
-void ADriverPg::commit(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver)
+void ADriverPg::commit(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, bool now, QObject *receiver)
 {
     exec(db, QStringLiteral("COMMIT"), QVariantList(), cb, receiver);
     if (now && m_queuedQueries.size() > 1) {
@@ -289,7 +289,7 @@ void ADriverPg::commit(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, bool 
     }
 }
 
-void ADriverPg::rollback(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver)
+void ADriverPg::rollback(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, bool now, QObject *receiver)
 {
     exec(db, QStringLiteral("ROLLBACK"), QVariantList(), cb, receiver);
     if (now && m_queuedQueries.size() > 1) {
@@ -331,7 +331,7 @@ void ADriverPg::queryConstructed(APGQuery &pgQuery)
     }
 }
 
-void ADriverPg::exec(std::shared_ptr<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriverPg::exec(const std::shared_ptr<ADatabasePrivate> &db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     APGQuery pgQuery;
     pgQuery.query = query.toUtf8();
@@ -344,7 +344,7 @@ void ADriverPg::exec(std::shared_ptr<ADatabasePrivate> db, const QString &query,
     queryConstructed(pgQuery);
 }
 
-void ADriverPg::exec(std::shared_ptr<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriverPg::exec(const std::shared_ptr<ADatabasePrivate> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     APGQuery pgQuery;
     pgQuery.query = query.toUtf8();
@@ -357,7 +357,7 @@ void ADriverPg::exec(std::shared_ptr<ADatabasePrivate> db, QStringView query, co
     queryConstructed(pgQuery);
 }
 
-void ADriverPg::exec(std::shared_ptr<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriverPg::exec(const std::shared_ptr<ADatabasePrivate> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     APGQuery pgQuery;
     pgQuery.preparedQuery = query;
@@ -385,7 +385,7 @@ void ADriverPg::setLastQuerySingleRowMode()
     }
 }
 
-void ADriverPg::subscribeToNotification(std::shared_ptr<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver)
+void ADriverPg::subscribeToNotification(const std::shared_ptr<ADatabasePrivate> &db, const QString &name, ANotificationFn cb, QObject *receiver)
 {
     if (m_subscribedNotifications.contains(name)) {
         qWarning(ASQL_PG) << "Already subscribed to notification" << name;
@@ -410,7 +410,7 @@ QStringList ADriverPg::subscribedToNotifications() const
     return m_subscribedNotifications.keys();
 }
 
-void ADriverPg::unsubscribeFromNotification(std::shared_ptr<ADatabasePrivate> db, const QString &name)
+void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADatabasePrivate> &db, const QString &name)
 {
     if (m_subscribedNotifications.remove(name)) {
         exec(db, QLatin1String("UNLISTEN ") + name, {}, [=] (AResult &result) {

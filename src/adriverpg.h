@@ -96,19 +96,19 @@ public:
     ADatabase::State state() const override;
     void onStateChanged(std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
-    void begin(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, QObject *receiver) override;
-    void commit(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
-    void rollback(std::shared_ptr<ADatabasePrivate> db, AResultFn cb, bool now, QObject *receiver) override;
+    void begin(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, QObject *receiver) override;
+    void commit(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, bool now, QObject *receiver) override;
+    void rollback(const std::shared_ptr<ADatabasePrivate> &db, AResultFn cb, bool now, QObject *receiver) override;
 
-    void exec(std::shared_ptr<ADatabasePrivate> db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
-    void exec(std::shared_ptr<ADatabasePrivate> db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
-    void exec(std::shared_ptr<ADatabasePrivate> db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    void exec(const std::shared_ptr<ADatabasePrivate> &db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    void exec(const std::shared_ptr<ADatabasePrivate> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    void exec(const std::shared_ptr<ADatabasePrivate> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
 
     void setLastQuerySingleRowMode() override;
 
-    void subscribeToNotification(std::shared_ptr<ADatabasePrivate> db, const QString &name, ANotificationFn cb, QObject *receiver) override;
+    void subscribeToNotification(const std::shared_ptr<ADatabasePrivate> &db, const QString &name, ANotificationFn cb, QObject *receiver) override;
     QStringList subscribedToNotifications() const override;
-    void unsubscribeFromNotification(std::shared_ptr<ADatabasePrivate> db, const QString &name) override;
+    void unsubscribeFromNotification(const std::shared_ptr<ADatabasePrivate> &db, const QString &name) override;
 
 private:
     inline void queryConstructed(APGQuery &pgQuery);
