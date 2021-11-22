@@ -47,18 +47,18 @@ public:
     ADatabase();
 
     /*!
-     * \brief ADatabase contructs an database object with the connection info
-     * supplied by \param connectionInfo.
-     *
-     * Example of connection info:
-     * * Just a database db1 "postgresql:///db1"
-     * * Username and database "postgresql://username@/db2"
-     * * Username, host, database and options "postgresql://username@example.com/db3/bng?target_session_attrs=read-write"
+     * \brief ADatabase contructs an database object with the supplied driver
      */
     ADatabase(const std::shared_ptr<ADriver> &driver);
 
+    /*!
+     * \brief ADatabase contructs an database object with the supplied driver factory
+     */
     ADatabase(const std::shared_ptr<ADriverFactory> &factory);
 
+    /*!
+     * \brief ADatabase contructs an database object from another database object
+     */
     ADatabase(const ADatabase &other);
 
     virtual ~ADatabase();

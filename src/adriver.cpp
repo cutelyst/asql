@@ -51,6 +51,11 @@ QString ADriver::connectionInfo() const
     return m_info;
 }
 
+bool ADriver::isValid() const
+{
+    return false;
+}
+
 void ADriver::open(std::function<void (bool, const QString &)> cb)
 {
     if (cb) {

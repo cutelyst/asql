@@ -27,6 +27,7 @@ public:
 
     QString connectionInfo() const;
 
+    virtual bool isValid() const;
     virtual void open(std::function<void(bool isOpen, const QString &error)> cb);
 
     virtual ADatabase::State state() const;

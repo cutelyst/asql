@@ -63,6 +63,11 @@ ADriverPg::~ADriverPg()
     }
 }
 
+bool ADriverPg::isValid() const
+{
+    return true;
+}
+
 QString connectionStatus(ConnStatusType type) {
     switch (type) {
     case CONNECTION_OK:

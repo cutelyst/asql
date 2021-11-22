@@ -88,6 +88,7 @@ public:
     ADriverPg(const QString &connInfo);
     virtual ~ADriverPg();
 
+    bool isValid() const override;
     void open(std::function<void(bool isOpen, const QString &error)> cb) override;
     bool isOpen() const override;
 

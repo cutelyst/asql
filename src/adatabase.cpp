@@ -34,7 +34,7 @@ ADatabase::~ADatabase() = default;
 
 bool ADatabase::isValid()
 {
-    return d != nullptr;
+    return d && d->isValid();
 }
 
 void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
