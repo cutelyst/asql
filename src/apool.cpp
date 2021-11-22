@@ -1,9 +1,10 @@
 /* 
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2021 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
 #include "apool.h"
+#include "adriver.h"
 #include "adriverfactory.h"
 
 #include <QPointer>
@@ -124,6 +125,15 @@ ADatabase APool::database(const QString &poolName)
     return db;
 }
 
+int APool::currentConnections(const QString &poolName)
+{
+    auto it = m_connectionPool.find(poolName);
+    if (it != m_connectionPool.end()) {
+        return it.value().connectionCount;
+    }
+    return 0;
+}
+
 void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, const QString &poolName)
 {
     ADatabase db;
@@ -162,7 +172,7 @@ void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, co
     }
 }
 
-void APool::setDatabaseMaxIdleConnections(int max, const QString &poolName)
+void APool::setMaxIdleConnections(int max, const QString &poolName)
 {
     auto it = m_connectionPool.find(poolName);
     if (it != m_connectionPool.end()) {
@@ -172,7 +182,7 @@ void APool::setDatabaseMaxIdleConnections(int max, const QString &poolName)
     }
 }
 
-void APool::setDatabaseMaximumConnections(int max, const QString &poolName)
+void APool::setMaxConnections(int max, const QString &poolName)
 {
     auto it = m_connectionPool.find(poolName);
     if (it != m_connectionPool.end()) {
@@ -180,4 +190,14 @@ void APool::setDatabaseMaximumConnections(int max, const QString &poolName)
     } else {
         qCritical(ASQL_POOL) << "Failed to set maximum connections: Database pool NOT FOUND" << poolName;
     }
+}
+
+void APool::setDatabaseMaxIdleConnections(int max, const QString &poolName)
+{
+    setMaxIdleConnections(max, poolName);
+}
+
+void APool::setDatabaseMaximumConnections(int max, const QString &poolName)
+{
+    setMaxConnections(max, poolName);
 }

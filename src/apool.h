@@ -1,5 +1,5 @@
 /* 
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2021 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
@@ -56,6 +56,13 @@ public:
     static ADatabase database(const QString &poolName = QLatin1String(defaultPool));
 
     /*!
+     * \brief currentConnections of the pool
+     * \param poolName
+     * \return the number of active connections on this pool
+     */
+    static int currentConnections(const QString &poolName = QLatin1String(defaultPool));
+
+    /*!
      * \brief retrieves a database object
      *
      * This method is only useful if the pool has a limit of maximum connections allowed,
@@ -67,14 +74,34 @@ public:
      */
     static void database(std::function<void(ADatabase &database)>, QObject *receiver = nullptr, const QString &poolName = QLatin1String(defaultPool));
 
+    /*!
+     * \brief setMaxIdleConnections maximum number of idle connections of the pool
+     *
+     * The default value is 1, so if 2 connections are created when they are returned the
+     * second one will be deleted.
+     *
+     * \param max
+     * \param poolName
+     */
+    static void setMaxIdleConnections(int max, const QString &poolName = QLatin1String(defaultPool));
 
-    static void setPoolMaxIdleConnections(int max, const QString &poolName = QLatin1String(defaultPool));
-    static void setPoolMaxConnections(int max, const QString &poolName = QLatin1String(defaultPool));
+    /*!
+     * \brief setMaxConnections maximum number of connections of the pool
+     *
+     * The default value is 0, which means ilimited, if a limit is set the \sa database method
+     * will start returning invalid objects untill the current number of connections is reduced.
+     *
+     * Changing this value only affect new connections created.
+     *
+     * \param max
+     * \param poolName
+     */
+    static void setMaxConnections(int max, const QString &poolName = QLatin1String(defaultPool));
 
-    Q_DECL_DEPRECATED_X("Use setPoolMaxIdleConnections instead.")
+    Q_DECL_DEPRECATED_X("Use setMaxIdleConnections instead.")
     static void setDatabaseMaxIdleConnections(int max, const QString &poolName = QLatin1String(defaultPool));
 
-    Q_DECL_DEPRECATED_X("Use setPoolMaxConnections instead.")
+    Q_DECL_DEPRECATED_X("Use setMaxConnections instead.")
     static void setDatabaseMaximumConnections(int max, const QString &poolName = QLatin1String(defaultPool));
 
 private:

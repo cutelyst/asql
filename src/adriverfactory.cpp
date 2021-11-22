@@ -1,4 +1,10 @@
+/*
+ * SPDX-FileCopyrightText: (C) 2021 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-License-Identifier: MIT
+ */
 #include "adriverfactory.h"
+
+#include <adatabase.h>
 
 ADriverFactory::ADriverFactory()
 {
@@ -7,7 +13,6 @@ ADriverFactory::ADriverFactory()
 
 ADriver *ADriverFactory::createRawDriver() const
 {
-    qDebug("Fac RAW");
     return nullptr;
 }
 
