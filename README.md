@@ -32,12 +32,12 @@ A connection pool is a convenient way of getting new connections without worryin
 
 ```c++
 // No new connection is created at this moment
-APool::addDatabase("postgres://user:pass@server/dbname?target_session_attrs=read-write");
-APool::addDatabase("postgres://user:pass@server/dbname", "my_read_only_pool");
+APool::create(APg::factory("postgres://user:pass@server/dbname?target_session_attrs=read-write"));
+APool::create(APg::factory("postgres://user:pass@server/dbname"), "my_read_only_pool");
 
 // Defines the maximum number of idle connections (defaults to 1)
-APool::setDatabaseMaxIdleConnections(10);
-APool::setDatabaseMaxIdleConnections(15, "my_read_only_pool");
+APool::setMaxIdleConnections(10);
+APool::setMaxIdleConnections(15, "my_read_only_pool");
 
 // Grabs a connection, it might be a new connection or one from the idle pool
 auto db = APool::database();
