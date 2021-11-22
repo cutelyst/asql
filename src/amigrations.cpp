@@ -90,6 +90,8 @@ bool AMigrations::fromFile(const QString &filename)
     if (file.open(QFile::ReadOnly | QFile::Text)) {
         fromString(QString::fromUtf8(file.readAll()));
         return true;
+    } else {
+        qCritical(ASQL_MIG) << "Failed to open migrations" << filename << file.errorString();
     }
     return false;
 }

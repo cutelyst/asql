@@ -17,10 +17,11 @@ public:
     ~APg();
 
     static std::shared_ptr<ADriverFactory> factory(const QString &connectionInfo);
+    static ADatabase database(const QString &connectionInfo);
 
     ADriver *createRawDriver() const final;
     std::shared_ptr<ADriver> createDriver() const final;
-    ADatabase database() const final;
+    ADatabase createDatabase() const final;
 
 private:
     APgPrivate *d;

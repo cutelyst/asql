@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 
     ADatabase db;
     if (conn.startsWith(u"postgres://") || conn.startsWith(u"postgresql://")) {
-        db = APg(conn).database();
+        db = APg::database(conn);
     } else {
         std::cerr << qPrintable(QCoreApplication::translate("main", "No driver for uri: %1.").arg(conn)) << std::endl;
         return 5;

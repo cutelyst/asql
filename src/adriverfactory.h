@@ -12,7 +12,7 @@ public:
 
     virtual ADriver *createRawDriver() const;
     virtual std::shared_ptr<ADriver> createDriver() const;
-    virtual ADatabase database() const;
+    virtual ADatabase createDatabase() const;
 };
 
 #endif // ADRIVERFACTORY_H

@@ -28,6 +28,12 @@ std::shared_ptr<ADriverFactory> APg::factory(const QString &connectionInfo)
     return ret;
 }
 
+ADatabase APg::database(const QString &connectionInfo)
+{
+    ADatabase ret(std::make_shared<APg>(connectionInfo));
+    return ret;
+}
+
 ADriver *APg::createRawDriver() const
 {
     qDebug("PG RAW");
@@ -41,7 +47,7 @@ std::shared_ptr<ADriver> APg::createDriver() const
     return ret;
 }
 
-ADatabase APg::database() const
+ADatabase APg::createDatabase() const
 {
     return ADatabase(std::make_shared<ADriverPg>(d->connection));
 }

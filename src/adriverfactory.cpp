@@ -16,7 +16,7 @@ std::shared_ptr<ADriver> ADriverFactory::createDriver() const
     return {};
 }
 
-ADatabase ADriverFactory::database() const
+ADatabase ADriverFactory::createDatabase() const
 {
     return {};
 }
