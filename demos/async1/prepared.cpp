@@ -27,9 +27,9 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    APool::addDatabase(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
-    APool::setDatabaseMaxIdleConnections(2);
-    APool::setDatabaseMaximumConnections(4);
+    APool::create(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
+    APool::setMaxIdleConnections(2);
+    APool::setMaxConnections(4);
 
     {
         auto db2 = APool::database();

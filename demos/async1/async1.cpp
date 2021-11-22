@@ -27,8 +27,8 @@ int main(int argc, char *argv[])
     QCoreApplication app(argc, argv);
 
 //    APool::addDatabase(QStringLiteral("postgres://server.com,server2.com/mydb?target_session_attrs=read-write"));
-    APool::addDatabase(APg::factory(QStringLiteral("postgres:///")));
-    APool::setDatabaseMaxIdleConnections(10);
+    APool::create(APg::factory(QStringLiteral("postgres:///")));
+    APool::setMaxIdleConnections(10);
 
     QVariantList series;
     {
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
             qDebug() << "Error" << result.errorString();
         }
 
-        for (auto row : result) {
+        for (const auto &row : result) {
             for (int i = 0; i < result.fields(); ++i) {
                 qDebug() << "cached 1" << i << row.value(i);
             }
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
                 qDebug() << "Error" << result.errorString();
             }
 
-             for (auto row : result) {
+             for (const auto &row : result) {
                 for (int i = 0; i < result.fields(); ++i) {
                     qDebug() << "cached 2" << i<< row.value(i);
                 }

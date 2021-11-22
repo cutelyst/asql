@@ -35,10 +35,10 @@ const char *APool::defaultPool = const_cast<char *>("asql_default_pool");
 
 void APool::addDatabase(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName)
 {
-    createPool(factory, poolName);
+    create(factory, poolName);
 }
 
-void APool::createPool(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName)
+void APool::create(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName)
 {
     if (!m_connectionPool.contains(poolName)) {
         APoolInternal pool;
@@ -49,7 +49,7 @@ void APool::createPool(const std::shared_ptr<ADriverFactory> &factory, const QSt
     }
 }
 
-void APool::removePool(const QString &poolName)
+void APool::remove(const QString &poolName)
 {
     m_connectionPool.remove(poolName);
 }

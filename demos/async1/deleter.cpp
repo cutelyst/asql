@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
         qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.size();
     }, obj);
 
-    QTimer::singleShot(2000, [=] {
+    QTimer::singleShot(2000, obj, [=] {
         qDebug() << "Delete Obj";
         delete obj;
     });

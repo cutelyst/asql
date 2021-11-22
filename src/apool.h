@@ -19,27 +19,27 @@ class ASQL_EXPORT APool
 public:
     static const char *defaultPool;
 
-    Q_DECL_DEPRECATED_X("Use createPool instead.")
+    Q_DECL_DEPRECATED_X("Use create instead.")
     static void addDatabase(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName = QLatin1String(defaultPool));
 
     /*!
-     * \brief createPool creates a new database pool
+     * \brief create creates a new database pool
      *
      * Creates a new connection Pool that uses the factory to create new connections when they are required.
      *
      * \param factory is a driver factory that creates new connections
      * \param poolName is an identifier for such pools, for example "read-write" or "read-only-replicas"
      */
-    static void createPool(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName = QLatin1String(defaultPool));
+    static void create(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName = QLatin1String(defaultPool));
 
     /*!
-     * \brief removePool removes the database pool
+     * \brief remove removes the database pool
      *
      * Removes the \p poolName from the connection pool, it doesn't remove or close current connections.
      *
      * \param poolName
      */
-    static void removePool(const QString &poolName = QLatin1String(defaultPool));
+    static void remove(const QString &poolName = QLatin1String(defaultPool));
 
     /*!
      * \brief database
