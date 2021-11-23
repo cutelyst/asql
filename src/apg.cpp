@@ -36,7 +36,6 @@ ADatabase APg::database(const QString &connectionInfo)
 
 ADriver *APg::createRawDriver() const
 {
-    qDebug("PG RAW");
     auto ret = new ADriverPg(d->connection);
     return ret;
 }
