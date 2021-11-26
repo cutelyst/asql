@@ -25,6 +25,22 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
+    APool::create(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
+    APool::setSetupCallback([] (ADatabase &db) {
+        qDebug() << "setup db";
+        db.exec(u"SET TIME ZONE 'Europe/Rome';", [] (AResult &result) {
+            qDebug() << "SETUP" << result.error() << result.errorString() << result.jsonObject();
+        });
+    });
+
+    APool::setReuseCallback([] (ADatabase &db) {
+        qDebug() << "reuse db";
+        db.exec(u"DISCARD ALL", [] (AResult &result) {
+            qDebug() << "REUSE" << result.error() << result.errorString() << result.jsonObject();
+        });
+    });
+
+
     auto obj = new QObject;
     {
         ADatabase db(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
@@ -48,9 +64,20 @@ int main(int argc, char *argv[])
         qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.size();
     }, obj);
 
+    APool::database().exec(u"SELECT now()", [] (AResult &result) {
+        qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.jsonObject();
+    }, obj);
+
     QTimer::singleShot(2000, obj, [=] {
         qDebug() << "Delete Obj";
         delete obj;
+    });
+
+    QTimer::singleShot(2500, [=] {
+        qDebug() << "Reuse Timer Obj";
+        APool::database().exec(u"SELECT now()", [] (AResult &result) {
+            qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.jsonObject();
+        });
     });
 
     app.exec();

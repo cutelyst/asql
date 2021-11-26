@@ -98,6 +98,43 @@ public:
      */
     static void setMaxConnections(int max, const QString &poolName = QLatin1String(defaultPool));
 
+    /*!
+     * \brief setSetupCallback setup a connection before being used for the first time
+     *
+     * Sometimes one might want to increase connection buffer or set a different timezone,
+     * any kind of connection setup that would be done as soon as the connection with the
+     * database is estabilished.
+     *
+     * This callback is not called when the connection is reused.
+     *
+     * Always call \sa ADatabase::exec() at once so that they are queued and executed before
+     * the caller of \sa APool::database().
+     *
+     * Changing this value only affect new connections created.
+     *
+     * \param max
+     * \param poolName
+     */
+    static void setSetupCallback(std::function<void(ADatabase &database)> cb, const QString &poolName = QLatin1String(defaultPool));
+
+    /*!
+     * \brief setReuseCallback setup a connection before being reused
+     *
+     * Sometimes one might want to "DISCARD" previous information on the connection,
+     * this callback will be called when an existing connection is going to be reused.
+     *
+     * This callback is not called when the connection is openned.
+     *
+     * Always call \sa ADatabase::exec() at once so that they are queued and executed before
+     * the caller of \sa APool::database().
+     *
+     * Changing this value only affect new connections created.
+     *
+     * \param max
+     * \param poolName
+     */
+    static void setReuseCallback(std::function<void(ADatabase &database)> cb, const QString &poolName = QLatin1String(defaultPool));
+
     Q_DECL_DEPRECATED_X("Use setMaxIdleConnections instead.")
     static void setDatabaseMaxIdleConnections(int max, const QString &poolName = QLatin1String(defaultPool));
 
