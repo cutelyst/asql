@@ -19,9 +19,6 @@ class ASQL_EXPORT APool
 public:
     static const char *defaultPool;
 
-    Q_DECL_DEPRECATED_X("Use create instead.")
-    static void addDatabase(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName = QLatin1String(defaultPool));
-
     /*!
      * \brief create creates a new database pool
      *
@@ -134,12 +131,6 @@ public:
      * \param poolName
      */
     static void setReuseCallback(std::function<void(ADatabase &database)> cb, const QString &poolName = QLatin1String(defaultPool));
-
-    Q_DECL_DEPRECATED_X("Use setMaxIdleConnections instead.")
-    static void setDatabaseMaxIdleConnections(int max, const QString &poolName = QLatin1String(defaultPool));
-
-    Q_DECL_DEPRECATED_X("Use setMaxConnections instead.")
-    static void setDatabaseMaximumConnections(int max, const QString &poolName = QLatin1String(defaultPool));
 
 private:
     inline static void pushDatabaseBack(const QString &connectionName, ADriver *driver);

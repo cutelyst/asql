@@ -35,11 +35,6 @@ static thread_local QHash<QString, APoolInternal> m_connectionPool;
 
 const char *APool::defaultPool = const_cast<char *>("asql_default_pool");
 
-void APool::addDatabase(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName)
-{
-    create(factory, poolName);
-}
-
 void APool::create(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName)
 {
     if (!m_connectionPool.contains(poolName)) {
@@ -228,14 +223,4 @@ void APool::setReuseCallback(std::function<void (ADatabase &)> cb, const QString
     } else {
         qCritical(ASQL_POOL) << "Failed to set maximum connections: Database pool NOT FOUND" << poolName;
     }
-}
-
-void APool::setDatabaseMaxIdleConnections(int max, const QString &poolName)
-{
-    setMaxIdleConnections(max, poolName);
-}
-
-void APool::setDatabaseMaximumConnections(int max, const QString &poolName)
-{
-    setMaxConnections(max, poolName);
 }
