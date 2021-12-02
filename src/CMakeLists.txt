@@ -108,6 +108,7 @@ set_target_properties(ASqlQt${QT_VERSION_MAJOR}Pg PROPERTIES
 target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Pg
     PUBLIC
         Qt${QT_VERSION_MAJOR}::Core
+        ASqlQt${QT_VERSION_MAJOR}::Core
     PRIVATE
         PostgreSQL::PostgreSQL
 )
