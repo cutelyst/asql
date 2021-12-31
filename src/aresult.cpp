@@ -86,6 +86,11 @@ QVariantList AResult::array() const
 
 QVariantHash AResult::hash() const
 {
+    return toHash();
+}
+
+QVariantHash AResult::toHash() const
+{
     QVariantHash ret;
     auto it = constBegin();
     if (it != constEnd()) {
@@ -97,6 +102,11 @@ QVariantHash AResult::hash() const
 }
 
 QVariantList AResult::hashes() const
+{
+    return toHashList();
+}
+
+QVariantList AResult::toHashList() const
 {
     QVariantList ret;
     auto it = constBegin();
@@ -117,6 +127,11 @@ QVariantList AResult::hashes() const
 
 QJsonObject AResult::jsonObject() const
 {
+    return toJsonObject();
+}
+
+QJsonObject AResult::toJsonObject() const
+{
     QJsonObject ret;
     auto it = constBegin();
     if (it != constEnd()) {
@@ -128,6 +143,11 @@ QJsonObject AResult::jsonObject() const
 }
 
 QJsonArray AResult::jsonArray() const
+{
+    return toJsonArray();
+}
+
+QJsonArray AResult::toJsonArray() const
 {
     QJsonArray ret;
     auto it = constBegin();
@@ -207,6 +227,11 @@ QJsonValue AResult::AColumn::toJsonValue() const
 
 QVariantHash AResult::ARow::hash() const
 {
+    return toHash();
+}
+
+QVariantHash AResult::ARow::toHash() const
+{
     QVariantHash ret;
     for (int i = 0; i < d->fields(); ++i) {
         ret.insert(d->fieldName(i), value(i));
@@ -214,7 +239,21 @@ QVariantHash AResult::ARow::hash() const
     return ret;
 }
 
+QVariantList AResult::ARow::toList() const
+{
+    QVariantList ret;
+    for (int i = 0; i < d->fields(); ++i) {
+        ret.append(value(i));
+    }
+    return ret;
+}
+
 QJsonObject AResult::ARow::jsonObject() const
+{
+    return toJsonObject();
+}
+
+QJsonObject AResult::ARow::toJsonObject() const
 {
     QJsonObject ret;
     for (int i = 0; i < d->fields(); ++i) {

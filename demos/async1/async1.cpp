@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
         }
 
         // For range
-        qDebug() << "JSON result" << result.array();
+        qDebug() << "JSON result" << result[0].toList();
     });
 
     APool::database().exec(QStringLiteral("select jsonb_build_object('foo', now());"),
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
         }
 
         // For range
-        qDebug() << "JSON result" << result.array();
+        qDebug() << "JSON result" << result[0].toList();
     });
 
     auto cache = new ACache;
@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
                  [&count, t] (AResult &result) mutable {
             (*count)++;
             if (!result.error()) {
-                auto data = result.hash();
+                auto data = result.toHash();
                 if (data.size() && *count == 10000) {
                     qDebug() << "finish" << count << "elap" << t.elapsed();
                     qApp->quit();

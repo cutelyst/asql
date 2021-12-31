@@ -74,31 +74,60 @@ public:
      * \brief hash returns the first row as a variant list
      * \return
      */
+    Q_DECL_DEPRECATED_X("use ARow::toList intead")
     QVariantList array() const;
 
     /*!
      * \brief hash returns the first row as a QHash object
      * \return
      */
+    Q_DECL_DEPRECATED_X("use toHash intead")
     QVariantHash hash() const;
+
+    /*!
+     * \brief hash returns the first row as a QHash object
+     * \return
+     */
+    QVariantHash toHash() const;
 
     /*!
      * \brief hashes returns all rows as QVariantHash objects
      * \return
      */
+    Q_DECL_DEPRECATED_X("use toHashList intead")
     QVariantList hashes() const;
+
+    /*!
+     * \brief toHashList returns all rows as a list of QVariantHash objects
+     * \return
+     */
+    QVariantList toHashList() const;
 
     /*!
      * \brief jsonObject returns the first row as a JSON object
      * \return
      */
+    Q_DECL_DEPRECATED_X("use toJsonObject intead")
     QJsonObject jsonObject() const;
+
+    /*!
+     * \brief toJsonObject returns the first row as a JSON object
+     * \return
+     */
+    QJsonObject toJsonObject() const;
 
     /*!
      * \brief jsonArray returns all rows as an array of JSON objects.
      * \return
      */
+    Q_DECL_DEPRECATED_X("use toJsonArray intead")
     QJsonArray jsonArray() const;
+
+    /*!
+     * \brief toJsonArray returns all rows as an array of JSON objects.
+     * \return
+     */
+    QJsonArray toJsonArray() const;
 
     AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;
@@ -139,13 +168,33 @@ public:
          * \brief hash returns the row as a QHash object
          * \return
          */
+        Q_DECL_DEPRECATED_X("use toHash intead")
         QVariantHash hash() const;
+
+        /*!
+         * \brief toHash returns the row as a QVariantHash object
+         * \return
+         */
+        QVariantHash toHash() const;
+
+        /*!
+         * \brief toHash returns the row as a QVariantList object
+         * \return
+         */
+        QVariantList toList() const;
 
         /*!
          * \brief jsonObject returns the row as a JSON object
          * \return
          */
+        Q_DECL_DEPRECATED_X("use toJsonObject intead")
         QJsonObject jsonObject() const;
+
+        /*!
+         * \brief toJsonObject returns the row as a JSON object
+         * \return
+         */
+        QJsonObject toJsonObject() const;
 
         inline int at() const { return row; }
         inline QVariant value(int column) const { return d->value(row, column); }
