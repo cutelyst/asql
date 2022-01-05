@@ -164,7 +164,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                         while (PQisBusy(m_conn) == 0) {
                             PGresult *result = PQgetResult(m_conn);
 //                            qDebug(ASQL_PG) << "Not busy: RESULT" << result << "busy" << PQisBusy(m_conn) << m_queuedQueries.size();
-                            if (result != nullptr) {
+                            if (Q_UNLIKELY(result != nullptr)) {
 //                                int status = PQresultStatus(result);
                                 APGQuery &pgQuery = m_queuedQueries.head();
 //                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << pgQuery.result;
@@ -182,12 +182,12 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                             } else if (m_queuedQueries.size()) {
                                 APGQuery &pgQuery = m_queuedQueries.head();
                                 m_queryRunning = false;
-                                if (pgQuery.prepared && pgQuery.preparing) {
-                                    if (pgQuery.result->error()) {
+                                if (Q_UNLIKELY(pgQuery.prepared && pgQuery.preparing)) {
+                                    if (Q_UNLIKELY(pgQuery.result->error())) {
                                         // PREPARE OR PREPARED QUERY ERROR
-                                        m_queuedQueries.dequeue();
+                                        auto query = m_queuedQueries.dequeue();
                                         nextQuery();
-                                        pgQuery.done();
+                                        query.done();
                                     } else {
                                         // Query prepared
                                         m_preparedQueries.append(pgQuery.preparedQuery.identification());
@@ -196,15 +196,14 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                         nextQuery();
                                     }
                                 } else {
-                                    m_queuedQueries.dequeue();
+                                    auto query = m_queuedQueries.dequeue();
                                     nextQuery();
-                                    pgQuery.done();
+                                    query.done();
                                 }
                                 break;
                             } else {
                                 break;
                             }
-
                         }
 //                        qDebug(ASQL_PG) << "Not busy OUT" << this;
 
