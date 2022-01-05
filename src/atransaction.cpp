@@ -68,7 +68,7 @@ void ATransaction::commit(AResultFn cb, QObject *receiver)
     Q_ASSERT(!d);
     if (d->running) {
         d->running = false;
-        d->db.commit(true, cb, receiver);
+        d->db.commit(cb, receiver);
     } else {
         qWarning(ASQL_TRANSACTION, "Transaction not started");
     }
@@ -79,7 +79,7 @@ void ATransaction::rollback(AResultFn cb, QObject *receiver)
     Q_ASSERT(!d);
     if (d->running) {
         d->running = false;
-        d->db.rollback(true, cb, receiver);
+        d->db.rollback(cb, receiver);
     } else {
         qWarning(ASQL_TRANSACTION, "Transaction not started");
     }

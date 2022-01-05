@@ -88,10 +88,9 @@ void ADriver::begin(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *r
     }
 }
 
-void ADriver::commit(const std::shared_ptr<ADriver> &db, AResultFn cb, bool now, QObject *receiver)
+void ADriver::commit(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
 {
     Q_UNUSED(db)
-    Q_UNUSED(now)
     Q_UNUSED(receiver)
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
@@ -99,10 +98,9 @@ void ADriver::commit(const std::shared_ptr<ADriver> &db, AResultFn cb, bool now,
     }
 }
 
-void ADriver::rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, bool now, QObject *receiver)
+void ADriver::rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
 {
     Q_UNUSED(db)
-    Q_UNUSED(now)
     Q_UNUSED(receiver)
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));

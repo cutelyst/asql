@@ -86,14 +86,6 @@ QString connectionStatus(ConnStatusType type) {
     }
 }
 
-//static QString qQuote(QString s)
-//{
-//    s.replace(QLatin1Char('\\'), QLatin1String("\\\\"));
-//    s.replace(QLatin1Char('\''), QLatin1String("\\'"));
-//    s.append(QLatin1Char('\'')).prepend(QLatin1Char('\''));
-//    return s;
-//}
-
 void ADriverPg::open(std::function<void(bool, const QString &)> cb)
 {
     qDebug(ASQL_PG) << "Open" << connectionInfo();
@@ -193,8 +185,9 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                 if (pgQuery.prepared && pgQuery.preparing) {
                                     if (pgQuery.result->error()) {
                                         // PREPARE OR PREPARED QUERY ERROR
-                                        m_queuedQueries.dequeue().done();
-                                        nextQuery(); // Must be after it's done so that a FORCED COMMIT/ROLLBACK can get in before next queries
+                                        m_queuedQueries.dequeue();
+                                        nextQuery();
+                                        pgQuery.done();
                                     } else {
                                         // Query prepared
                                         m_preparedQueries.append(pgQuery.preparedQuery.identification());
@@ -203,13 +196,15 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                         nextQuery();
                                     }
                                 } else {
-                                    m_queuedQueries.dequeue().done();
-                                    nextQuery(); // Must be after it's done so that a FORCED COMMIT/ROLLBACK can get in before next queries
+                                    m_queuedQueries.dequeue();
+                                    nextQuery();
+                                    pgQuery.done();
                                 }
                                 break;
                             } else {
                                 break;
                             }
+
                         }
 //                        qDebug(ASQL_PG) << "Not busy OUT" << this;
 
@@ -284,24 +279,14 @@ void ADriverPg::begin(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject 
     exec(db, QStringLiteral("BEGIN"), QVariantList(), cb, receiver);
 }
 
-void ADriverPg::commit(const std::shared_ptr<ADriver> &db, AResultFn cb, bool now, QObject *receiver)
+void ADriverPg::commit(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
 {
     exec(db, QStringLiteral("COMMIT"), QVariantList(), cb, receiver);
-    if (now && m_queuedQueries.size() > 1) {
-        // 0 - next query, .... LAST - COMMIT
-        auto last = m_queuedQueries.takeLast();
-        m_queuedQueries.insert(m_queryRunning ? 1 : 0, last);
-    }
 }
 
-void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, bool now, QObject *receiver)
+void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
 {
     exec(db, QStringLiteral("ROLLBACK"), QVariantList(), cb, receiver);
-    if (now && m_queuedQueries.size() > 1) {
-        // 0 - next query, .... LAST - COMMIT
-        auto last = m_queuedQueries.takeLast();
-        m_queuedQueries.insert(m_queryRunning ? 1 : 0, last);
-    }
 }
 
 void ADriverPg::queryConstructed(APGQuery &pgQuery)

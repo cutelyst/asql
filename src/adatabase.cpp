@@ -72,16 +72,16 @@ void ADatabase::begin(AResultFn cb, QObject *receiver)
     d->begin(d, cb, receiver);
 }
 
-void ADatabase::commit(bool now, AResultFn cb, QObject *receiver)
+void ADatabase::commit(AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->commit(d, cb, now, receiver);
+    d->commit(d, cb, receiver);
 }
 
-void ADatabase::rollback(bool now, AResultFn cb, QObject *receiver)
+void ADatabase::rollback(AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->rollback(d, cb, now, receiver);
+    d->rollback(d, cb, receiver);
 }
 
 void ADatabase::exec(const QString &query, AResultFn cb, QObject *receiver)

@@ -114,18 +114,16 @@ public:
      * but one can hook up a callback to check it's result.
      *
      * \param cb
-     * \param now when true will get in front of the query queue
      */
-    void commit(bool now = false, AResultFn cb = {}, QObject *receiver = nullptr);
+    void commit(AResultFn cb = {}, QObject *receiver = nullptr);
 
     /*!
      * \brief rollback a transaction, this operation usually succeeds,
      * but one can hook up a callback to check it's result.
      *
      * \param cb
-     * \param now when true will get in front of the query queue
      */
-    void rollback(bool now = false, AResultFn cb = {}, QObject *receiver = nullptr);
+    void rollback(AResultFn cb = {}, QObject *receiver = nullptr);
 
     /*!
      * \brief exec excutes a \param query against this database connection,

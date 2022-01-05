@@ -97,8 +97,8 @@ public:
     void onStateChanged(std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
     void begin(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver) override;
-    void commit(const std::shared_ptr<ADriver> &db, AResultFn cb, bool now, QObject *receiver) override;
-    void rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, bool now, QObject *receiver) override;
+    void commit(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver) override;
+    void rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver) override;
 
     void exec(const std::shared_ptr<ADriver> &db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
     void exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver) override;

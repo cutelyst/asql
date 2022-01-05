@@ -36,8 +36,8 @@ public:
     virtual bool isOpen() const;
 
     virtual void begin(const std::shared_ptr<ADriver> &driver, AResultFn cb, QObject *receiver);
-    virtual void commit(const std::shared_ptr<ADriver> &driver, AResultFn cb, bool now, QObject *receiver);
-    virtual void rollback(const std::shared_ptr<ADriver> &driver, AResultFn cb, bool now, QObject *receiver);
+    virtual void commit(const std::shared_ptr<ADriver> &driver, AResultFn cb, QObject *receiver);
+    virtual void rollback(const std::shared_ptr<ADriver> &driver, AResultFn cb, QObject *receiver);
 
     virtual void exec(const std::shared_ptr<ADriver> &driver, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver);
     virtual void exec(const std::shared_ptr<ADriver> &driver, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver);
