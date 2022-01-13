@@ -16,7 +16,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 # Include our cmake modules
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 # As moc files are generated in the binary dir, tell CMake
 # to always look for includes there:
@@ -27,7 +27,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Forbid in-tree building
-if(CMAKE_SOURCE_DIR MATCHES CMAKE_BINARY_DIR)
+if(CMAKE_CURRENT_SOURCE_DIR MATCHES CMAKE_BINARY_DIR)
       message(STATUS "Please do an out-of-tree build:")
       message(STATUS "rm -f CMakeCache.txt && mkdir build && cd build; cmake .. && make")
       message(FATAL_ERROR "In-tree-build detected!")
