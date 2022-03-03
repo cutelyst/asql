@@ -66,6 +66,7 @@ QString AResult::fieldName(int column) const
 QStringList AResult::columnNames() const
 {
     QStringList columns;
+    columns.reserve(d->fields());
     for (int i = 0; i < fields(); ++i) {
         columns.append(fieldName(i));
     }
@@ -77,6 +78,7 @@ QVariantList AResult::array() const
     QVariantList ret;
     auto it = constBegin();
     if (it != constEnd()) {
+        ret.reserve(d->fields());
         for (int i = 0; i < fields(); ++i) {
             ret.append(it.value(i));
         }
@@ -94,6 +96,7 @@ QVariantHash AResult::toHash() const
     QVariantHash ret;
     auto it = constBegin();
     if (it != constEnd()) {
+        ret.reserve(d->fields());
         for (int i = 0; i < fields(); ++i) {
             ret.insert(fieldName(i), it.value(i));
         }
@@ -111,10 +114,12 @@ QVariantList AResult::toHashList() const
     QVariantList ret;
     auto it = constBegin();
     if (it != constEnd()) {
+        ret.reserve(d->size());
         const QStringList columns = columnNames();
 
-        QVariantHash obj;
         do {
+            QVariantHash obj;
+            obj.reserve(d->fields());
             for (int i = 0; i < fields(); ++i) {
                 obj.insert(columns[i], it.value(i));
             }
@@ -154,8 +159,8 @@ QJsonArray AResult::toJsonArray() const
     if (it != constEnd()) {
         const QStringList columns = columnNames();
 
-        QJsonObject obj;
         do {
+            QJsonObject obj;
             for (int i = 0; i < fields(); ++i) {
                 obj.insert(columns[i], QJsonValue::fromVariant(it.value(i)));
             }
@@ -233,6 +238,7 @@ QVariantHash AResult::ARow::hash() const
 QVariantHash AResult::ARow::toHash() const
 {
     QVariantHash ret;
+    ret.reserve(d->fields());
     for (int i = 0; i < d->fields(); ++i) {
         ret.insert(d->fieldName(i), value(i));
     }
@@ -242,6 +248,7 @@ QVariantHash AResult::ARow::toHash() const
 QVariantList AResult::ARow::toList() const
 {
     QVariantList ret;
+    ret.reserve(d->fields());
     for (int i = 0; i < d->fields(); ++i) {
         ret.append(value(i));
     }
