@@ -76,11 +76,11 @@ add_definitions(
 )
 
 # cmake config files
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/asqlqt5-config.cmake.in
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/asqlqt-config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}Config.cmake
     @ONLY
 )
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/asqlqt5-config-version.cmake.in
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/asqlqt-config-version.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}ConfigVersion.cmake
     @ONLY
 )
