@@ -12,7 +12,7 @@
 #include <adatabase.h>
 #include <adriverfactory.h>
 
-#include <aqsqlexports.h>
+#include <asqlexports.h>
 
 class ASQL_EXPORT APool
 {

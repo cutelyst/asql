@@ -12,7 +12,7 @@
 #include <functional>
 #include <memory>
 
-#include <aqsqlexports.h>
+#include <asqlexports.h>
 
 class AResult;
 class ADriver;

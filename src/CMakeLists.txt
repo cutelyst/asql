@@ -26,7 +26,6 @@ set(asql_HEADERS
     adriver.h
     adriverfactory.h
     acache.h
-    aqsqlexports.h
 )
 
 set(asql_pg_SRC
@@ -39,14 +38,15 @@ set(asql_pg_HEADERS
     apg.h
 )
 
-set(asql_HEADERS_PRIVATE
-#     common.h
-)
-
 add_library(ASqlQt${QT_VERSION_MAJOR}
     ${asql_SRC}
     ${asql_HEADERS}
     ${asql_HEADERS_PRIVATE}
+)
+
+configure_file(asqlexports.h.in asqlexports.h @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/asqlexports.h
+        DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
 )
 
 #Add an alias so that library can be used inside the build tree, e.g. when testing
@@ -62,7 +62,7 @@ target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}
 )
 
 target_include_directories(ASqlQt${QT_VERSION_MAJOR} PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
   $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
 )
 
@@ -75,6 +75,22 @@ set_target_properties(ASqlQt${QT_VERSION_MAJOR} PROPERTIES
 target_link_libraries(ASqlQt${QT_VERSION_MAJOR}
     PUBLIC
         Qt${QT_VERSION_MAJOR}::Core
+)
+
+set_property(TARGET ASqlQt${QT_VERSION_MAJOR} PROPERTY PUBLIC_HEADER ${asql_HEADERS})
+install(TARGETS ASqlQt${QT_VERSION_MAJOR}
+    EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION bin COMPONENT runtime
+    ARCHIVE DESTINATION lib COMPONENT devel
+    PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
+)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/asql-qt5.pc.in
+  ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}.pc
+  @ONLY
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
 
 ## Postgres Driver
@@ -121,23 +137,7 @@ install(TARGETS ASqlQt${QT_VERSION_MAJOR}Pg
     PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
 )
 
-## End Postgres Driver
-
-set_property(TARGET ASqlQt${QT_VERSION_MAJOR} PROPERTY PUBLIC_HEADER ${asql_HEADERS})
-install(TARGETS ASqlQt${QT_VERSION_MAJOR}
-    EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION bin COMPONENT runtime
-    ARCHIVE DESTINATION lib COMPONENT devel
-    PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
-)
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/asql-qt5.pc.in
-  ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}.pc
-  @ONLY
-)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
-)
+# End Postgres Driver
 
 add_executable(asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR} asql_migration.cpp)
 target_link_libraries(asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}

@@ -10,7 +10,7 @@
 
 #include <adatabase.h>
 
-#include <aqsqlexports.h>
+#include <asqlexports.h>
 
 class ACachePrivate;
 class ASQL_EXPORT ACache : public QObject

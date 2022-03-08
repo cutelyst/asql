@@ -13,7 +13,7 @@
 
 #include <functional>
 
-#include <aqsqlexports.h>
+#include <asqlexports.h>
 
 class AResult;
 class APreparedQuery;

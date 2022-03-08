@@ -8,13 +8,13 @@
 
 #include <QtCore/QtGlobal>
 
-#if defined(ASqlQt5_EXPORTS)
+#if defined(ASqlQt@QT_VERSION_MAJOR@_EXPORTS)
 #define ASQL_EXPORT Q_DECL_EXPORT
 #else
 #define ASQL_EXPORT Q_DECL_IMPORT
 #endif
 
-#if defined(ASqlQt5Pg_EXPORTS)
+#if defined(ASqlQt@QT_VERSION_MAJOR@Pg_EXPORTS)
 #define ASQL_PG_EXPORT Q_DECL_EXPORT
 #else
 #define ASQL_PG_EXPORT Q_DECL_IMPORT

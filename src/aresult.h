@@ -9,7 +9,7 @@
 #include <QVariant>
 #include <memory>
 
-#include <aqsqlexports.h>
+#include <asqlexports.h>
 
 class ASQL_EXPORT AResultPrivate
 {

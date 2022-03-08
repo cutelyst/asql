@@ -7,7 +7,7 @@
 #define ATRANSACTION_H
 
 #include <adatabase.h>
-#include <aqsqlexports.h>
+#include <asqlexports.h>
 
 class ATransactionPrivate;
 class ASQL_EXPORT ATransaction

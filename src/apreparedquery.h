@@ -8,7 +8,7 @@
 
 #include <QString>
 
-#include <aqsqlexports.h>
+#include <asqlexports.h>
 
 #define APreparedQueryLiteral(str) \
     ([]() Q_DECL_NOEXCEPT -> APreparedQuery { \

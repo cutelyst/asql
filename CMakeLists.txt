@@ -26,13 +26,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Forbid in-tree building
-if(CMAKE_CURRENT_SOURCE_DIR MATCHES CMAKE_BINARY_DIR)
-      message(STATUS "Please do an out-of-tree build:")
-      message(STATUS "rm -f CMakeCache.txt && mkdir build && cd build; cmake .. && make")
-      message(FATAL_ERROR "In-tree-build detected!")
-endif()
-
 #
 # Options
 #

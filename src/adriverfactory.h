@@ -5,7 +5,7 @@
 #ifndef ADRIVERFACTORY_H
 #define ADRIVERFACTORY_H
 
-#include <aqsqlexports.h>
+#include <asqlexports.h>
 
 #include <memory>
 

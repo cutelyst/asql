@@ -7,7 +7,7 @@
 
 #include "adriverfactory.h"
 
-#include <aqsqlexports.h>
+#include <asqlexports.h>
 
 class APgPrivate;
 class ASQL_PG_EXPORT APg : public ADriverFactory
