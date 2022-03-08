@@ -140,6 +140,12 @@ void AMigrations::fromString(const QString &text)
                 version = 0;
             }
 #endif
+            if (upWay && up.contains(version)) {
+                qFatal("Duplicated UP version %d", version);
+            }
+            if (!upWay && down.contains(version)) {
+                qFatal("Duplicated DOWN version %d", version);
+            }
             latest = qMax(latest, version);
         } else if (version) {
             if (upWay) {
