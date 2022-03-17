@@ -907,6 +907,12 @@ QVariant AResultPg::value(int row, int column) const
     return {};
 }
 
+bool AResultPg::isNull(int row, int column) const
+{
+    Q_ASSERT_X(column < PQnfields(m_result), "isNull", "column out of range");
+    return PQgetisnull(m_result, row, column) == 1;
+}
+
 bool AResultPg::toBool(int row, int column) const
 {
     Q_ASSERT_X(column < PQnfields(m_result), "toBool", "column out of range");

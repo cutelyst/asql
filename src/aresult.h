@@ -30,6 +30,7 @@ public:
     virtual QString fieldName(int column) const = 0;
     virtual QVariant value(int row, int column) const = 0;
 
+    virtual bool isNull(int row, int column) const = 0;
     virtual bool toBool(int row, int column) const = 0;
     virtual int toInt(int row, int column) const = 0;
     virtual qint64 toLongLong(int row, int column) const = 0;
@@ -143,6 +144,7 @@ public:
         inline QString fieldName() const { return d->fieldName(column); }
 
         inline QVariant value() const { return d->value(row, column); }
+        inline bool isNull() const { return d->isNull(row, column); }
         inline bool toBool() const { return d->toBool(row, column); }
         inline int toInt() const { return d->toInt(row, column); };
         inline qint64 toLongLong() const { return d->toLongLong(row, column); };

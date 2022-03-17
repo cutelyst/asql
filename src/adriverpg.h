@@ -36,6 +36,7 @@ public:
     QString fieldName(int column) const override;
     QVariant value(int row, int column) const override;
 
+    bool isNull(int row, int column) const override;
     bool toBool(int row, int column) const override;
     int toInt(int row, int column) const override;
     qint64 toLongLong(int row, int column) const override;

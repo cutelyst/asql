@@ -23,6 +23,7 @@ public:
     QString fieldName(int column) const final { return {}; };
     QVariant value(int row, int column) const final { return {}; };
 
+    bool isNull(int row, int column) const final { return true; };
     bool toBool(int row, int column) const final { return false; };
     int toInt(int row, int column) const final { return 0; };
     qint64 toLongLong(int row, int column) const final { return 0; };
