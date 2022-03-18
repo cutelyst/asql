@@ -22,6 +22,11 @@ APg::~APg()
     delete d;
 }
 
+std::shared_ptr<ADriverFactory> APg::factory(const QUrl &connectionInfo)
+{
+    return APg::factory(connectionInfo.toString(QUrl::None));
+}
+
 std::shared_ptr<ADriverFactory> APg::factory(const QString &connectionInfo)
 {
     auto ret = std::make_shared<APg>(connectionInfo);
