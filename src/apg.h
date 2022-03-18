@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: (C) 2021 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2021-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 #ifndef APG_H
@@ -10,6 +10,8 @@
 #include <asqlexports.h>
 
 #include <QUrl>
+
+namespace ASql {
 
 class APgPrivate;
 class ASQL_PG_EXPORT APg : public ADriverFactory
@@ -39,5 +41,7 @@ public:
 private:
     APgPrivate *d;
 };
+
+}
 
 #endif // APG_H

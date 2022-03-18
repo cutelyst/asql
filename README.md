@@ -1,4 +1,4 @@
-<!-- SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+<!-- SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
      SPDX-License-Identifier: MIT
 -->
 
@@ -31,6 +31,8 @@ libraries are required as well.
 A connection pool is a convenient way of getting new connections without worrying about configuring it and it's lifetime, once you are done with it the connection returns to the pool. It's also possible to have a single database connection without it being attached to a pool, by creating ADatabase object directly and calling open().
 
 ```c++
+using namespace ASql;
+
 // No new connection is created at this moment
 APool::create(APg::factory("postgres://user:pass@server/dbname?target_session_attrs=read-write"));
 APool::create(APg::factory("postgres://user:pass@server/dbname"), "my_read_only_pool");
@@ -39,59 +41,60 @@ APool::create(APg::factory("postgres://user:pass@server/dbname"), "my_read_only_
 APool::setMaxIdleConnections(10);
 APool::setMaxIdleConnections(15, "my_read_only_pool");
 
-// Grabs a connection, it might be a new connection or one from the idle pool
-auto db = APool::database();
+{
+    // Grabs a connection, it might be a new connection or one from the idle pool
+    auto db = APool::database();
 
-// Grabs a connection from a read-only pool
-auto dbRO = APool::database("my_read_only_pool");
+    // Grabs a connection from a read-only pool
+    auto dbRO = APool::database("my_read_only_pool");
+    
+} // The scope is over, now once ADatabase db variables are
+  // done with the queries they will return to the pool
+
 ```
 
 ### Performing a query without params
 Please if you have user input values that you need to pass to your query, do yourself a favour and pass it as parameters, thus reducing the risk of SQL injection attacks.  
 ```c++
-{
-    auto db = APool::database();
-    db.exec(u"SELECT id, message FROM messages LIMIT 5", [=] (AResult &result) {
-        if (result.error()) {
-            qDebug() << result.errorString();
-            return;
+auto db = APool::database();
+db.exec(u"SELECT id, message FROM messages LIMIT 5", [=] (AResult &result) {
+    if (result.error()) {
+        qDebug() << result.errorString();
+        return;
+    }
+    
+    // iterate over your data
+    for (auto row : result) {
+        for (int i = 0; i < result.fields(); ++i) {
+            qDebug() << "data row" << row.at() << "column" << i << "value" << row.value(i);
         }
-        
-        // iterate over your data
-        for (auto row : result) {
-           for (int i = 0; i < result.fields(); ++i) {
-               qDebug() << "data row" << row.at() << "column" << i << "value" << row.value(i);
-           }
-           // or explicity select the columns
-           qDebug() << "ROW" << row.at() << "id" << row[0].toInt() << "msg" << row["message"].toString();
-        }
-    });
-
+        // or explicity select the columns
+        qDebug() << "ROW" << row.at() << "id" << row[0].toInt() << "msg" << row["message"].toString();
+    }
+});
 ```
 
 ### Performing multiple queries without params
 When you are not sending parameters PostgreSQL allows for multiple queries, this results into multiple calls to your lambda, if one query fails the remaining queries are ignored as if they where in a transaction block. It's possible to check if the last result has arrived
 ```c++
-    // This query is at the same scope at the previou one, this mean ADatabase will queue them
-    db.exec(u"SELECT * FROM logs LIMIT 5; SELECT * FROM messages LIMIT 5", [=] (AResult &result) {
-        if (result.error()) {
-            qDebug() << result.errorString();
-            return;
+// This query is at the same scope at the previou one, this mean ADatabase will queue them
+db.exec(u"SELECT * FROM logs LIMIT 5; SELECT * FROM messages LIMIT 5", [=] (AResult &result) {
+    if (result.error()) {
+        qDebug() << result.errorString();
+        return;
+    }
+    
+    if (result.lastResulSet()) {
+        // do something..
+    }
+    
+    // iterate over your data
+    for (auto row : result) {
+        for (int i = 0; i < result.fields(); ++i) {
+            qDebug() << "data row" << row.at() << "column" << i << "value" << row.value(i);
         }
-        
-        if (result.lastResulSet()) {
-            // do something..
-        }
-        
-        // iterate over your data
-        for (auto row : result) {
-           for (int i = 0; i < result.fields(); ++i) {
-               qDebug() << "data row" << row.at() << "column" << i << "value" << row.value(i);
-           }
-        }
-    });
-} // The scope is over, now once ADatabase db variable is
-  // done with the queries it will return to the pool
+    }
+});
 ```
 
 ### Performing a prepared query

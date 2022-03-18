@@ -51,6 +51,8 @@ Q_LOGGING_CATEGORY(ASQL_PG, "asql.pg", QtInfoMsg)
 
 #define VARHDRSZ 4
 
+using namespace ASql;
+
 ADriverPg::ADriverPg(const QString &connInfo) : ADriver(connInfo)
 {
 

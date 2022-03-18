@@ -12,6 +12,8 @@
 
 #include <asqlexports.h>
 
+namespace ASql {
+
 class ACachePrivate;
 class ASQL_EXPORT ACache : public QObject
 {
@@ -42,5 +44,7 @@ public:
 private:
     ACachePrivate *d_ptr;
 };
+
+}
 
 #endif // ACACHE_H

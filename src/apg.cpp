@@ -5,11 +5,17 @@
 #include "apg.h"
 #include "adriverpg.h"
 
+using namespace ASql;
+
+namespace ASql {
+
 class APgPrivate
 {
 public:
     QString connection;
 };
+
+}
 
 APg::APg(const QString &connectionInfo)
     : d(new APgPrivate)

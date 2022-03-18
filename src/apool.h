@@ -1,5 +1,5 @@
 /* 
- * SPDX-FileCopyrightText: (C) 2020-2021 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
@@ -13,6 +13,8 @@
 #include <adriverfactory.h>
 
 #include <asqlexports.h>
+
+namespace ASql {
 
 class ASQL_EXPORT APool
 {
@@ -135,5 +137,7 @@ public:
 private:
     inline static void pushDatabaseBack(const QString &connectionName, ADriver *driver);
 };
+
+}
 
 #endif // APOOL_H

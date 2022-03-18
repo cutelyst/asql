@@ -10,6 +10,8 @@
 
 #include <QLoggingCategory>
 
+using namespace ASql;
+
 ADatabase::ADatabase()
 {
 

@@ -16,6 +16,8 @@
 #include <QPointer>
 #include <QHash>
 
+namespace ASql {
+
 using PGconn = struct pg_conn;
 
 class AResultPg final : public AResultPrivate
@@ -135,5 +137,7 @@ private:
     QSocketNotifier *m_readNotify = nullptr;
     QByteArrayList m_preparedQueries;
 };
+
+}
 
 #endif // ADRIVERPG_H

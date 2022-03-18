@@ -9,6 +9,8 @@
 
 Q_LOGGING_CATEGORY(ASQL_PQ, "asql.prepared_query", QtInfoMsg)
 
+using namespace ASql;
+
 APreparedQuery::APreparedQuery()
 {
 

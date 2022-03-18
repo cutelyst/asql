@@ -15,6 +15,8 @@
 
 Q_LOGGING_CATEGORY(ASQL_CACHE, "asql.cache", QtInfoMsg)
 
+namespace ASql {
+
 struct ACacheReceiverCb {
     AResultFn cb;
     QPointer<QObject> receiver;
@@ -37,6 +39,10 @@ public:
     QMultiHash<QString, ACacheValue> cache;
     int dbSource = 0; // 0 - unset, 1 - db, 2 - pool
 };
+
+}
+
+using namespace ASql;
 
 ACache::ACache(QObject *parent) : QObject(parent)
   , d_ptr(new ACachePrivate)

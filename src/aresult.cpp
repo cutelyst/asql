@@ -9,6 +9,8 @@
 #include <QJsonObject>
 #include <QDateTime>
 
+using namespace ASql;
+
 AResult::AResult() = default;
 
 AResult::AResult(const AResult &other)

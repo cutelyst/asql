@@ -14,6 +14,8 @@
 
 Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
 
+using namespace ASql;
+
 struct APoolQueuedClient {
     std::function<void (ADatabase &)> cb;
     QPointer<QObject> receiver;
