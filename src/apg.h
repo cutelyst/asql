@@ -9,6 +9,8 @@
 
 #include <asqlexports.h>
 
+#include <QUrl>
+
 class APgPrivate;
 class ASQL_PG_EXPORT APg : public ADriverFactory
 {
@@ -26,6 +28,7 @@ public:
     APg(const QString &connectionInfo);
     ~APg();
 
+    static std::shared_ptr<ADriverFactory> factory(const QUrl &connectionInfo);
     static std::shared_ptr<ADriverFactory> factory(const QString &connectionInfo);
     static ADatabase database(const QString &connectionInfo);
 
