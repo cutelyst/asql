@@ -32,6 +32,7 @@ public:
 
     static std::shared_ptr<ADriverFactory> factory(const QUrl &connectionInfo);
     static std::shared_ptr<ADriverFactory> factory(const QString &connectionInfo);
+    static std::shared_ptr<ADriverFactory> factory(QStringView connectionInfo);
     static ADatabase database(const QString &connectionInfo);
 
     ADriver *createRawDriver() const final;

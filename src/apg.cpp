@@ -39,6 +39,11 @@ std::shared_ptr<ADriverFactory> APg::factory(const QString &connectionInfo)
     return ret;
 }
 
+std::shared_ptr<ADriverFactory> APg::factory(QStringView connectionInfo)
+{
+    return APg::factory(connectionInfo.toString());
+}
+
 ADatabase APg::database(const QString &connectionInfo)
 {
     ADatabase ret(std::make_shared<APg>(connectionInfo));

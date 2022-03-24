@@ -19,7 +19,7 @@ namespace ASql {
 class ASQL_EXPORT APool
 {
 public:
-    static const char *defaultPool;
+    static const QStringView defaultPool;
 
     /*!
      * \brief create creates a new database pool
@@ -29,7 +29,17 @@ public:
      * \param factory is a driver factory that creates new connections
      * \param poolName is an identifier for such pools, for example "read-write" or "read-only-replicas"
      */
-    static void create(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName = QLatin1String(defaultPool));
+    static void create(const std::shared_ptr<ADriverFactory> &factory, QStringView poolName = defaultPool);
+
+    /*!
+     * \brief create creates a new database pool
+     *
+     * Creates a new connection Pool that uses the factory to create new connections when they are required.
+     *
+     * \param factory is a driver factory that creates new connections
+     * \param poolName is an identifier for such pools, for example "read-write" or "read-only-replicas"
+     */
+    static void create(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName);
 
     /*!
      * \brief remove removes the database pool
@@ -38,7 +48,7 @@ public:
      *
      * \param poolName
      */
-    static void remove(const QString &poolName = QLatin1String(defaultPool));
+    static void remove(QStringView poolName = defaultPool);
 
     /*!
      * \brief database
@@ -52,14 +62,14 @@ public:
      * \param poolName
      * \return ADatabase
      */
-    static ADatabase database(const QString &poolName = QLatin1String(defaultPool));
+    static ADatabase database(QStringView poolName = defaultPool);
 
     /*!
      * \brief currentConnections of the pool
      * \param poolName
      * \return the number of active connections on this pool
      */
-    static int currentConnections(const QString &poolName = QLatin1String(defaultPool));
+    static int currentConnections(QStringView poolName = defaultPool);
 
     /*!
      * \brief retrieves a database object
@@ -71,7 +81,7 @@ public:
      * \param receiver
      * \param connectionName
      */
-    static void database(std::function<void(ADatabase &database)>, QObject *receiver = nullptr, const QString &poolName = QLatin1String(defaultPool));
+    static void database(std::function<void(ADatabase &database)>, QObject *receiver = nullptr, QStringView poolName = defaultPool);
 
     /*!
      * \brief setMaxIdleConnections maximum number of idle connections of the pool
@@ -82,7 +92,7 @@ public:
      * \param max
      * \param poolName
      */
-    static void setMaxIdleConnections(int max, const QString &poolName = QLatin1String(defaultPool));
+    static void setMaxIdleConnections(int max, QStringView poolName = defaultPool);
 
     /*!
      * \brief setMaxConnections maximum number of connections of the pool
@@ -95,7 +105,7 @@ public:
      * \param max
      * \param poolName
      */
-    static void setMaxConnections(int max, const QString &poolName = QLatin1String(defaultPool));
+    static void setMaxConnections(int max, QStringView poolName = defaultPool);
 
     /*!
      * \brief setSetupCallback setup a connection before being used for the first time
@@ -114,7 +124,7 @@ public:
      * \param max
      * \param poolName
      */
-    static void setSetupCallback(std::function<void(ADatabase &database)> cb, const QString &poolName = QLatin1String(defaultPool));
+    static void setSetupCallback(std::function<void(ADatabase &database)> cb, QStringView poolName = defaultPool);
 
     /*!
      * \brief setReuseCallback setup a connection before being reused
@@ -132,10 +142,10 @@ public:
      * \param max
      * \param poolName
      */
-    static void setReuseCallback(std::function<void(ADatabase &database)> cb, const QString &poolName = QLatin1String(defaultPool));
+    static void setReuseCallback(std::function<void(ADatabase &database)> cb, QStringView poolName = defaultPool);
 
 private:
-    inline static void pushDatabaseBack(const QString &connectionName, ADriver *driver);
+    inline static void pushDatabaseBack(QStringView connectionName, ADriver *driver);
 };
 
 }

@@ -24,6 +24,7 @@ public:
     virtual ~ACache();
 
     void setDatabasePool(const QString &poolName);
+    void setDatabasePool(QStringView poolName);
     void setDatabase(const ADatabase &db);
 
     /*!
@@ -32,14 +33,19 @@ public:
      * \param params
      * \return
      */
-    bool clear(const QString &query, const QVariantList &params = QVariantList());
-    bool expire(qint64 maxAgeMs, const QString &query, const QVariantList &params = QVariantList());
+    bool clear(QStringView query, const QVariantList &params = {});
+    bool expire(qint64 maxAgeMs, QStringView query, const QVariantList &params = {});
     int expireAll(qint64 maxAgeMs);
 
+    void exec(QStringView query, AResultFn cb, QObject *receiver = nullptr);
+    void exec(QStringView query, const QVariantList &args, AResultFn cb, QObject *receiver = nullptr);
+    void execExpiring(QStringView query, qint64 maxAgeMs, AResultFn cb, QObject *receiver = nullptr);
+    void execExpiring(QStringView query, qint64 maxAgeMs, const QVariantList &args, AResultFn cb, QObject *receiver = nullptr);
+
     void exec(const QString &query, AResultFn cb, QObject *receiver = nullptr);
-    void exec(const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
+    void exec(const QString &query, const QVariantList &args, AResultFn cb, QObject *receiver = nullptr);
     void execExpiring(const QString &query, qint64 maxAgeMs, AResultFn cb, QObject *receiver = nullptr);
-    void execExpiring(const QString &query, qint64 maxAgeMs, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
+    void execExpiring(const QString &query, qint64 maxAgeMs, const QVariantList &args, AResultFn cb, QObject *receiver = nullptr);
 
 private:
     ACachePrivate *d_ptr;
