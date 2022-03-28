@@ -13,7 +13,7 @@
 
 #include <QLoggingCategory>
 
-Q_LOGGING_CATEGORY(ASQL_CACHE, "asql.cache", QtInfoMsg)
+Q_LOGGING_CATEGORY(ASQL_CACHE, "asql.cache", QtWarningMsg)
 
 namespace ASql {
 
@@ -27,8 +27,8 @@ struct ACacheValue {
     QString query;
     QVariantList args;
     std::shared_ptr<QObject> cancellable;
-    AResult result;
     std::vector<ACacheReceiverCb> receivers;
+    AResult result;
     qint64 hasResultTs = 0;
 };
 
@@ -77,11 +77,11 @@ bool ACachePrivate::searchOrQueue(QStringView query, qint64 maxAgeMs, const QVar
             } else {
                 qDebug(ASQL_CACHE) << "queuing request" << query;
                 // queue another request
-                ACacheReceiverCb receiverObj;
-                receiverObj.cb = cb;
-                receiverObj.receiver = receiver;
-                receiverObj.checkReceiver = receiver;
-                value.receivers.push_back(receiverObj);
+                value.receivers.emplace_back(ACacheReceiverCb {
+                                                 cb,
+                                                 receiver,
+                                                 receiver
+                                             });
             }
 
             return true;
@@ -94,27 +94,39 @@ bool ACachePrivate::searchOrQueue(QStringView query, qint64 maxAgeMs, const QVar
 
 void ACachePrivate::requestData(const QString &query, qint64 maxAgeMs, const QVariantList &args, AResultFn cb, QObject *receiver)
 {
-    qDebug(ASQL_CACHE) << "requesting data" << query;
-    ACacheReceiverCb receiverObj;
-    receiverObj.cb = cb;
-    receiverObj.receiver = receiver;
-    receiverObj.checkReceiver = receiver;
+    qCDebug(ASQL_CACHE) << "requesting data" << query << int(dbSource);
+
+    ADatabase _db;
+    if (dbSource == ACachePrivate::DbSource::Database) {
+        _db = db;
+    } else if (dbSource == ACachePrivate::DbSource::Pool) {
+        _db = APool::database(poolName);
+    } else {
+        qCCritical(ASQL_CACHE) << "Pool database was not set" << int(dbSource);
+        AResult result;
+        cb(result);
+        return;
+    }
 
     ACacheValue _value;
     _value.query = query;
     _value.args = args;
     _value.cancellable = std::make_shared<QObject>();
-    _value.receivers.push_back(receiverObj);
+    _value.receivers.emplace_back(ACacheReceiverCb {
+                                      cb,
+                                      receiver,
+                                      receiver
+                                  });
     cache.insert(query, _value);
 
-    auto dbFn = [query, args, this] (AResult &result) {
+    _db.exec(query, args, [query, args, this] (AResult &result) {
         auto it = cache.find(query);
         while (it != cache.end() && it.key() == query) {
             ACacheValue &value = it.value();
             if (value.args == args) {
                 value.result = result;
                 value.hasResultTs = QDateTime::currentMSecsSinceEpoch();
-                qDebug(ASQL_CACHE) << "got request data, dispatching to" << value.receivers.size() << "receivers" << query;
+                qInfo(ASQL_CACHE) << "got request data, dispatching to" << value.receivers.size() << "receivers" << query;
                 for (const ACacheReceiverCb &receiverObj : value.receivers) {
                     if (receiverObj.checkReceiver == nullptr || !receiverObj.receiver.isNull()) {
                         qDebug(ASQL_CACHE) << "dispatching to receiver" << receiverObj.checkReceiver << query;
@@ -125,16 +137,7 @@ void ACachePrivate::requestData(const QString &query, qint64 maxAgeMs, const QVa
             }
             ++it;
         }
-    };
-
-    ADatabase db;
-    if (dbSource == ACachePrivate::DbSource::Database) {
-        db = db;
-    } else if (dbSource == ACachePrivate::DbSource::Pool) {
-        db = APool::database(poolName);
-    }
-
-    db.exec(query, args, dbFn, _value.cancellable.get());
+    }, _value.cancellable.get());
 }
 
 }
