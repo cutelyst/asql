@@ -14,6 +14,8 @@
 
 Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
 
+using namespace ASql;
+
 struct APoolQueuedClient {
     std::function<void (ADatabase &)> cb;
     QPointer<QObject> receiver;
@@ -21,6 +23,7 @@ struct APoolQueuedClient {
 };
 
 struct APoolInternal {
+    QString name;
     std::shared_ptr<ADriverFactory> driverFactory;
     QVector<ADriver *> pool;
     QQueue<APoolQueuedClient> connectionQueue;
@@ -31,27 +34,33 @@ struct APoolInternal {
     int connectionCount = 0;
 };
 
-static thread_local QHash<QString, APoolInternal> m_connectionPool;
+static thread_local QHash<QStringView, APoolInternal> m_connectionPool;
 
-const char *APool::defaultPool = const_cast<char *>("asql_default_pool");
+const QStringView APool::defaultPool = u"asql_default_pool";
+
+void APool::create(const std::shared_ptr<ADriverFactory> &factory, QStringView poolName)
+{
+    APool::create(factory, poolName.toString());
+}
 
 void APool::create(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName)
 {
     if (!m_connectionPool.contains(poolName)) {
         APoolInternal pool;
+        pool.name = poolName;
         pool.driverFactory = factory;
-        m_connectionPool.insert(poolName, pool);
+        m_connectionPool.insert(pool.name, pool);
     } else {
         qWarning(ASQL_POOL) << "Ignoring addDatabase, connectionName already available" << poolName;
     }
 }
 
-void APool::remove(const QString &poolName)
+void APool::remove(QStringView poolName)
 {
     m_connectionPool.remove(poolName);
 }
 
-void APool::pushDatabaseBack(const QString &connectionName, ADriver *driver)
+void APool::pushDatabaseBack(QStringView connectionName, ADriver *driver)
 {
     auto it = m_connectionPool.find(connectionName);
     if (it != m_connectionPool.end()) {
@@ -91,7 +100,7 @@ void APool::pushDatabaseBack(const QString &connectionName, ADriver *driver)
     }
 }
 
-ADatabase APool::database(const QString &poolName)
+ADatabase APool::database(QStringView poolName)
 {
     ADatabase db;
     auto it = m_connectionPool.find(poolName);
@@ -130,7 +139,7 @@ ADatabase APool::database(const QString &poolName)
     return db;
 }
 
-int APool::currentConnections(const QString &poolName)
+int APool::currentConnections(QStringView poolName)
 {
     auto it = m_connectionPool.find(poolName);
     if (it != m_connectionPool.end()) {
@@ -139,7 +148,7 @@ int APool::currentConnections(const QString &poolName)
     return 0;
 }
 
-void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, const QString &poolName)
+void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, QStringView poolName)
 {
     ADatabase db;
     auto it = m_connectionPool.find(poolName);
@@ -185,7 +194,7 @@ void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, co
     }
 }
 
-void APool::setMaxIdleConnections(int max, const QString &poolName)
+void APool::setMaxIdleConnections(int max, QStringView poolName)
 {
     auto it = m_connectionPool.find(poolName);
     if (it != m_connectionPool.end()) {
@@ -195,7 +204,7 @@ void APool::setMaxIdleConnections(int max, const QString &poolName)
     }
 }
 
-void APool::setMaxConnections(int max, const QString &poolName)
+void APool::setMaxConnections(int max, QStringView poolName)
 {
     auto it = m_connectionPool.find(poolName);
     if (it != m_connectionPool.end()) {
@@ -205,7 +214,7 @@ void APool::setMaxConnections(int max, const QString &poolName)
     }
 }
 
-void APool::setSetupCallback(std::function<void (ADatabase &)> cb, const QString &poolName)
+void APool::setSetupCallback(std::function<void (ADatabase &)> cb, QStringView poolName)
 {
     auto it = m_connectionPool.find(poolName);
     if (it != m_connectionPool.end()) {
@@ -215,7 +224,7 @@ void APool::setSetupCallback(std::function<void (ADatabase &)> cb, const QString
     }
 }
 
-void APool::setReuseCallback(std::function<void (ADatabase &)> cb, const QString &poolName)
+void APool::setReuseCallback(std::function<void (ADatabase &)> cb, QStringView poolName)
 {
     auto it = m_connectionPool.find(poolName);
     if (it != m_connectionPool.end()) {

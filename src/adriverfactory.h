@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: (C) 2021 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2021-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 #ifndef ADRIVERFACTORY_H
@@ -8,6 +8,8 @@
 #include <asqlexports.h>
 
 #include <memory>
+
+namespace ASql {
 
 class ADriver;
 class ADatabase;
@@ -21,5 +23,7 @@ public:
     virtual std::shared_ptr<ADriver> createDriver() const;
     virtual ADatabase createDatabase() const;
 };
+
+}
 
 #endif // ADRIVERFACTORY_H

@@ -1,5 +1,5 @@
 /* 
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
@@ -9,6 +9,8 @@
 #include <QString>
 
 #include <asqlexports.h>
+
+namespace ASql {
 
 #define APreparedQueryLiteral(str) \
     ([]() Q_DECL_NOEXCEPT -> APreparedQuery { \
@@ -68,5 +70,7 @@ private:
     QByteArray m_query;
     QByteArray m_identification;
 };
+
+}
 
 #endif // APREPAREDQUERY_H

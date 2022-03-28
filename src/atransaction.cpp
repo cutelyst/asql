@@ -9,6 +9,8 @@
 
 Q_LOGGING_CATEGORY(ASQL_TRANSACTION, "asql.transaction", QtInfoMsg)
 
+namespace ASql {
+
 class ATransactionPrivate
 {
 public:
@@ -23,6 +25,10 @@ public:
     ADatabase db;
     bool running = false;
 };
+
+}
+
+using namespace ASql;
 
 ATransaction::ATransaction()
 {

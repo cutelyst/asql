@@ -15,6 +15,8 @@
 #include "amigrations.h"
 #include "apg.h"
 
+using namespace ASql;
+
 int main(int argc, char *argv[])
 {
     QCoreApplication::setOrganizationName(QStringLiteral("Cutelyst"));

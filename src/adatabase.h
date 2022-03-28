@@ -1,5 +1,5 @@
 /* 
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
@@ -13,6 +13,8 @@
 #include <memory>
 
 #include <asqlexports.h>
+
+namespace ASql {
 
 class AResult;
 class ADriver;
@@ -228,5 +230,7 @@ protected:
     friend class APool;
     std::shared_ptr<ADriver> d;
 };
+
+}
 
 #endif // ADATABASE_H

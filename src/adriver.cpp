@@ -9,6 +9,8 @@
 #include <QDate>
 #include <QJsonValue>
 
+using namespace ASql;
+
 class AResultInvalid : public AResultPrivate
 {
 public:

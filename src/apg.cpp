@@ -5,11 +5,17 @@
 #include "apg.h"
 #include "adriverpg.h"
 
+using namespace ASql;
+
+namespace ASql {
+
 class APgPrivate
 {
 public:
     QString connection;
 };
+
+}
 
 APg::APg(const QString &connectionInfo)
     : d(new APgPrivate)
@@ -31,6 +37,11 @@ std::shared_ptr<ADriverFactory> APg::factory(const QString &connectionInfo)
 {
     auto ret = std::make_shared<APg>(connectionInfo);
     return ret;
+}
+
+std::shared_ptr<ADriverFactory> APg::factory(QStringView connectionInfo)
+{
+    return APg::factory(connectionInfo.toString());
 }
 
 ADatabase APg::database(const QString &connectionInfo)

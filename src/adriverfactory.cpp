@@ -6,6 +6,8 @@
 
 #include <adatabase.h>
 
+using namespace ASql;
+
 ADriverFactory::ADriverFactory()
 {
 

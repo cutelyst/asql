@@ -1,5 +1,5 @@
 /* 
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
@@ -8,6 +8,8 @@
 
 #include <QObject>
 #include <adatabase.h>
+
+namespace ASql {
 
 class AMigrationsPrivate;
 class ASQL_EXPORT AMigrations : public QObject
@@ -98,5 +100,7 @@ Q_SIGNALS:
 private:
     AMigrationsPrivate *d_ptr;
 };
+
+}
 
 #endif // AMIGRATIONS_H

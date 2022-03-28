@@ -14,6 +14,8 @@
 
 Q_LOGGING_CATEGORY(ASQL_MIG, "asql.migrations", QtInfoMsg)
 
+namespace ASql {
+
 class AMigrationsPrivate
 {
 public:
@@ -27,6 +29,10 @@ public:
     int active = -1;
     int latest = -1;
 };
+
+}
+
+using namespace ASql;
 
 AMigrations::AMigrations(QObject *parent)
     : QObject(parent)

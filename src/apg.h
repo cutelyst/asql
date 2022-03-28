@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: (C) 2021 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2021-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 #ifndef APG_H
@@ -10,6 +10,8 @@
 #include <asqlexports.h>
 
 #include <QUrl>
+
+namespace ASql {
 
 class APgPrivate;
 class ASQL_PG_EXPORT APg : public ADriverFactory
@@ -30,6 +32,7 @@ public:
 
     static std::shared_ptr<ADriverFactory> factory(const QUrl &connectionInfo);
     static std::shared_ptr<ADriverFactory> factory(const QString &connectionInfo);
+    static std::shared_ptr<ADriverFactory> factory(QStringView connectionInfo);
     static ADatabase database(const QString &connectionInfo);
 
     ADriver *createRawDriver() const final;
@@ -39,5 +42,7 @@ public:
 private:
     APgPrivate *d;
 };
+
+}
 
 #endif // APG_H

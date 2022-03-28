@@ -9,6 +9,8 @@
 #include <QJsonObject>
 #include <QDateTime>
 
+using namespace ASql;
+
 AResult::AResult() = default;
 
 AResult::AResult(const AResult &other)
@@ -73,24 +75,6 @@ QStringList AResult::columnNames() const
     return columns;
 }
 
-QVariantList AResult::array() const
-{
-    QVariantList ret;
-    auto it = constBegin();
-    if (it != constEnd()) {
-        ret.reserve(d->fields());
-        for (int i = 0; i < fields(); ++i) {
-            ret.append(it.value(i));
-        }
-    }
-    return ret;
-}
-
-QVariantHash AResult::hash() const
-{
-    return toHash();
-}
-
 QVariantHash AResult::toHash() const
 {
     QVariantHash ret;
@@ -102,11 +86,6 @@ QVariantHash AResult::toHash() const
         }
     }
     return ret;
-}
-
-QVariantList AResult::hashes() const
-{
-    return toHashList();
 }
 
 QVariantList AResult::toHashList() const
@@ -130,11 +109,6 @@ QVariantList AResult::toHashList() const
     return ret;
 }
 
-QJsonObject AResult::jsonObject() const
-{
-    return toJsonObject();
-}
-
 QJsonObject AResult::toJsonObject() const
 {
     QJsonObject ret;
@@ -145,11 +119,6 @@ QJsonObject AResult::toJsonObject() const
         }
     }
     return ret;
-}
-
-QJsonArray AResult::jsonArray() const
-{
-    return toJsonArray();
 }
 
 QJsonArray AResult::toJsonArray() const
@@ -230,11 +199,6 @@ QJsonValue AResult::AColumn::toJsonValue() const
     return d->toJsonValue(row, column);
 }
 
-QVariantHash AResult::ARow::hash() const
-{
-    return toHash();
-}
-
 QVariantHash AResult::ARow::toHash() const
 {
     QVariantHash ret;
@@ -253,11 +217,6 @@ QVariantList AResult::ARow::toList() const
         ret.append(value(i));
     }
     return ret;
-}
-
-QJsonObject AResult::ARow::jsonObject() const
-{
-    return toJsonObject();
 }
 
 QJsonObject AResult::ARow::toJsonObject() const

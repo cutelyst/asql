@@ -22,6 +22,8 @@
 #include "../../src/apreparedquery.h"
 #include "../../src/apg.h"
 
+using namespace ASql;
+
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);

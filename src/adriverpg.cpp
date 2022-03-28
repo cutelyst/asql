@@ -51,6 +51,8 @@ Q_LOGGING_CATEGORY(ASQL_PG, "asql.pg", QtInfoMsg)
 
 #define VARHDRSZ 4
 
+using namespace ASql;
+
 ADriverPg::ADriverPg(const QString &connInfo) : ADriver(connInfo)
 {
 
@@ -506,11 +508,11 @@ void ADriverPg::doExec(APGQuery &pgQuery)
 
 void ADriverPg::doExecParams(APGQuery &pgQuery)
 {
-    const QVariantList params = pgQuery.params;
-    Oid paramTypes[params.size()];
-    const char *paramValues[params.size()];
-    int paramLengths[params.size()];
-    int paramFormats[params.size()];
+    const QVariantList &params = pgQuery.params;
+    auto paramTypes = std::make_unique<Oid[]>(params.size());
+    auto paramValues = std::make_unique<const char *[]>(params.size());
+    auto paramLengths = std::make_unique<int[]>(params.size());
+    auto paramFormats = std::make_unique<int[]>(params.size());
 
     QByteArrayList deleteLater;
     for (int i = 0; i < params.size(); ++i) {
@@ -647,9 +649,9 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
             ret = PQsendQueryPrepared(m_conn,
                                       pgQuery.preparedQuery.identification().constData(),
                                       params.size(),
-                                      paramValues,
-                                      paramLengths,
-                                      paramFormats,
+                                      paramValues.get(),
+                                      paramLengths.get(),
+                                      paramFormats.get(),
                                       0); // perhaps later use binary results
             if (pgQuery.setSingleRow) {
                 setSingleRowMode();
@@ -660,16 +662,16 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
                                 pgQuery.preparedQuery.identification().constData(),
                                 pgQuery.preparedQuery.query().constData(),
                                 params.size(),
-                                paramTypes); // perhaps later use binary results
+                                paramTypes.get()); // perhaps later use binary results
         }
     } else {
         ret = PQsendQueryParams(m_conn,
                                 pgQuery.query.constData(),
                                 params.size(),
-                                paramTypes,
-                                paramValues,
-                                paramLengths,
-                                paramFormats,
+                                paramTypes.get(),
+                                paramValues.get(),
+                                paramLengths.get(),
+                                paramFormats.get(),
                                 0); // perhaps later use binary results
         if (pgQuery.setSingleRow) {
             setSingleRowMode();
