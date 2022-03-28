@@ -180,6 +180,7 @@ public:
         inline QVariant value(int column) const { return d->value(i, column); }
         inline QVariant value(const QString &name) const { return d->value(i, d->indexOfField(name)); }
         inline QVariant value(QLatin1String name) const { return d->value(i, d->indexOfField(name)); }
+        inline QVariant value(QStringView name) const { return d->value(i, d->indexOfField(name)); }
         inline AColumn operator[](int column) const { return AColumn(d, i, column); }
         inline AColumn operator[](const QString &name) const { return AColumn(d, i, d->indexOfField(name)); }
         inline AColumn operator[](QLatin1String name) const { return AColumn(d, i, d->indexOfField(name)); }
