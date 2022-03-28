@@ -17,7 +17,6 @@
 #include <QUuid>
 #include <QtEndian>
 
-#include <arpa/inet.h>
 #include <libpq-fe.h>
 
 Q_LOGGING_CATEGORY(ASQL_PG, "asql.pg", QtInfoMsg)
@@ -710,10 +709,7 @@ void ADriverPg::cmdFlush()
     }
 }
 
-AResultPg::AResultPg()
-{
-
-}
+AResultPg::AResultPg() = default;
 
 AResultPg::~AResultPg()
 {
