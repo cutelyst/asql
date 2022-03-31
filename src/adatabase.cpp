@@ -12,10 +12,7 @@
 
 using namespace ASql;
 
-ADatabase::ADatabase()
-{
-
-}
+ADatabase::ADatabase() = default;
 
 ADatabase::ADatabase(const std::shared_ptr<ADriver> &driver) : d(driver)
 {
@@ -52,8 +49,10 @@ void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
 
 ADatabase::State ADatabase::state() const
 {
-    Q_ASSERT(d);
-    return d->state();
+    if (d) {
+        return d->state();
+    }
+    return ADatabase::State::Disconnected;
 }
 
 void ADatabase::onStateChanged(std::function<void (ADatabase::State, const QString &)> cb)
@@ -65,7 +64,7 @@ void ADatabase::onStateChanged(std::function<void (ADatabase::State, const QStri
 bool ADatabase::isOpen() const
 {
     Q_ASSERT(d);
-    return d->isOpen();
+    return d && d->isOpen();
 }
 
 void ADatabase::begin(AResultFn cb, QObject *receiver)
