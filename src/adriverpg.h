@@ -18,7 +18,7 @@
 
 namespace ASql {
 
-using PGconn = struct pg_conn;
+using PGconn = struct ::pg_conn;
 
 class AResultPg final : public AResultPrivate
 {
