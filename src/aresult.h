@@ -100,7 +100,7 @@ public:
     AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;
 
-    class AColumn {
+    class ASQL_EXPORT AColumn {
     public:
         std::shared_ptr<AResultPrivate> d;
         int row;
@@ -126,7 +126,7 @@ public:
         inline QByteArray toByteArray() const  { return d->toByteArray(row, column); }
     };
 
-    class ARow {
+    class ASQL_EXPORT ARow {
     public:
         std::shared_ptr<AResultPrivate> d;
         int row;
@@ -162,7 +162,7 @@ public:
         inline AColumn operator[](QStringView name) const { return AColumn(d, row, d->indexOfField(name)); }
     };
 
-    class const_iterator {
+    class ASQL_EXPORT const_iterator {
     public:
         std::shared_ptr<AResultPrivate> d;
         int i;
