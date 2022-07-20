@@ -30,14 +30,9 @@ public:
 
 using namespace ASql;
 
-ATransaction::ATransaction()
-{
-}
+ATransaction::ATransaction() = default;
 
-ATransaction::~ATransaction()
-{
-
-}
+ATransaction::~ATransaction() = default;
 
 ATransaction::ATransaction(const ADatabase &db) : d(std::make_shared<ATransactionPrivate>(db))
 {
@@ -60,7 +55,7 @@ ATransaction &ATransaction::operator =(const ATransaction &copy)
 
 void ATransaction::begin(AResultFn cb, QObject *receiver)
 {
-    Q_ASSERT(!d);
+    Q_ASSERT(d);
     if (!d->running) {
         d->running = true;
         d->db.begin(cb, receiver);
@@ -71,7 +66,7 @@ void ATransaction::begin(AResultFn cb, QObject *receiver)
 
 void ATransaction::commit(AResultFn cb, QObject *receiver)
 {
-    Q_ASSERT(!d);
+    Q_ASSERT(d);
     if (d->running) {
         d->running = false;
         d->db.commit(cb, receiver);
@@ -82,7 +77,7 @@ void ATransaction::commit(AResultFn cb, QObject *receiver)
 
 void ATransaction::rollback(AResultFn cb, QObject *receiver)
 {
-    Q_ASSERT(!d);
+    Q_ASSERT(d);
     if (d->running) {
         d->running = false;
         d->db.rollback(cb, receiver);
