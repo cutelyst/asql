@@ -111,18 +111,6 @@ void ADriver::rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject
     }
 }
 
-void ADriver::exec(const std::shared_ptr<ADriver> &db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
-{
-    Q_UNUSED(db)
-    Q_UNUSED(query)
-    Q_UNUSED(params)
-    Q_UNUSED(receiver)
-    if (cb) {
-        AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
-        cb(result);
-    }
-}
-
 void ADriver::exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_UNUSED(db)
@@ -134,6 +122,20 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db, QStringView query, const 
         cb(result);
     }
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+void ADriver::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+{
+    Q_UNUSED(db)
+    Q_UNUSED(query)
+    Q_UNUSED(params)
+    Q_UNUSED(receiver)
+    if (cb) {
+        AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
+        cb(result);
+    }
+}
+#endif
 
 void ADriver::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {

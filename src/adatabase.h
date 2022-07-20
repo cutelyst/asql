@@ -141,9 +141,28 @@ public:
      * \param query
      * \param cb
      */
-    void exec(const QString &query, AResultFn cb, QObject *receiver = nullptr);
-
     void exec(QStringView query, AResultFn cb, QObject *receiver = nullptr);
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    /*!
+     * \brief exec excutes a \param query against this database connection,
+     * once done AResult object will have the retrieved data if any, always
+     * check for AResult::error() to see if the query was successful.
+     *
+     * Postgres allows for multiple commands to be sent, in this case the callback
+     * will be called once per command you must then check for AResult::lastResultSet(),
+     * if one of the commands fails the subsequently ones will not be delivered, which
+     * is why checking for AResult::lastResultSet() is important. This feature is
+     * not supported by Postgres on the method that accepts params.
+     *
+     * \note Since ASql might queue queries only use this method for strings that can outlive
+     * the query execution, such as string literals
+     *
+     * \param query
+     * \param cb
+     */
+    void exec(QUtf8StringView query, AResultFn cb, QObject *receiver = nullptr);
+#endif
 
     /*!
      * \brief exec executes a prepared \param query against this database connection,
@@ -167,9 +186,23 @@ public:
      * \param params
      * \param cb
      */
-    void exec(const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
-
     void exec(QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    /*!
+     * \brief exec executes a \param query against this database connection,
+     * once done AResult object will have the retrieved data if any, always
+     * check for AResult::error() to see if the query was successful.
+     *
+     * \note Since ASql might queue queries only use this method for strings that can outlive
+     * the query execution, such as string literals
+     *
+     * \param query
+     * \param params
+     * \param cb
+     */
+    void exec(QUtf8StringView query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
+#endif
 
     /*!
      * \brief exec executes a prepared \param query against this database connection

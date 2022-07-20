@@ -32,6 +32,26 @@ int main(int argc, char *argv[])
     APool::create(APg::factory(QStringLiteral("postgres:///")));
     APool::setMaxIdleConnections(10);
 
+    {
+        auto db = APool::database();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        // Zero-copy and zero allocation
+        db.exec(u8"SELECT 'I ♥ Cutelyst!' AS utf8", [] (AResult &result) {
+            qDebug() << "=====iterator single row" << result.toHash();
+            if (result.error()) {
+                qDebug() << "Error" << result.errorString();
+            }
+        });
+#endif
+        // Zero-copy but allocates due toUtf8()
+        db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", [] (AResult &result) {
+            qDebug() << "=====iterator single row" << result.toHash();
+            if (result.error()) {
+                qDebug() << "Error" << result.errorString();
+            }
+        });
+    }
+
     QVariantList series;
     {
         auto db = APool::database();

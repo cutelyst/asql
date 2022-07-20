@@ -41,8 +41,11 @@ public:
     virtual void commit(const std::shared_ptr<ADriver> &driver, AResultFn cb, QObject *receiver);
     virtual void rollback(const std::shared_ptr<ADriver> &driver, AResultFn cb, QObject *receiver);
 
-    virtual void exec(const std::shared_ptr<ADriver> &driver, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    virtual void exec(const std::shared_ptr<ADriver> &driver, QUtf8StringView query, const QVariantList &params, AResultFn cb, QObject *receiver);
+#endif
     virtual void exec(const std::shared_ptr<ADriver> &driver, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver);
+
     virtual void exec(const std::shared_ptr<ADriver> &driver, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver);
 
     virtual void setLastQuerySingleRowMode();

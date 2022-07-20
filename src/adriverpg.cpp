@@ -321,10 +321,11 @@ void ADriverPg::queryConstructed(APGQuery &pgQuery)
     }
 }
 
-void ADriverPg::exec(const std::shared_ptr<ADriver> &db, const QString &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     APGQuery pgQuery;
-    pgQuery.query = query.toUtf8();
+    pgQuery.query.setRawData(query.data(), query.size());
     pgQuery.params = params;
     pgQuery.cb = cb;
     selfDriver = db;
@@ -333,6 +334,7 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, const QString &query, c
 
     queryConstructed(pgQuery);
 }
+#endif
 
 void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
@@ -383,7 +385,7 @@ void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db, cons
     }
 
     m_subscribedNotifications.insert(name, cb);
-    exec(db, QLatin1String("LISTEN ") + name, {}, [=] (AResult &result) {
+    exec(db, QString(u"LISTEN " + name), {}, [=] (AResult &result) {
         qDebug(ASQL_PG) << "subscribed" << !result.error() << result.errorString();
         if (result.error()) {
             m_subscribedNotifications.remove(name);
@@ -403,7 +405,7 @@ QStringList ADriverPg::subscribedToNotifications() const
 void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name)
 {
     if (m_subscribedNotifications.remove(name)) {
-        exec(db, QLatin1String("UNLISTEN ") + name, {}, [=] (AResult &result) {
+        exec(db, QString(u"UNLISTEN " + name), {}, [=] (AResult &result) {
             qDebug(ASQL_PG) << "unsubscribed" << !result.error() << result.errorString();
         }, this);
     }
