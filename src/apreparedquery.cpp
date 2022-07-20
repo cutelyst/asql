@@ -11,10 +11,7 @@ Q_LOGGING_CATEGORY(ASQL_PQ, "asql.prepared_query", QtInfoMsg)
 
 using namespace ASql;
 
-APreparedQuery::APreparedQuery()
-{
-
-}
+APreparedQuery::APreparedQuery() = default;
 
 static QByteArray identificationCounter() {
     QByteArray ret;
@@ -22,12 +19,6 @@ static QByteArray identificationCounter() {
     ret = "asql_" + QByteArray::number(qPreparedStmtCount.fetchAndAddRelaxed(1) + 1, 16);
     qDebug(ASQL_PQ) << "Created prepared query identifier" << ret;
     return ret;
-}
-
-APreparedQuery::APreparedQuery(const QString &query)
-    : m_query(query.toUtf8())
-    , m_identification(identificationCounter())
-{
 }
 
 APreparedQuery::APreparedQuery(QStringView query)

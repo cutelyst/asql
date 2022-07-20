@@ -49,12 +49,6 @@ public:
      * \brief APreparedQuery constructs a prepared \p query with an automatic unique identification
      * \param query
      */
-    APreparedQuery(const QString &query);
-
-    /*!
-     * \brief APreparedQuery constructs a prepared \p query with an automatic unique identification
-     * \param query
-     */
     APreparedQuery(QStringView query);
 
     /*!
