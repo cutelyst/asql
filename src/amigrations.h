@@ -24,8 +24,9 @@ public:
      * \brief load migration information from the asql_migrations table using the specified migration \p name.
      * \param db a valid dabase option
      * \param name of the migration
+     * \param noTransactionDB a database object in case some script must run outside a transaction block
      */
-    void load(const ADatabase &db, const QString &name);
+    void load(const ADatabase &db, const QString &name, const ADatabase &noTransactionDB = {});
 
     /*!
      * \brief active version of this migration, only valid after ready has been emitted
@@ -86,13 +87,13 @@ public:
      * All version numbers need to be positive, with version 0 representing an empty database.
      *
      * \sa finished() signal is emitted with the result.
-     * \param version to try to apply changes
+     * \param targetVersion to try to apply changes
      * \param cb callback function that is called to inform the result
      * \param dryRun if set will rollback the transaction instead of committing, this option diverges
      * from regular operation as it will perform a single transaction block with all up/down
      * steps at once, which depending on the operation will fail.
      */
-    void migrate(int version, std::function<void(bool error, const QString &errorString)> cb, bool dryRun = false);
+    void migrate(int targetVersion, std::function<void(bool error, const QString &errorString)> cb, bool dryRun = false);
 
 Q_SIGNALS:
     void ready(bool error, const QString &errorString);
