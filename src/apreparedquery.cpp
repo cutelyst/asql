@@ -27,11 +27,10 @@ APreparedQuery::APreparedQuery(QStringView query)
 {
 }
 
-APreparedQuery::APreparedQuery(const QString &query, const QString &identification)
+APreparedQuery::APreparedQuery(QStringView query, QStringView identification)
     : m_query(query.toUtf8())
     , m_identification(identification.toUtf8())
 {
-
 }
 
 QByteArray APreparedQuery::query() const

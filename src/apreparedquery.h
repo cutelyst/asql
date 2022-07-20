@@ -55,7 +55,7 @@ public:
      * \brief APreparedQuery constructs a prepared \p query with a manual \p identification
      * \param query
      */
-    APreparedQuery(const QString &query, const QString &identification);
+    APreparedQuery(QStringView query, QStringView identification);
 
     QByteArray query() const;
     QByteArray identification() const;
