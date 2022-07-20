@@ -105,8 +105,11 @@ int main(int argc, char *argv[])
     }
 
     ADatabase db;
+    ADatabase noTransactionDB;
     if (conn.startsWith(u"postgres://") || conn.startsWith(u"postgresql://")) {
         db = APg::database(conn);
+        noTransactionDB = APg::database(conn);
+        noTransactionDB.open();
     } else {
         std::cerr << qPrintable(QCoreApplication::translate("main", "No driver for uri: %1.").arg(conn)) << std::endl;
         return 5;
@@ -172,7 +175,7 @@ int main(int argc, char *argv[])
             }, dryRun);
         });
 
-        mig->load(db, name);
+        mig->load(db, name, noTransactionDB);
     });
 
     return app.exec();
