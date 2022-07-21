@@ -393,8 +393,12 @@ void ADriverPg::setLastQuerySingleRowMode()
 
 bool ADriverPg::enterPipelineMode()
 {
+#ifdef LIBPQ_HAS_PIPELINING
     // Refuse to enter Pipeline mode if we have queued queries
     return m_connected && m_queuedQueries.isEmpty() && PQenterPipelineMode(m_conn) == 1;
+#else
+    return false;
+#endif
 }
 
 bool ADriverPg::exitPipelineMode()
