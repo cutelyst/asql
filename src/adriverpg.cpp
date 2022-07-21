@@ -168,12 +168,14 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
 //                            qCWarning(ASQL_PG) << "Not busy: RESULT" << result << "queue" << m_queuedQueries.size();
 
                             if (result) {
+#ifdef LIBPQ_HAS_PIPELINING
                                 ExecStatusType status = PQresultStatus(result);
                                 if (status == PGRES_PIPELINE_SYNC) {
                                     --m_pipelineSync;
                                     PQclear(result);
                                     continue;
                                 }
+#endif
 
                                 APGQuery &pgQuery = m_queuedQueries.head();
 //                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << pgQuery.result;
