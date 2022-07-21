@@ -415,11 +415,11 @@ bool ADriverPg::exitPipelineMode()
 ADatabase::PipelineStatus ADriverPg::pipelineStatus() const
 {
 #ifdef LIBPQ_HAS_PIPELINING
-    return m_connected ? static_cast<ADatabase::PipelineStatus>(PQpipelineStatus(m_conn))
-                       : ADatabase::PipelineStatus::Off;
-#else
-    return false;
+    if (m_connected) {
+        return static_cast<ADatabase::PipelineStatus>(PQpipelineStatus(m_conn));
+    }
 #endif
+    return ADatabase::PipelineStatus::Off;
 }
 
 bool ADriverPg::pipelineSync()
