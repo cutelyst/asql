@@ -227,9 +227,12 @@ public:
 
     /**
      * @brief enterPipelineMode will enable the pipeline mode on the driver, it's queue must be empty and the connection must be open
+     *
+     * \param autoSyncMS if greater than zero it will setup a timer to send pipeline sync at each ms.
+     *
      * @return
      */
-    bool enterPipelineMode();
+    bool enterPipelineMode(qint64 autoSyncMS = 0);
 
     /**
      * @brief exitPipelineModewill disables the pipeline mode on the driver, it's queue must be empty and the connection must be open

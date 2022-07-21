@@ -16,6 +16,8 @@
 #include <QPointer>
 #include <QHash>
 
+class QTimer;
+
 namespace ASql {
 
 class AResultPg final : public AResultPrivate
@@ -109,7 +111,7 @@ public:
 
     void setLastQuerySingleRowMode() override;
 
-    bool enterPipelineMode() override;
+    bool enterPipelineMode(qint64 autoSyncMS) override;
 
     bool exitPipelineMode() override;
 
@@ -138,6 +140,7 @@ private:
     QByteArrayList m_preparedQueries;
     QSocketNotifier *m_writeNotify = nullptr;
     QSocketNotifier *m_readNotify = nullptr;
+    QTimer *m_autoSyncTimer = nullptr;
     PGconn *m_conn = nullptr;
     ADatabase::State m_state = ADatabase::State::Disconnected;
     int m_pipelineSync = 0;

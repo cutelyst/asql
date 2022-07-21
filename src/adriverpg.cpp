@@ -16,6 +16,7 @@
 #include <QUrlQuery>
 #include <QUuid>
 #include <QtEndian>
+#include <QTimer>
 
 #include <libpq-fe.h>
 
@@ -223,6 +224,11 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                         }
 //                        qDebug(ASQL_PG) << "Not busy OUT" << this;
 
+                        if (!m_queuedQueries.isEmpty() && m_pipelineSync == 0 &&
+                                pipelineStatus() != ADatabase::PipelineStatus::Off && m_autoSyncTimer && !m_autoSyncTimer->isActive()) {
+                            m_autoSyncTimer->start();
+                        }
+
                         PGnotify *notify = nullptr;
                         while ((notify = PQnotifies(m_conn)) != nullptr) {
                             const QString name = QString::fromUtf8(notify->relname);
@@ -335,6 +341,10 @@ void ADriverPg::queryConstructed(APGQuery &pgQuery)
         doExecParams(pgQuery);
     }
     m_queuedQueries.append(pgQuery);
+
+    if (pipelineStatus() != ADatabase::PipelineStatus::Off && m_autoSyncTimer && !m_autoSyncTimer->isActive()) {
+        m_autoSyncTimer->start();
+    }
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -393,14 +403,22 @@ void ADriverPg::setLastQuerySingleRowMode()
     }
 }
 
-bool ADriverPg::enterPipelineMode()
+bool ADriverPg::enterPipelineMode(qint64 autoSyncMS)
 {
 #ifdef LIBPQ_HAS_PIPELINING
     // Refuse to enter Pipeline mode if we have queued queries
-    return m_connected && m_queuedQueries.isEmpty() && PQenterPipelineMode(m_conn) == 1;
-#else
-    return false;
+    if (m_connected && m_queuedQueries.isEmpty() && PQenterPipelineMode(m_conn) == 1) {
+        if (autoSyncMS && !m_autoSyncTimer) {
+            m_autoSyncTimer = new QTimer{this};
+            m_autoSyncTimer->setInterval(autoSyncMS);
+            m_autoSyncTimer->setSingleShot(autoSyncMS);
+            connect(m_autoSyncTimer, &QTimer::timeout, this, &ADriverPg::pipelineSync);
+        }
+        return true;
+    }
 #endif
+
+    return false;
 }
 
 bool ADriverPg::exitPipelineMode()
@@ -499,6 +517,8 @@ void ADriverPg::finishConnection()
     m_preparedQueries.clear();
     m_connected = false;
     m_pipelineSync = 0;
+    delete m_autoSyncTimer;
+    m_autoSyncTimer = nullptr;
     if (m_readNotify) {
         m_readNotify->setEnabled(false);
         m_readNotify->deleteLater();

@@ -131,10 +131,10 @@ void ADatabase::setLastQuerySingleRowMode()
     d->setLastQuerySingleRowMode();
 }
 
-bool ADatabase::enterPipelineMode()
+bool ADatabase::enterPipelineMode(qint64 autoSyncMS)
 {
     Q_ASSERT(d);
-    return d->enterPipelineMode();
+    return d->enterPipelineMode(autoSyncMS);
 }
 
 bool ADatabase::exitPipelineMode()

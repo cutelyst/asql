@@ -154,8 +154,9 @@ void ADriver::setLastQuerySingleRowMode()
 
 }
 
-bool ADriver::enterPipelineMode()
+bool ADriver::enterPipelineMode(qint64 autoSyncMS)
 {
+    Q_UNUSED(autoSyncMS);
     return false;
 }
 

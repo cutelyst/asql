@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
                 callDb(i);
             }
             // Must be called either after some X number of queries or periodically
+            // if enterPipelineMode did not set autoSync
             qDebug() << "PIPELINE SYNC" << db.pipelineSync();
         });
     }
@@ -64,19 +65,19 @@ int main(int argc, char *argv[])
         auto db = APool::database();
         db.onStateChanged([db] (ADatabase::State state, const QString &msg) mutable {
             // Must be called with an empty db query queue and after it is connected (state)
-            qDebug() << "PIPELINE ENTER" << state << db.enterPipelineMode();
+            qDebug() << "2 PIPELINE ENTER" << state << db.enterPipelineMode(2000);
 
-            qDebug() << "PIPELINE STATUS" << int(db.pipelineStatus());
+            qDebug() << "2 PIPELINE STATUS" << int(db.pipelineStatus());
             auto callDb = [db](int id) mutable {
                 db.exec(APreparedQuery(u"SELECT now(), $1"), {id},
                         [=] (AResult &result) {
                     if (result.error()) {
-                        qDebug() << "PIPELINE SELECT error" << id << result.errorString();
+                        qDebug() << "2 PIPELINE SELECT error" << id << result.errorString();
                         return;
                     }
 
                     if (result.size()) {
-                        qDebug() << "PIPELINE SELECT value" << id << result.begin()[1].toInt() << result.begin().value(0);
+                        qDebug() << "2 PIPELINE SELECT value" << id << result.begin()[1].toInt() << result.begin().value(0);
                     }
                 });
             };
@@ -85,12 +86,12 @@ int main(int argc, char *argv[])
                 db.exec(APreparedQueryLiteral(u"SELECT now(), $1"), {id},
                         [=] (AResult &result) {
                     if (result.error()) {
-                        qDebug() << "PIPELINE SELECT error" << id << result.errorString();
+                        qDebug() << "2 PIPELINE SELECT error" << id << result.errorString();
                         return;
                     }
 
                     if (result.size()) {
-                        qDebug() << "PIPELINE SELECT value" << id << result.begin()[1].toInt() << result.begin().value(0);
+                        qDebug() << "2 PIPELINE SELECT value" << id << result.begin()[1].toInt() << result.begin().value(0);
                     }
                 });
             };
@@ -99,8 +100,6 @@ int main(int argc, char *argv[])
                 callDb(i);
                 callStaticDb(-i);
             }
-            // Must be called either after some X number of queries or periodically
-            qDebug() << "PIPELINE SYNC" << db.pipelineSync();
         });
     }
 
