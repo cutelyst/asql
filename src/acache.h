@@ -8,9 +8,9 @@
 
 #include <QObject>
 
-#include <adatabase.h>
+#include "adatabase.h"
 
-#include <asqlexports.h>
+#include "asqlexports.h"
 
 namespace ASql {
 

@@ -8,7 +8,7 @@
 
 #include <QString>
 
-#include <asqlexports.h>
+#include "asqlexports.h"
 
 namespace ASql {
 

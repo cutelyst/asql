@@ -7,7 +7,7 @@
 
 #include "adriverfactory.h"
 
-#include <asqlexports.h>
+#include "asqlexports.h"
 
 #include <QUrl>
 

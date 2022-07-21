@@ -7,7 +7,7 @@
 #define AMIGRATIONS_H
 
 #include <QObject>
-#include <adatabase.h>
+#include "adatabase.h"
 
 namespace ASql {
 

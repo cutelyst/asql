@@ -9,11 +9,11 @@
 #include <QString>
 #include <QSocketNotifier>
 
-#include <adatabase.h>
+#include "adatabase.h"
 
 #include <functional>
 
-#include <asqlexports.h>
+#include "asqlexports.h"
 
 namespace ASql {
 

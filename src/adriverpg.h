@@ -6,7 +6,7 @@
 #ifndef ADRIVERPG_H
 #define ADRIVERPG_H
 
-#include <adriver.h>
+#include "adriver.h"
 #include <libpq-fe.h>
 
 #include "aresult.h"

@@ -6,8 +6,8 @@
 #ifndef ATRANSACTION_H
 #define ATRANSACTION_H
 
-#include <adatabase.h>
-#include <asqlexports.h>
+#include "adatabase.h"
+#include "asqlexports.h"
 
 namespace ASql {
 

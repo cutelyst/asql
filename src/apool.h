@@ -9,10 +9,10 @@
 #include <QObject>
 #include <QUrl>
 
-#include <adatabase.h>
-#include <adriverfactory.h>
+#include "adatabase.h"
+#include "adriverfactory.h"
 
-#include <asqlexports.h>
+#include "asqlexports.h"
 
 namespace ASql {
 
