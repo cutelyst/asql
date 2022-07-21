@@ -148,7 +148,7 @@ void AMigrations::fromString(const QString &text)
 #else
             const QStringRef way = match.capturedRef(2);
             noTransaction = !match.capturedRef(3).isNull();
-            qDebug(ASQL_MIG) << "CAPTURE" << way << match.capturedRef(1).toInt() << noTransaction´;
+            qDebug(ASQL_MIG) << "CAPTURE" << way << match.capturedRef(1).toInt() << noTransaction;
             if (way.compare(QLatin1String("up"), Qt::CaseInsensitive) == 0) {
                 upWay = true;
                 version = match.capturedRef(1).toInt();
