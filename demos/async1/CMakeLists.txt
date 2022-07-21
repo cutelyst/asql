@@ -22,6 +22,13 @@ target_link_libraries(deleter
     Qt${QT_VERSION_MAJOR}::Core
 )
 
+add_executable(pipeline pipeline.cpp)
+target_link_libraries(pipeline
+    ASqlQt${QT_VERSION_MAJOR}::Core
+    ASqlQt${QT_VERSION_MAJOR}::Pg
+    Qt${QT_VERSION_MAJOR}::Core
+)
+
 add_executable(prepared prepared.cpp)
 target_link_libraries(prepared
     ASqlQt${QT_VERSION_MAJOR}::Core

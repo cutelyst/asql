@@ -111,6 +111,14 @@ void ADatabase::exec(QStringView query, const QVariantList &params, AResultFn cb
     d->exec(d, query, params, cb, receiver);
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+void ADatabase::exec(QUtf8StringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+{
+    Q_ASSERT(d);
+    d->exec(d, query, params, cb, receiver);
+}
+#endif
+
 void ADatabase::exec(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
 {
     Q_ASSERT(d);
@@ -121,6 +129,30 @@ void ADatabase::setLastQuerySingleRowMode()
 {
     Q_ASSERT(d);
     d->setLastQuerySingleRowMode();
+}
+
+bool ADatabase::enterPipelineMode()
+{
+    Q_ASSERT(d);
+    return d->enterPipelineMode();
+}
+
+bool ADatabase::exitPipelineMode()
+{
+    Q_ASSERT(d);
+    return d->exitPipelineMode();
+}
+
+ADatabase::PipelineStatus ADatabase::pipelineStatus() const
+{
+    Q_ASSERT(d);
+    return d->pipelineStatus();
+}
+
+bool ADatabase::pipelineSync()
+{
+    Q_ASSERT(d);
+    return d->pipelineSync();
 }
 
 void ADatabase::subscribeToNotification(const QString &channel, ANotificationFn cb, QObject *receiver)
@@ -147,3 +179,4 @@ ADatabase &ADatabase::operator =(const ADatabase &copy)
     return *this;
 }
 
+#include "moc_adatabase.cpp"

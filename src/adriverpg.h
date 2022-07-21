@@ -50,7 +50,7 @@ public:
     QJsonValue toJsonValue(int row, int column) const final;
     QByteArray toByteArray(int row, int column) const override;
 
-    void processResult();
+    inline void processResult();
 
     QString m_errorString;
     PGresult *m_result = nullptr;
@@ -109,6 +109,14 @@ public:
 
     void setLastQuerySingleRowMode() override;
 
+    bool enterPipelineMode() override;
+
+    bool exitPipelineMode() override;
+
+    ADatabase::PipelineStatus pipelineStatus() const override;
+
+    bool pipelineSync() override;
+
     void subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, ANotificationFn cb, QObject *receiver) override;
     QStringList subscribedToNotifications() const override;
     void unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name) override;
@@ -123,19 +131,20 @@ private:
     inline void setSingleRowMode();
     inline void cmdFlush();
 
-    PGconn *m_conn = nullptr;
-    ADatabase::State m_state = ADatabase::State::Disconnected;
-    bool m_connected = false;
-    bool m_flush = false;
-    bool m_queryRunning = false;
-    bool m_notificationPtrSet = false;
     std::function<void (ADatabase::State, const QString &)> m_stateChangedCb;
     QHash<QString, ANotificationFn> m_subscribedNotifications;
     QQueue<APGQuery> m_queuedQueries;
     std::shared_ptr<ADriver> selfDriver;
+    QByteArrayList m_preparedQueries;
     QSocketNotifier *m_writeNotify = nullptr;
     QSocketNotifier *m_readNotify = nullptr;
-    QByteArrayList m_preparedQueries;
+    PGconn *m_conn = nullptr;
+    ADatabase::State m_state = ADatabase::State::Disconnected;
+    int m_pipelineSync = 0;
+    bool m_connected = false;
+    bool m_flush = false;
+    bool m_queryRunning = false;
+    bool m_notificationPtrSet = false;
 };
 
 }

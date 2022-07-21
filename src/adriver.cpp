@@ -154,6 +154,26 @@ void ADriver::setLastQuerySingleRowMode()
 
 }
 
+bool ADriver::enterPipelineMode()
+{
+    return false;
+}
+
+bool ADriver::exitPipelineMode()
+{
+    return false;
+}
+
+ADatabase::PipelineStatus ADriver::pipelineStatus() const
+{
+    return ADatabase::PipelineStatus::Off;
+}
+
+bool ADriver::pipelineSync()
+{
+    return false;
+}
+
 void ADriver::subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, ANotificationFn cb, QObject *receiver)
 {
     Q_UNUSED(db)

@@ -164,9 +164,17 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                     if (PQconsumeInput(m_conn) == 1) {
                         while (PQisBusy(m_conn) == 0) {
                             PGresult *result = PQgetResult(m_conn);
-//                            qDebug(ASQL_PG) << "Not busy: RESULT" << result << "busy" << PQisBusy(m_conn) << m_queuedQueries.size();
-                            if (Q_UNLIKELY(result != nullptr)) {
-//                                int status = PQresultStatus(result);
+
+//                            qCWarning(ASQL_PG) << "Not busy: RESULT" << result << "queue" << m_queuedQueries.size();
+
+                            if (result) {
+                                ExecStatusType status = PQresultStatus(result);
+                                if (status == PGRES_PIPELINE_SYNC) {
+                                    --m_pipelineSync;
+                                    PQclear(result);
+                                    continue;
+                                }
+
                                 APGQuery &pgQuery = m_queuedQueries.head();
 //                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << pgQuery.result;
                                 if (pgQuery.result->m_result) {
@@ -180,9 +188,11 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                 }
                                 pgQuery.result->m_result = result;
                                 pgQuery.result->processResult();
+                                continue;
                             } else if (m_queuedQueries.size()) {
                                 APGQuery &pgQuery = m_queuedQueries.head();
                                 m_queryRunning = false;
+
                                 if (Q_UNLIKELY(pgQuery.prepared && pgQuery.preparing)) {
                                     if (Q_UNLIKELY(pgQuery.result->error())) {
                                         // PREPARE OR PREPARED QUERY ERROR
@@ -201,8 +211,11 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                     nextQuery();
                                     query.done();
                                 }
-                                break;
-                            } else {
+                            }
+
+                            if (pipelineStatus() == ADatabase::PipelineStatus::Off || !m_pipelineSync) {
+                                // In PIPELINE mode a null result means the end of a query
+                                // but PQisBusy() should indicate it's end instead
                                 break;
                             }
                         }
@@ -308,9 +321,9 @@ void ADriverPg::queryConstructed(APGQuery &pgQuery)
         });
     }
 
-    m_queuedQueries.append(pgQuery);
-
-    if (m_queryRunning || !m_conn || !m_connected || m_queuedQueries.size() > 1) {
+    if (pipelineStatus() != ADatabase::PipelineStatus::On &&
+            (m_queryRunning || !m_connected || m_queuedQueries.size() > 1)) {
+        m_queuedQueries.append(pgQuery);
         return;
     }
 
@@ -319,6 +332,7 @@ void ADriverPg::queryConstructed(APGQuery &pgQuery)
     } else {
         doExecParams(pgQuery);
     }
+    m_queuedQueries.append(pgQuery);
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -377,6 +391,42 @@ void ADriverPg::setLastQuerySingleRowMode()
     }
 }
 
+bool ADriverPg::enterPipelineMode()
+{
+    // Refuse to enter Pipeline mode if we have queued queries
+    return m_connected && m_queuedQueries.isEmpty() && PQenterPipelineMode(m_conn) == 1;
+}
+
+bool ADriverPg::exitPipelineMode()
+{
+#ifdef LIBPQ_HAS_PIPELINING
+    return m_connected && PQexitPipelineMode(m_conn) == 1;
+#else
+    return false;
+#endif
+}
+
+ADatabase::PipelineStatus ADriverPg::pipelineStatus() const
+{
+#ifdef LIBPQ_HAS_PIPELINING
+    return m_connected ? static_cast<ADatabase::PipelineStatus>(PQpipelineStatus(m_conn))
+                       : ADatabase::PipelineStatus::Off;
+#else
+    return false;
+#endif
+}
+
+bool ADriverPg::pipelineSync()
+{
+#ifdef LIBPQ_HAS_PIPELINING
+    if (m_connected && PQpipelineSync(m_conn) == 1) {
+        ++m_pipelineSync;
+        return true;
+    }
+#endif
+    return false;
+}
+
 void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, ANotificationFn cb, QObject *receiver)
 {
     if (m_subscribedNotifications.contains(name)) {
@@ -413,7 +463,8 @@ void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, 
 
 void ADriverPg::nextQuery()
 {
-    while (!m_queuedQueries.isEmpty() && !m_queryRunning) {
+    const bool pipelineOff = pipelineStatus() == ADatabase::PipelineStatus::Off;
+    while (pipelineOff && !m_queuedQueries.isEmpty() && !m_queryRunning) {
         APGQuery &pgQuery = m_queuedQueries.head();
         if (pgQuery.checkReceiver && pgQuery.receiver.isNull()) {
             m_queuedQueries.dequeue();
@@ -441,6 +492,7 @@ void ADriverPg::finishConnection()
     m_subscribedNotifications.clear();
     m_preparedQueries.clear();
     m_connected = false;
+    m_pipelineSync = 0;
     if (m_readNotify) {
         m_readNotify->setEnabled(false);
         m_readNotify->deleteLater();
@@ -468,7 +520,23 @@ void ADriverPg::doExec(APGQuery &pgQuery)
 {
     int ret;
     if (pgQuery.prepared) {
-        if (m_preparedQueries.contains(pgQuery.preparedQuery.identification())) {
+        bool isPrepared = m_preparedQueries.contains(pgQuery.preparedQuery.identification());
+        if (!isPrepared) {
+            ret = PQsendPrepare(m_conn,
+                                pgQuery.preparedQuery.identification().constData(),
+                                pgQuery.preparedQuery.query().constData(),
+                                0,
+                                nullptr); // perhaps later use binary results
+
+            if (pipelineStatus() == ADatabase::PipelineStatus::On) {
+                // pretend that it was prepared otherwise it can't be used in in the pipeline
+                m_preparedQueries.append(pgQuery.preparedQuery.identification());
+                isPrepared = true;
+            }
+            pgQuery.preparing = true;
+        }
+
+        if (isPrepared) {
             ret = PQsendQueryPrepared(m_conn,
                                       pgQuery.preparedQuery.identification().constData(),
                                       0,
@@ -479,13 +547,6 @@ void ADriverPg::doExec(APGQuery &pgQuery)
             if (pgQuery.setSingleRow) {
                 setSingleRowMode();
             }
-        } else {
-            m_queuedQueries.head().preparing = true;
-            ret = PQsendPrepare(m_conn,
-                                pgQuery.preparedQuery.identification().constData(),
-                                pgQuery.preparedQuery.query().constData(),
-                                0,
-                                nullptr); // perhaps later use binary results
         }
     } else {
         ret = PQsendQuery(m_conn, pgQuery.query.constData());
@@ -646,7 +707,23 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
 
     int ret;
     if (pgQuery.prepared) {
-        if (m_preparedQueries.contains(pgQuery.preparedQuery.identification())) {
+        bool isPrepared = m_preparedQueries.contains(pgQuery.preparedQuery.identification());
+        if (!isPrepared) {
+            ret = PQsendPrepare(m_conn,
+                                pgQuery.preparedQuery.identification().constData(),
+                                pgQuery.preparedQuery.query().constData(),
+                                params.size(),
+                                paramTypes.get());
+
+            if (pipelineStatus() == ADatabase::PipelineStatus::On) {
+                // pretend that it was prepared otherwise it can't be used in in the pipeline
+                m_preparedQueries.append(pgQuery.preparedQuery.identification());
+                isPrepared = true;
+            }
+            pgQuery.preparing = true;
+        }
+
+        if (isPrepared) {
             ret = PQsendQueryPrepared(m_conn,
                                       pgQuery.preparedQuery.identification().constData(),
                                       params.size(),
@@ -657,13 +734,6 @@ void ADriverPg::doExecParams(APGQuery &pgQuery)
             if (pgQuery.setSingleRow) {
                 setSingleRowMode();
             }
-        } else {
-            m_queuedQueries.head().preparing = true;
-            ret = PQsendPrepare(m_conn,
-                                pgQuery.preparedQuery.identification().constData(),
-                                pgQuery.preparedQuery.query().constData(),
-                                params.size(),
-                                paramTypes.get()); // perhaps later use binary results
         }
     } else {
         ret = PQsendQueryParams(m_conn,
@@ -1053,42 +1123,15 @@ QByteArray AResultPg::toByteArray(int row, int column) const
 
 void AResultPg::processResult()
 {
-    if (!m_result) {
-//        q->setSelect(false);
-//        q->setActive(false);
-//        currentSize = -1;
-//        canFetchMoreRows = false;
-//        return false;
-        return;
-    }
     ExecStatusType status = PQresultStatus(m_result);
     switch (status) {
     case PGRES_TUPLES_OK:
-//        q->setSelect(true);
-//        q->setActive(true);
-//        currentSize = q->isForwardOnly() ? -1 : PQntuples(result);
-//        canFetchMoreRows = false;
-//        return true;
     case PGRES_SINGLE_TUPLE:
-//        q->setSelect(true);
-//        q->setActive(true);
-//        currentSize = -1;
-//        canFetchMoreRows = true;
-//        return true;
     case PGRES_COMMAND_OK:
-//        q->setSelect(false);
-//        q->setActive(true);
-//        currentSize = -1;
-//        canFetchMoreRows = false;
-//        return true;
         return;
     default:
         break;
     }
-//    q->setSelect(false);
-//    q->setActive(false);
-//    currentSize = -1;
-//    canFetchMoreRows = false;
 
     m_error = true;
     m_errorString = QString::fromLocal8Bit(PQresultErrorMessage(m_result));

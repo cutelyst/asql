@@ -225,6 +225,35 @@ public:
      */
     void setLastQuerySingleRowMode();
 
+    /**
+     * @brief enterPipelineMode will enable the pipeline mode on the driver, it's queue must be empty and the connection must be open
+     * @return
+     */
+    bool enterPipelineMode();
+
+    /**
+     * @brief exitPipelineModewill disables the pipeline mode on the driver, it's queue must be empty and the connection must be open
+     * @return
+     */
+    bool exitPipelineMode();
+
+    enum class PipelineStatus {
+        Off,
+        On,
+        Aborted,
+    };
+    /**
+     * @brief pipelineStatus
+     * @return the current pipeline mode status
+     */
+    PipelineStatus pipelineStatus() const;
+
+    /**
+     * @brief pipelineSync sends a pipeline sync to delimiter the end of the current query set
+     * @return
+     */
+    bool pipelineSync();
+
     /*!
      * \brief subscribeToNotification will start listening for notifications
      * described by name

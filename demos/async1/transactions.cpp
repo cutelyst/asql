@@ -6,6 +6,8 @@
 #include <QCoreApplication>
 #include <QLoggingCategory>
 
+#include <thread>
+
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDateTime>

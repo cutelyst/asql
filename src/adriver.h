@@ -50,6 +50,14 @@ public:
 
     virtual void setLastQuerySingleRowMode();
 
+    virtual bool enterPipelineMode();
+
+    virtual bool exitPipelineMode();
+
+    virtual ADatabase::PipelineStatus pipelineStatus() const;
+
+    virtual bool pipelineSync();
+
     virtual void subscribeToNotification(const std::shared_ptr<ADriver> &driver, const QString &name, ANotificationFn cb, QObject *receiver);
     virtual QStringList subscribedToNotifications() const;
     virtual void unsubscribeFromNotification(const std::shared_ptr<ADriver> &driver, const QString &name);
