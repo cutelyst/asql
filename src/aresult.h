@@ -22,6 +22,8 @@ public:
     virtual bool error() const = 0;
     virtual QString errorString() const = 0;
 
+    virtual QByteArray query() const = 0;
+
     virtual int size() const = 0;
     virtual int fields() const = 0;
     virtual int numRowsAffected() const = 0;
@@ -58,6 +60,12 @@ public:
     bool lastResulSet() const;
     bool error() const;
     QString errorString() const;
+
+    /*!
+     * \brief returns the query data sent to the database
+     * \return
+     */
+    QByteArray query() const;
 
     int size() const;
     int fields() const;

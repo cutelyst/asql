@@ -30,6 +30,8 @@ public:
     bool error() const override;
     QString errorString() const override;
 
+    QByteArray query() const override;
+
     int size() const override;
     int fields() const override;
     int numRowsAffected() const override;
@@ -54,6 +56,7 @@ public:
 
     inline void processResult();
 
+    QByteArray m_query;
     QString m_errorString;
     PGresult *m_result = nullptr;
     bool m_error = false;
@@ -77,8 +80,9 @@ public:
     bool setSingleRow = false;
 
     inline void done() {
-        AResult r(result);
         if (cb && (!checkReceiver || !receiver.isNull())) {
+            result->m_query = query;
+            AResult r(result);
             cb(r);
         }
     }

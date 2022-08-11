@@ -829,6 +829,11 @@ QString AResultPg::errorString() const
     return m_errorString;
 }
 
+QByteArray AResultPg::query() const
+{
+    return m_query;
+}
+
 int AResultPg::size() const
 {
     return PQntuples(m_result);

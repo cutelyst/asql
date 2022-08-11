@@ -28,7 +28,7 @@ public:
     bool self;
 };
 
-using AResultFn = std::function<void(AResult &row)>;
+using AResultFn = std::function<void(AResult &result)>;
 using ANotificationFn = std::function<void(const ADatabaseNotification &payload)>;
 
 class APreparedQuery;

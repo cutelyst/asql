@@ -18,6 +18,8 @@ public:
     bool error() const final { return true; }
     QString errorString() const { return {}; }
 
+    QByteArray query() const { return {}; }
+
     int size() const final { return 0; }
     int fields() const final { return 0; }
     int numRowsAffected() const final { return 0; }

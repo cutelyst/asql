@@ -35,6 +35,11 @@ QString AResult::errorString() const
     return !d ? QStringLiteral("INVALID DRIVER") : d->errorString();
 }
 
+QByteArray AResult::query() const
+{
+    return d->query();
+}
+
 int AResult::size() const
 {
     return d->size();
