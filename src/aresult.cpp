@@ -158,7 +158,10 @@ bool AResult::operator==(const AResult &other) const
 
 AResult::AResult(const std::shared_ptr<AResultPrivate> &priv) : d(priv)
 {
+}
 
+AResult::AResult(std::shared_ptr<AResultPrivate> &&priv) : d(std::move(priv))
+{
 }
 
 AResultPrivate::~AResultPrivate() = default;

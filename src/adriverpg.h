@@ -82,7 +82,7 @@ public:
     inline void done() {
         if (cb && (!checkReceiver || !receiver.isNull())) {
             result->m_query = query;
-            AResult r(result);
+            AResult r(std::move(result));
             cb(r);
         }
     }

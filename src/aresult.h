@@ -54,6 +54,7 @@ class ASQL_EXPORT AResult
 public:
     AResult();
     AResult(const std::shared_ptr<AResultPrivate> &priv);
+    AResult(std::shared_ptr<AResultPrivate> &&priv);
     AResult(const AResult &other);
     virtual ~AResult();
 

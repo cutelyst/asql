@@ -117,7 +117,7 @@ void ACachePrivate::requestData(const QString &query, qint64 maxAgeMs, const QVa
                                       receiver,
                                       receiver
                                   });
-    cache.insert(query, _value);
+    auto it = cache.insert(query, std::move(_value));
 
     _db.exec(query, args, [query, args, this] (AResult &result) {
         auto it = cache.find(query);
@@ -137,7 +137,7 @@ void ACachePrivate::requestData(const QString &query, qint64 maxAgeMs, const QVa
             }
             ++it;
         }
-    }, _value.cancellable.get());
+    }, it->cancellable.get());
 }
 
 }
