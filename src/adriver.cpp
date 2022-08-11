@@ -14,33 +14,31 @@ using namespace ASql;
 class AResultInvalid : public AResultPrivate
 {
 public:
-    bool lastResulSet() const final { return true; };
-    bool error() const final { return true; };
-    QString errorString() const { return {}; };
+    bool lastResulSet() const final { return true; }
+    bool error() const final { return true; }
+    QString errorString() const { return {}; }
 
-    int size() const final { return 0; };
-    int fields() const final { return 0; };
-    int numRowsAffected() const final { return 0; };
+    int size() const final { return 0; }
+    int fields() const final { return 0; }
+    int numRowsAffected() const final { return 0; }
 
-    QString fieldName(int column) const final { return {}; };
-    QVariant value(int row, int column) const final { return {}; };
+    QString fieldName(int column) const final { return {}; }
+    QVariant value(int row, int column) const final { return {}; }
 
-    bool isNull(int row, int column) const final { return true; };
-    bool toBool(int row, int column) const final { return false; };
-    int toInt(int row, int column) const final { return 0; };
-    qint64 toLongLong(int row, int column) const final { return 0; };
-    quint64 toULongLong(int row, int column) const final { return 0; };
-    double toDouble(int row, int column) const final { return 0; };
-    QString toString(int row, int column) const final { return {}; };
-    std::string toStdString(int row, int column) const final { return {}; };
-    QDate toDate(int row, int column) const final { return {}; };
-    QTime toTime(int row, int column) const final { return {}; };
-    QDateTime toDateTime(int row, int column) const final { return {}; };
-    QJsonValue toJsonValue(int row, int column) const final { return  {}; };
-    QByteArray toByteArray(int row, int column) const final { return {}; };
+    bool isNull(int row, int column) const final { return true; }
+    bool toBool(int row, int column) const final { return false; }
+    int toInt(int row, int column) const final { return 0; }
+    qint64 toLongLong(int row, int column) const final { return 0; }
+    quint64 toULongLong(int row, int column) const final { return 0; }
+    double toDouble(int row, int column) const final { return 0; }
+    QString toString(int row, int column) const final { return {}; }
+    std::string toStdString(int row, int column) const final { return {}; }
+    QDate toDate(int row, int column) const final { return {}; }
+    QTime toTime(int row, int column) const final { return {}; }
+    QDateTime toDateTime(int row, int column) const final { return {}; }
+    QJsonValue toJsonValue(int row, int column) const final { return {}; }
+    QByteArray toByteArray(int row, int column) const final { return {}; }
 };
-
-static const QString INVALID_DRIVER = QStringLiteral("INVALID DATABASE DRIVER");
 
 ADriver::ADriver() = default;
 
@@ -62,7 +60,7 @@ bool ADriver::isValid() const
 void ADriver::open(std::function<void (bool, const QString &)> cb)
 {
     if (cb) {
-        cb(false, INVALID_DRIVER);
+        cb(false, QStringLiteral("INVALID DATABASE DRIVER"));
     }
 }
 

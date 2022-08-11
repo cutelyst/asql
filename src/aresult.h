@@ -113,10 +113,10 @@ public:
         inline QVariant value() const { return d->value(row, column); }
         inline bool isNull() const { return d->isNull(row, column); }
         inline bool toBool() const { return d->toBool(row, column); }
-        inline int toInt() const { return d->toInt(row, column); };
-        inline qint64 toLongLong() const { return d->toLongLong(row, column); };
-        inline quint64 toULongLong() const { return d->toULongLong(row, column); };
-        inline double toDouble() const { return d->toDouble(row, column); };
+        inline int toInt() const { return d->toInt(row, column); }
+        inline qint64 toLongLong() const { return d->toLongLong(row, column); }
+        inline quint64 toULongLong() const { return d->toULongLong(row, column); }
+        inline double toDouble() const { return d->toDouble(row, column); }
         inline QString toString() const  { return d->toString(row, column); }
         inline std::string toStdString() const  { return d->toStdString(row, column); }
         QDate toDate() const;
