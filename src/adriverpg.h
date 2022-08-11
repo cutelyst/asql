@@ -12,7 +12,8 @@
 #include "aresult.h"
 #include "apreparedquery.h"
 
-#include <QQueue>
+#include <queue>
+
 #include <QPointer>
 #include <QHash>
 
@@ -139,7 +140,7 @@ private:
 
     std::function<void (ADatabase::State, const QString &)> m_stateChangedCb;
     QHash<QString, ANotificationFn> m_subscribedNotifications;
-    QQueue<APGQuery> m_queuedQueries;
+    std::queue<APGQuery> m_queuedQueries;
     std::shared_ptr<ADriver> selfDriver;
     QByteArrayList m_preparedQueries;
     QSocketNotifier *m_writeNotify = nullptr;
