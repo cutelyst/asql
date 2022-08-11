@@ -8,9 +8,10 @@
 #include "adriverfactory.h"
 
 #include <QPointer>
-#include <QQueue>
 #include <QObject>
 #include <QLoggingCategory>
+
+#include <queue>
 
 Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
 
@@ -26,7 +27,7 @@ struct APoolInternal {
     QString name;
     std::shared_ptr<ADriverFactory> driverFactory;
     QVector<ADriver *> pool;
-    QQueue<APoolQueuedClient> connectionQueue;
+    std::queue<APoolQueuedClient> connectionQueue;
     std::function<void (ADatabase &)> setupCb;
     std::function<void (ADatabase &)> reuseCb;
     int maxIdleConnections = 1;
@@ -73,8 +74,9 @@ void APool::pushDatabaseBack(QStringView connectionName, ADriver *driver)
         }
 
         // Check for waiting clients
-        while (!iPool.connectionQueue.isEmpty()) {
-            APoolQueuedClient client = iPool.connectionQueue.dequeue();
+        while (!iPool.connectionQueue.empty()) {
+            APoolQueuedClient client = iPool.connectionQueue.front();
+            iPool.connectionQueue.pop();
             if ((client.checkReceiver && client.receiver.isNull()) || !client.cb) {
                 continue;
             }
@@ -161,7 +163,7 @@ void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, QS
                 queued.cb = cb;
                 queued.receiver = receiver;
                 queued.checkReceiver = receiver;
-                iPool.connectionQueue.enqueue(queued);
+                iPool.connectionQueue.emplace(std::move(queued));
                 return;
             }
             ++iPool.connectionCount;
