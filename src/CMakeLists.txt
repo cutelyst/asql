@@ -50,7 +50,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/asqlexports.h
 )
 
 #Add an alias so that library can be used inside the build tree, e.g. when testing
-add_library(ASqlQt${QT_VERSION_MAJOR}::Core ALIAS ASqlQt${QT_VERSION_MAJOR})
+add_library(ASql::Core ALIAS ASqlQt${QT_VERSION_MAJOR})
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
   set_property(TARGET ASqlQt${QT_VERSION_MAJOR} PROPERTY DEBUG_POSTFIX "d")
@@ -99,7 +99,7 @@ add_library(ASqlQt${QT_VERSION_MAJOR}Pg
     ${asql_pg_HEADERS}
 )
 
-add_library(ASqlQt${QT_VERSION_MAJOR}::Pg ALIAS ASqlQt${QT_VERSION_MAJOR}Pg)
+add_library(ASql::Pg ALIAS ASqlQt${QT_VERSION_MAJOR}Pg)
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
   set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Pg PROPERTY DEBUG_POSTFIX "d")
@@ -123,8 +123,8 @@ set_target_properties(ASqlQt${QT_VERSION_MAJOR}Pg PROPERTIES
 
 target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Pg
     PUBLIC
-        Qt${QT_VERSION_MAJOR}::Core
-        ASqlQt${QT_VERSION_MAJOR}::Core
+        Qt::Core
+        ASql::Core
     PRIVATE
         PostgreSQL::PostgreSQL
 )
@@ -142,8 +142,8 @@ install(TARGETS ASqlQt${QT_VERSION_MAJOR}Pg
 add_executable(asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR} asql_migration.cpp)
 target_link_libraries(asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}
     PUBLIC
-        Qt${QT_VERSION_MAJOR}::Core
-        ASqlQt${QT_VERSION_MAJOR}::Core
-        ASqlQt${QT_VERSION_MAJOR}::Pg
+        Qt::Core
+        ASql::Core
+        ASql::Pg
 )
 install(TARGETS asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR} DESTINATION ${CMAKE_INSTALL_BINDIR})

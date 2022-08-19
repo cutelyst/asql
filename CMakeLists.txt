@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 cmake_minimum_required(VERSION 3.16)
-project(libasql VERSION 0.58.0 LANGUAGES CXX)
+project(libasql VERSION 0.59.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
@@ -87,7 +87,7 @@ install(
 install(EXPORT ASqlTargets
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ASqlQt${QT_VERSION_MAJOR}/
     FILE ASql${PROJECT_VERSION_MAJOR}Qt${QT_VERSION_MAJOR}Targets.cmake
-    NAMESPACE ASqlQt${QT_VERSION_MAJOR}::
+    NAMESPACE ASql::
     COMPONENT Devel
 )
 
