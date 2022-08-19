@@ -50,7 +50,11 @@ void APool::create(const std::shared_ptr<ADriverFactory> &factory, const QString
         APoolInternal pool;
         pool.name = poolName;
         pool.driverFactory = factory;
-        m_connectionPool.insert(pool.name, std::move(pool));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        m_connectionPool.emplace(pool.name, std::move(pool));
+#else
+        m_connectionPool.insert(pool.name, pool);
+#endif
     } else {
         qWarning(ASQL_POOL) << "Ignoring addDatabase, connectionName already available" << poolName;
     }

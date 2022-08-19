@@ -111,13 +111,17 @@ void ACachePrivate::requestData(const QString &query, qint64 maxAgeMs, const QVa
     ACacheValue _value;
     _value.query = query;
     _value.args = args;
-    _value.cancellable = std::make_shared<QObject>();
+    _value.cancellable = std::make_shared<QObject>(nullptr);
     _value.receivers.emplace_back(ACacheReceiverCb {
                                       cb,
                                       receiver,
                                       receiver
                                   });
-    auto it = cache.insert(query, std::move(_value));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    auto it = cache.emplace(query, std::move(_value));
+#else
+    auto it = cache.insert(query, _value);
+#endif
 
     _db.exec(query, args, [query, args, this] (AResult &result) {
         auto it = cache.find(query);

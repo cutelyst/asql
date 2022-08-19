@@ -333,7 +333,6 @@ void ADriverPg::queryConstructed(APGQuery &pgQuery)
 
     if (pipelineStatus() != ADatabase::PipelineStatus::On &&
             (m_queryRunning || !m_connected || m_queuedQueries.size() > 1)) {
-        m_queuedQueries.emplace(std::move(pgQuery));
         return;
     }
 
@@ -342,7 +341,6 @@ void ADriverPg::queryConstructed(APGQuery &pgQuery)
     } else {
         doExecParams(pgQuery);
     }
-    m_queuedQueries.emplace(std::move(pgQuery));
 
     if (pipelineStatus() != ADatabase::PipelineStatus::Off && m_autoSyncTimer && !m_autoSyncTimer->isActive()) {
         m_autoSyncTimer->start();
@@ -361,6 +359,7 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, 
     pgQuery.checkReceiver = receiver;
 
     queryConstructed(pgQuery);
+    m_queuedQueries.emplace(std::move(pgQuery));
 }
 #endif
 
@@ -375,6 +374,7 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QStringView query, cons
     pgQuery.checkReceiver = receiver;
 
     queryConstructed(pgQuery);
+    m_queuedQueries.emplace(std::move(pgQuery));
 }
 
 void ADriverPg::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
@@ -389,6 +389,7 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &q
     pgQuery.prepared = true;
 
     queryConstructed(pgQuery);
+    m_queuedQueries.emplace(std::move(pgQuery));
 }
 
 void ADriverPg::setLastQuerySingleRowMode()
