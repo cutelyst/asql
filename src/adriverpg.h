@@ -1,5 +1,5 @@
 /* 
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
@@ -13,6 +13,7 @@
 #include "apreparedquery.h"
 
 #include <queue>
+#include <optional>
 
 #include <QPointer>
 #include <QHash>
@@ -24,7 +25,7 @@ namespace ASql {
 class AResultPg final : public AResultPrivate
 {
 public:
-    AResultPg();
+    AResultPg(PGresult *result);
     virtual ~AResultPg();
 
     bool lastResulSet() const override;
@@ -67,22 +68,31 @@ public:
 class APGQuery
 {
 public:
-    APGQuery() : result(std::make_shared<AResultPg>())
-    { }
+    APGQuery() = default;
     QByteArray query;
-    APreparedQuery preparedQuery;
+    std::optional<APreparedQuery> preparedQuery;
     std::shared_ptr<AResultPg> result;
     QVariantList params;
     AResultFn cb;
     QPointer<QObject> receiver;
-    QObject *checkReceiver;
+    QObject *checkReceiver = nullptr;
     bool preparing = false;
-    bool prepared = false;
     bool setSingleRow = false;
 
     inline void done() {
         if (cb && (!checkReceiver || !receiver.isNull())) {
             result->m_query = query;
+            AResult r(std::move(result));
+            cb(r);
+        }
+    }
+
+    inline void doneError(const QString &error) {
+        if (cb && (!checkReceiver || !receiver.isNull())) {
+            result = std::make_shared<AResultPg>(nullptr);
+            result->m_query = query;
+            result->m_errorString = error;
+            result->m_error = true;
             AResult r(std::move(result));
             cb(r);
         }
@@ -129,27 +139,29 @@ public:
     void unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name) override;
 
 private:
-    inline void queryConstructed(APGQuery &pgQuery);
+    inline void setupCheckReceiver(APGQuery &pgQuery, QObject *receiver);
+    inline bool runQuery(APGQuery &pgQuery);
+    inline bool queryShouldBeQueued() const;
     void nextQuery();
     void finishConnection();
     void finishQueries(const QString &error);
-    inline void doExec(APGQuery &pgQuery);
-    inline void doExecParams(APGQuery &query);
+    inline int doExec(APGQuery &pgQuery);
+    inline int doExecParams(APGQuery &query);
     inline void setSingleRowMode();
     inline void cmdFlush();
+    inline bool isConnected() const;
 
     std::function<void (ADatabase::State, const QString &)> m_stateChangedCb;
     QHash<QString, ANotificationFn> m_subscribedNotifications;
     std::queue<APGQuery> m_queuedQueries;
     std::shared_ptr<ADriver> selfDriver;
     QByteArrayList m_preparedQueries;
-    QSocketNotifier *m_writeNotify = nullptr;
-    QSocketNotifier *m_readNotify = nullptr;
-    QTimer *m_autoSyncTimer = nullptr;
+    std::unique_ptr<QSocketNotifier> m_writeNotify;
+    std::unique_ptr<QSocketNotifier> m_readNotify;
+    std::unique_ptr<QTimer> m_autoSyncTimer;
     PGconn *m_conn = nullptr;
     ADatabase::State m_state = ADatabase::State::Disconnected;
     int m_pipelineSync = 0;
-    bool m_connected = false;
     bool m_flush = false;
     bool m_queryRunning = false;
     bool m_notificationPtrSet = false;

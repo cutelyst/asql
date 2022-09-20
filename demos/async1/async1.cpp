@@ -28,7 +28,6 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-//    APool::addDatabase(QStringLiteral("postgres://server.com,server2.com/mydb?target_session_attrs=read-write"));
     APool::create(APg::factory(QStringLiteral("postgres:///")));
     APool::setMaxIdleConnections(10);
 
@@ -147,7 +146,7 @@ int main(int argc, char *argv[])
         }
     }, new QObject);
 
-    QTimer::singleShot(2000, [=] {
+    QTimer::singleShot(2000, cache, [=] {
         cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
             qDebug() << "CACHED 2" << result.errorString() << result.size();
             if (result.error()) {
@@ -292,6 +291,21 @@ int main(int argc, char *argv[])
             }
         });
     }
+
+    auto loopT = new QTimer{&app};
+    loopT->setInterval(1000);
+    loopT->setSingleShot(false);
+    QObject::connect(loopT, &QTimer::timeout, loopT, [=] {
+        auto db = APool::database();
+        db.exec(u"SELECT now()", [] (AResult &result) {
+            if (result.error()) {
+                qDebug() << "Error" << result.errorString();
+            } else {
+                qDebug() << "1s loop" << result.toHash();
+            }
+        });
+    });
+    loopT->start();
 
     app.exec();
 }

@@ -1,5 +1,5 @@
 /* 
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
         t.begin();
         db7.exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
             if (result.error()) {
-                qDebug() << "SELECT error" << result.errorString();
+                qDebug() << "SELECT error db7" << result.errorString();
                 return;
             }
 

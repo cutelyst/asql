@@ -51,6 +51,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/asqlexports.h
 
 #Add an alias so that library can be used inside the build tree, e.g. when testing
 add_library(ASql::Core ALIAS ASqlQt${QT_VERSION_MAJOR})
+project_target_compile_definitions(ASqlQt${QT_VERSION_MAJOR})
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
   set_property(TARGET ASqlQt${QT_VERSION_MAJOR} PROPERTY DEBUG_POSTFIX "d")
@@ -100,6 +101,7 @@ add_library(ASqlQt${QT_VERSION_MAJOR}Pg
 )
 
 add_library(ASql::Pg ALIAS ASqlQt${QT_VERSION_MAJOR}Pg)
+project_target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}Pg)
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
   set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Pg PROPERTY DEBUG_POSTFIX "d")
@@ -146,4 +148,5 @@ target_link_libraries(asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJO
         ASql::Core
         ASql::Pg
 )
+project_target_compile_definitions(asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR})
 install(TARGETS asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR} DESTINATION ${CMAKE_INSTALL_BINDIR})

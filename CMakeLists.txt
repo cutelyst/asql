@@ -1,8 +1,8 @@
-# SPDX-FileCopyrightText: (C) 2020-2021 Daniel Nicoletti <dantti12@gmail.com>
+# SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
 # SPDX-License-Identifier: MIT
 
 cmake_minimum_required(VERSION 3.16)
-project(libasql VERSION 0.59.0 LANGUAGES CXX)
+project(libasql VERSION 0.60.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
@@ -55,18 +55,21 @@ if (ENABLE_MAINTAINER_CFLAGS)
     )
 endif ()
 
-add_definitions(
-    -DQT_NO_KEYWORDS
-    -DQT_NO_CAST_TO_ASCII
-    -DQT_NO_CAST_FROM_ASCII
-    -DQT_STRICT_ITERATORS
-    -DQT_NO_URL_CAST_FROM_STRING
-    -DQT_NO_CAST_FROM_BYTEARRAY
-    -DQT_USE_QSTRINGBUILDER
-    -DQT_NO_SIGNALS_SLOTS_KEYWORDS
-    -DQT_USE_FAST_OPERATOR_PLUS
-    -DQT_DISABLE_DEPRECATED_BEFORE=0x050c00
-)
+function(project_target_compile_definitions target)
+    target_compile_definitions(${target}
+        PRIVATE
+        QT_NO_KEYWORDS
+        QT_NO_CAST_TO_ASCII
+        QT_NO_CAST_FROM_ASCII
+        QT_STRICT_ITERATORS
+        QT_NO_URL_CAST_FROM_STRING
+        QT_NO_CAST_FROM_BYTEARRAY
+        QT_USE_QSTRINGBUILDER
+        QT_NO_SIGNALS_SLOTS_KEYWORDS
+        QT_USE_FAST_OPERATOR_PLUS
+        QT_DISABLE_DEPRECATED_BEFORE=0x060200
+    )
+endfunction()
 
 # cmake config files
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/asqlqt-config.cmake.in
