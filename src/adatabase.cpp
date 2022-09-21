@@ -24,9 +24,14 @@ ADatabase::ADatabase(const std::shared_ptr<ADriverFactory> &factory) : d(factory
 
 }
 
-ADatabase::ADatabase(const ADatabase &other)
+ADatabase::ADatabase(const ADatabase &other) : d(other.d)
 {
-    d = other.d;
+
+}
+
+ADatabase::ADatabase(ADatabase &&other) : d(std::move(other.d))
+{
+
 }
 
 ADatabase::~ADatabase() = default;

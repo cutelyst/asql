@@ -63,6 +63,11 @@ public:
      */
     ADatabase(const ADatabase &other);
 
+    /*!
+     * \brief Move-constructs an ADatabase instance
+     */
+    ADatabase(ADatabase &&other);
+
     virtual ~ADatabase();
 
     /*!
