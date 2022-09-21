@@ -22,6 +22,8 @@ public:
 
     ATransaction(const ATransaction &other);
 
+    ATransaction(ATransaction &&other);
+
     ADatabase database() const;
 
     ATransaction &operator =(const ATransaction &copy);
