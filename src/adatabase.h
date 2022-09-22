@@ -66,9 +66,15 @@ public:
     /*!
      * \brief Move-constructs an ADatabase instance
      */
-    ADatabase(ADatabase &&other);
+    ADatabase(ADatabase &&other) noexcept;
 
     virtual ~ADatabase();
+
+    ADatabase &operator =(ADatabase &&other) noexcept
+    {
+        std::swap(d, other.d);
+        return *this;
+    }
 
     /*!
      * \brief isValid checks if this is a valid connection, invalid connections

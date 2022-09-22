@@ -29,7 +29,7 @@ ADatabase::ADatabase(const ADatabase &other) : d(other.d)
 
 }
 
-ADatabase::ADatabase(ADatabase &&other) : d(std::move(other.d))
+ADatabase::ADatabase(ADatabase &&other) noexcept : d(std::move(other.d))
 {
 
 }

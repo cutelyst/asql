@@ -34,17 +34,19 @@ ATransaction::ATransaction() = default;
 
 ATransaction::~ATransaction() = default;
 
-ATransaction::ATransaction(const ADatabase &db) : d(std::make_shared<ATransactionPrivate>(db))
+ATransaction::ATransaction(const ADatabase &db)
+    : d(std::make_shared<ATransactionPrivate>(db))
 {
 }
 
-ATransaction::ATransaction(const ATransaction &other) : d(other.d)
+ATransaction::ATransaction(const ATransaction &other)
+    : d(other.d)
 {
 }
 
-ATransaction::ATransaction(ATransaction &&other) : d(std::move(other.d))
+ATransaction::ATransaction(ATransaction &&other) noexcept
+    : d(std::move(other.d))
 {
-
 }
 
 ADatabase ATransaction::database() const

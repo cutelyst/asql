@@ -22,11 +22,17 @@ public:
 
     ATransaction(const ATransaction &other);
 
-    ATransaction(ATransaction &&other);
+    ATransaction(ATransaction &&other) noexcept;
 
     ADatabase database() const;
 
     ATransaction &operator =(const ATransaction &copy);
+
+    ATransaction &operator =(ATransaction &&other) noexcept
+    {
+        std::swap(d, other.d);
+        return *this;
+    }
 
     /*!
      * \brief begin a transaction, this operation usually succeeds,

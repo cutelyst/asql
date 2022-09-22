@@ -18,15 +18,12 @@ public:
 }
 
 APg::APg(const QString &connectionInfo)
-    : d(new APgPrivate)
+    : d(std::make_unique<APgPrivate>())
 {
     d->connection = connectionInfo;
 }
 
-APg::~APg()
-{
-    delete d;
-}
+APg::~APg() = default;
 
 std::shared_ptr<ADriverFactory> APg::factory(const QUrl &connectionInfo)
 {

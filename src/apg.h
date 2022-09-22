@@ -40,7 +40,7 @@ public:
     ADatabase createDatabase() const final;
 
 private:
-    APgPrivate *d;
+    std::unique_ptr<APgPrivate> d;
 };
 
 }
