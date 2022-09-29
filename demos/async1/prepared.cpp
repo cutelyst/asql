@@ -33,6 +33,25 @@ int main(int argc, char *argv[])
     APool::setMaxIdleConnections(2);
     APool::setMaxConnections(4);
 
+    auto simpleDb = APool::database();
+    simpleDb.exec(APreparedQueryLiteral(u"SELECT $1, now()"), { qint64(12345) }, [=] (AResult &result) {
+        if (result.error()) {
+            qDebug() << "SELECT error" << result.errorString();
+            return;
+        }
+
+        qDebug() << "PREPARED size" << result.size();
+    });
+    simpleDb.exec(APreparedQueryLiteral(u"SELECT broken"), { qint64(12345) }, [=] (AResult &result) {
+        if (result.error()) {
+            qDebug() << "SELECT broken error" << result.errorString();
+            return;
+        }
+
+        qDebug() << "PREPARED broken size" << result.size();
+    });
+    return app.exec();
+
     {
         auto db2 = APool::database();
         auto db3 = APool::database();

@@ -99,6 +99,44 @@ public:
     }
 };
 
+class APgConn
+{
+public:
+    APgConn(const QString &connInfo)
+        : m_conn(PQconnectStart(connInfo.toUtf8().constData()))
+    {
+    }
+    ~APgConn() {
+        PQfinish(m_conn);
+    }
+
+    PGconn *conn() const
+    { return m_conn; }
+
+    int socket() const
+    {
+        return PQsocket(m_conn);
+    }
+
+    ConnStatusType status() const
+    {
+        return PQstatus(m_conn);
+    }
+
+    QString errorMessage() const
+    {
+        return QString::fromUtf8(PQerrorMessage(m_conn));
+    }
+
+    PostgresPollingStatusType connectPoll() const
+    {
+        return PQconnectPoll(m_conn);
+    }
+
+private:
+    PGconn *m_conn;
+};
+
 class ADriverPg final : public ADriver
 {
     Q_OBJECT
@@ -159,7 +197,7 @@ private:
     std::unique_ptr<QSocketNotifier> m_writeNotify;
     std::unique_ptr<QSocketNotifier> m_readNotify;
     std::unique_ptr<QTimer> m_autoSyncTimer;
-    PGconn *m_conn = nullptr;
+    std::unique_ptr<APgConn> m_conn;
     ADatabase::State m_state = ADatabase::State::Disconnected;
     int m_pipelineSync = 0;
     bool m_flush = false;

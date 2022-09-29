@@ -58,12 +58,7 @@ ADriverPg::ADriverPg(const QString &connInfo) : ADriver(connInfo)
 
 }
 
-ADriverPg::~ADriverPg()
-{
-    if (m_conn) {
-        PQfinish(m_conn);
-    }
-}
+ADriverPg::~ADriverPg() = default;
 
 bool ADriverPg::isValid() const
 {
@@ -91,26 +86,18 @@ QString connectionStatus(ConnStatusType type) {
 void ADriverPg::open(std::function<void(bool, const QString &)> cb)
 {
     qDebug(ASQL_PG) << "Open" << connectionInfo();
-    Q_ASSERT_X(m_conn == nullptr, "open", "ADatabase should prevent double open()");
-    if (Q_UNLIKELY(m_conn)) {
-        if (cb) {
-            cb(isConnected(), QStringLiteral("Open was already called."));
-        }
-        return;
-    }
-
-    m_conn = PQconnectStart(connectionInfo().toUtf8().constData());
-    if (m_conn) {
-        const auto socket = PQsocket(m_conn);
+    m_conn = std::make_unique<APgConn>(connectionInfo());
+    if (m_conn->conn()) {
+        const auto socket = m_conn->socket();
         if (socket > 0) {
             m_writeNotify = std::make_unique<QSocketNotifier>(socket, QSocketNotifier::Write);
             m_readNotify = std::make_unique<QSocketNotifier>(socket, QSocketNotifier::Read);
 
-            const QString error = QString::fromLocal8Bit(PQerrorMessage(m_conn));
+            const QString error = m_conn->errorMessage();
             setState(ADatabase::State::Connecting, error);
 
             auto connFn = [=]  {
-                PostgresPollingStatusType type = PQconnectPoll(m_conn);
+                PostgresPollingStatusType type = m_conn->connectPoll();
 //                qDebug(ASQL_PG) << "poll" << type << "status" << connectionStatus(PQstatus(m_conn));
                 switch (type) {
                 case PGRES_POLLING_READING:
@@ -133,7 +120,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                     return;
                 case PGRES_POLLING_FAILED:
                 {
-                    const QString error = QString::fromLocal8Bit(PQerrorMessage(m_conn));
+                    const QString error = m_conn->errorMessage();
                     qDebug(ASQL_PG) << "PGRES_POLLING_FAILED" << type << error;
                     finishConnection();
 
@@ -164,24 +151,24 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                 if (!isConnected()) {
                     connFn();
                 } else {
-                    if (PQconsumeInput(m_conn) == 1) {
-                        while (PQisBusy(m_conn) == 0) {
-                            PGresult *result = PQgetResult(m_conn);
+                    if (PQconsumeInput(m_conn->conn()) == 1) {
+                        while (PQisBusy(m_conn->conn()) == 0) {
+                            PGresult *result = PQgetResult(m_conn->conn());
 
 //                            qWarning() << "Not busy: RESULT" << result << "queue" << m_queuedQueries.size();
 
                             if (result) {
+                                auto safeResult = std::make_shared<AResultPg>(result);
 #ifdef LIBPQ_HAS_PIPELINING
                                 ExecStatusType status = PQresultStatus(result);
                                 if (status == PGRES_PIPELINE_SYNC) {
                                     --m_pipelineSync;
-                                    PQclear(result);
                                     continue;
                                 }
 #endif
 
                                 APGQuery &pgQuery = m_queuedQueries.front();
-//                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << pgQuery.result;
+//                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << bool(pgQuery.result);
                                 if (pgQuery.result) {
                                     // when we had already had a result it means we should emit the
                                     // first one and keep waiting till a null result is returned
@@ -189,10 +176,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                     pgQuery.done();
                                 }
 
-                                // allocate a new result
-                                pgQuery.result = std::make_shared<AResultPg>(result);
-                                pgQuery.result->m_result = result;
-                                pgQuery.result->processResult();
+                                pgQuery.result = safeResult;
                                 continue;
                             } else if (m_queuedQueries.size()) {
                                 APGQuery &pgQuery = m_queuedQueries.front();
@@ -206,6 +190,8 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                         nextQuery();
                                         query.done();
                                     } else {
+                                        pgQuery.result.reset();
+
                                         // Query prepared
                                         m_preparedQueries.append(pgQuery.preparedQuery->identification());
                                         pgQuery.preparing = false;
@@ -233,7 +219,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                         }
 
                         PGnotify *notify = nullptr;
-                        while ((notify = PQnotifies(m_conn)) != nullptr) {
+                        while ((notify = PQnotifies(m_conn->conn())) != nullptr) {
                             const QString name = QString::fromUtf8(notify->relname);
 //                            qDebug(ASQL_PG) << "NOTIFICATION" << name << notify;
 
@@ -244,7 +230,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                                     if (notify->extra) {
                                         payload = QString::fromUtf8(notify->extra);
                                     }
-                                    const bool self = (notify->be_pid == PQbackendPID(m_conn)) ? true : false;
+                                    const bool self = (notify->be_pid == PQbackendPID(m_conn->conn())) ? true : false;
 //                                qDebug(ASQL_PG) << "NOTIFICATION" << self << name << payload;
                                     it.value()(ADatabaseNotification{name, payload, self});
                                 }
@@ -255,9 +241,9 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                             PQfreemem(notify);
                         }
                     } else {
-                        const QString error = QString::fromLocal8Bit(PQerrorMessage(m_conn));
-                        qDebug(ASQL_PG) << "CONSUME ERROR" <<  error << PQstatus(m_conn) << connectionStatus(PQstatus(m_conn));
-                        if (PQstatus(m_conn) == CONNECTION_BAD) {
+                        const QString error = m_conn->errorMessage();
+                        qDebug(ASQL_PG) << "CONSUME ERROR" <<  error << m_conn->status() << connectionStatus(m_conn->status());
+                        if (m_conn->status() == CONNECTION_BAD) {
                             finishConnection();
                             finishQueries(error);
 
@@ -320,7 +306,7 @@ void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
         pgQuery.checkReceiver = receiver;
         connect(pgQuery.checkReceiver, &QObject::destroyed, this, [=] (QObject *obj) {
             if (m_queryRunning && !m_queuedQueries.empty() && m_queuedQueries.front().checkReceiver == obj && m_conn) {
-                PGcancel *cancel = PQgetCancel(m_conn);
+                PGcancel *cancel = PQgetCancel(m_conn->conn());
                 char errbuf[256];
                 int ret = PQcancel(cancel, errbuf, 256);
                 if (ret == 1) {
@@ -355,7 +341,7 @@ bool ADriverPg::runQuery(APGQuery &pgQuery)
         cmdFlush();
         return true;
     } else {
-        pgQuery.doneError(QString::fromUtf8(PQerrorMessage(m_conn)));
+        pgQuery.doneError(m_conn->errorMessage());
         if (m_queuedQueries.empty()) {
             selfDriver = {};
         }
@@ -434,7 +420,7 @@ bool ADriverPg::enterPipelineMode(qint64 autoSyncMS)
 {
 #ifdef LIBPQ_HAS_PIPELINING
     // Refuse to enter Pipeline mode if we have queued queries
-    if (isConnected() && m_queuedQueries.empty() && PQenterPipelineMode(m_conn) == 1) {
+    if (isConnected() && m_queuedQueries.empty() && PQenterPipelineMode(m_conn->conn()) == 1) {
         if (autoSyncMS && !m_autoSyncTimer) {
             m_autoSyncTimer = std::make_unique<QTimer>();
             m_autoSyncTimer->setInterval(autoSyncMS);
@@ -451,7 +437,7 @@ bool ADriverPg::enterPipelineMode(qint64 autoSyncMS)
 bool ADriverPg::exitPipelineMode()
 {
 #ifdef LIBPQ_HAS_PIPELINING
-    return isConnected() && PQexitPipelineMode(m_conn) == 1;
+    return isConnected() && PQexitPipelineMode(m_conn->conn()) == 1;
 #else
     return false;
 #endif
@@ -461,7 +447,7 @@ ADatabase::PipelineStatus ADriverPg::pipelineStatus() const
 {
 #ifdef LIBPQ_HAS_PIPELINING
     if (isConnected()) {
-        return static_cast<ADatabase::PipelineStatus>(PQpipelineStatus(m_conn));
+        return static_cast<ADatabase::PipelineStatus>(PQpipelineStatus(m_conn->conn()));
     }
 #endif
     return ADatabase::PipelineStatus::Off;
@@ -470,7 +456,7 @@ ADatabase::PipelineStatus ADriverPg::pipelineStatus() const
 bool ADriverPg::pipelineSync()
 {
 #ifdef LIBPQ_HAS_PIPELINING
-    if (isConnected() && PQpipelineSync(m_conn) == 1) {
+    if (isConnected() && PQpipelineSync(m_conn->conn()) == 1) {
         ++m_pipelineSync;
         return true;
     }
@@ -532,10 +518,7 @@ void ADriverPg::nextQuery()
 
 void ADriverPg::finishConnection()
 {
-    if (m_conn) {
-        PQfinish(m_conn);
-        m_conn = nullptr;
-    }
+    m_conn.reset();
 
     m_subscribedNotifications.clear();
     m_preparedQueries.clear();
@@ -572,7 +555,7 @@ int ADriverPg::doExec(APGQuery &pgQuery)
     if (pgQuery.preparedQuery) {
         bool isPrepared = m_preparedQueries.contains(pgQuery.preparedQuery->identification());
         if (!isPrepared) {
-            ret = PQsendPrepare(m_conn,
+            ret = PQsendPrepare(m_conn->conn(),
                                 pgQuery.preparedQuery->identification().constData(),
                                 pgQuery.preparedQuery->query().constData(),
                                 0,
@@ -587,7 +570,7 @@ int ADriverPg::doExec(APGQuery &pgQuery)
         }
 
         if (isPrepared) {
-            ret = PQsendQueryPrepared(m_conn,
+            ret = PQsendQueryPrepared(m_conn->conn(),
                                       pgQuery.preparedQuery->identification().constData(),
                                       0,
                                       nullptr,
@@ -596,7 +579,7 @@ int ADriverPg::doExec(APGQuery &pgQuery)
                                       0); // perhaps later use binary results
         }
     } else {
-        ret = PQsendQuery(m_conn, pgQuery.query.constData());
+        ret = PQsendQuery(m_conn->conn(), pgQuery.query.constData());
     }
 
     return ret;
@@ -743,7 +726,7 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
     if (pgQuery.preparedQuery) {
         bool isPrepared = m_preparedQueries.contains(pgQuery.preparedQuery->identification());
         if (!isPrepared) {
-            ret = PQsendPrepare(m_conn,
+            ret = PQsendPrepare(m_conn->conn(),
                                 pgQuery.preparedQuery->identification().constData(),
                                 pgQuery.preparedQuery->query().constData(),
                                 params.size(),
@@ -758,7 +741,7 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
         }
 
         if (isPrepared) {
-            ret = PQsendQueryPrepared(m_conn,
+            ret = PQsendQueryPrepared(m_conn->conn(),
                                       pgQuery.preparedQuery->identification().constData(),
                                       params.size(),
                                       paramValues.get(),
@@ -767,7 +750,7 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
                                       0); // perhaps later use binary results
         }
     } else {
-        ret = PQsendQueryParams(m_conn,
+        ret = PQsendQueryParams(m_conn->conn(),
                                 pgQuery.query.constData(),
                                 params.size(),
                                 paramTypes.get(),
@@ -782,16 +765,16 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
 
 void ADriverPg::setSingleRowMode()
 {
-    if (PQsetSingleRowMode(m_conn) != 1) {
+    if (PQsetSingleRowMode(m_conn->conn()) != 1) {
         qWarning(ASQL_PG) << "Failed to set single row mode";
     }
 }
 
 void ADriverPg::cmdFlush()
 {
-    int ret = PQflush(m_conn);
+    int ret = PQflush(m_conn->conn());
     if (Q_UNLIKELY(ret == -1)) {
-        qWarning(ASQL_PG) << "Failed to flush" << QString::fromLocal8Bit(PQerrorMessage(m_conn));
+        qWarning(ASQL_PG) << "Failed to flush" << m_conn->errorMessage();
     } else if (Q_UNLIKELY(ret == 1)) {
         // Wait for write-ready and call it again
         m_flush = true;
@@ -806,6 +789,21 @@ bool ADriverPg::isConnected() const
 
 AResultPg::AResultPg(PGresult *result) : m_result{result}
 {
+    ExecStatusType status = PQresultStatus(m_result);
+    switch (status) {
+    case PGRES_TUPLES_OK:
+    case PGRES_SINGLE_TUPLE:
+    case PGRES_COMMAND_OK:
+#ifdef LIBPQ_HAS_PIPELINING
+    case PGRES_PIPELINE_SYNC:
+#endif
+        return;
+    default:
+        break;
+    }
+
+    m_error = true;
+    m_errorString = QString::fromLocal8Bit(PQresultErrorMessage(m_result));
 }
 
 AResultPg::~AResultPg()
@@ -1155,22 +1153,6 @@ QByteArray AResultPg::toByteArray(int row, int column) const
     QByteArray ba(reinterpret_cast<const char *>(data), int(len));
     PQfreemem(data);
     return ba;
-}
-
-void AResultPg::processResult()
-{
-    ExecStatusType status = PQresultStatus(m_result);
-    switch (status) {
-    case PGRES_TUPLES_OK:
-    case PGRES_SINGLE_TUPLE:
-    case PGRES_COMMAND_OK:
-        return;
-    default:
-        break;
-    }
-
-    m_error = true;
-    m_errorString = QString::fromLocal8Bit(PQresultErrorMessage(m_result));
 }
 
 #include "moc_adriverpg.cpp"
