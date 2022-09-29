@@ -28,6 +28,21 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
+    {
+        // regresion test crash - where selfDriver gets released
+        APool::create(APg::factory(QStringLiteral("postgres:///")), u"delete_db_after_use");
+        APool::setMaxIdleConnections(0, u"delete_db_after_use");
+
+        {
+            APool::database(u"delete_db_after_use").exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", [] (AResult &result) {
+                qDebug() << "=====iterator single row" << result.toHash();
+                if (result.error()) {
+                    qDebug() << "Error" << result.errorString();
+                }
+            });
+        }
+    }
+
     APool::create(APg::factory(QStringLiteral("postgres:///")));
     APool::setMaxIdleConnections(10);
 

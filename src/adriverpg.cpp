@@ -251,6 +251,12 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                         }
                     }
                 }
+
+                // CRITICAL it's only safe to release ourself
+                // after all connection processing took place
+                if (m_queuedQueries.empty()) {
+                    selfDriver.reset();
+                }
             });
         }
 //        qDebug(ASQL_PG) << "PG Socket" << m_conn << socket;
@@ -342,11 +348,8 @@ bool ADriverPg::runQuery(APGQuery &pgQuery)
         return true;
     } else {
         pgQuery.doneError(m_conn->errorMessage());
-        if (m_queuedQueries.empty()) {
-            selfDriver = {};
-        }
+        return false;
     }
-    return false;
 }
 
 bool ADriverPg::queryShouldBeQueued() const
@@ -362,11 +365,11 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, 
     pgQuery.query.setRawData(query.data(), query.size());
     pgQuery.params = params;
     pgQuery.cb = cb;
-    selfDriver = db;
 
     setupCheckReceiver(pgQuery, receiver);
 
     if (queryShouldBeQueued() || runQuery(pgQuery)) {
+        selfDriver = db;
         m_queuedQueries.emplace(std::move(pgQuery));
     }
 }
@@ -378,11 +381,11 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QStringView query, cons
     pgQuery.query = query.toUtf8();
     pgQuery.params = params;
     pgQuery.cb = cb;
-    selfDriver = db;
 
     setupCheckReceiver(pgQuery, receiver);
 
     if (queryShouldBeQueued() || runQuery(pgQuery)) {
+        selfDriver = db;
         m_queuedQueries.emplace(std::move(pgQuery));
     }
 }
@@ -393,11 +396,11 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &q
     pgQuery.preparedQuery = query;
     pgQuery.params = params;
     pgQuery.cb = cb;
-    selfDriver = db;
 
     setupCheckReceiver(pgQuery, receiver);
 
     if (queryShouldBeQueued() || runQuery(pgQuery)) {
+        selfDriver = db;
         m_queuedQueries.emplace(std::move(pgQuery));
     }
 }
@@ -510,10 +513,6 @@ void ADriverPg::nextQuery()
             runQuery(pgQuery);
         }
     }
-
-    if (m_queuedQueries.empty()) {
-        selfDriver = {};
-    }
 }
 
 void ADriverPg::finishConnection()
@@ -546,7 +545,6 @@ void ADriverPg::finishQueries(const QString &error)
         pgQuery.result->m_errorString = error;
         pgQuery.done();
     }
-    selfDriver = {};
 }
 
 int ADriverPg::doExec(APGQuery &pgQuery)
