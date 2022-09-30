@@ -219,7 +219,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                         }
 
                         PGnotify *notify = nullptr;
-                        while ((notify = PQnotifies(m_conn->conn())) != nullptr) {
+                        while ((notify = m_conn->notifies()) != nullptr) {
                             const QString name = QString::fromUtf8(notify->relname);
 //                            qDebug(ASQL_PG) << "NOTIFICATION" << name << notify;
 
@@ -292,17 +292,17 @@ void ADriverPg::onStateChanged(std::function<void (ADatabase::State, const QStri
 
 void ADriverPg::begin(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
 {
-    exec(db, QStringLiteral("BEGIN"), QVariantList(), cb, receiver);
+    exec(db, u"BEGIN", QVariantList(), cb, receiver);
 }
 
 void ADriverPg::commit(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
 {
-    exec(db, QStringLiteral("COMMIT"), QVariantList(), cb, receiver);
+    exec(db, u"COMMIT", QVariantList(), cb, receiver);
 }
 
 void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
 {
-    exec(db, QStringLiteral("ROLLBACK"), QVariantList(), cb, receiver);
+    exec(db, u"ROLLBACK", QVariantList(), cb, receiver);
 }
 
 void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
@@ -523,16 +523,8 @@ void ADriverPg::finishConnection()
     m_preparedQueries.clear();
     m_pipelineSync = 0;
     m_autoSyncTimer.reset();
-    if (m_readNotify) {
-        m_readNotify->setEnabled(false);
-        m_readNotify->deleteLater();
-        m_readNotify.reset();
-    }
-    if (m_writeNotify) {
-        m_writeNotify->setEnabled(false);
-        m_writeNotify->deleteLater();
-        m_writeNotify.reset();
-    }
+    m_readNotify.reset();
+    m_writeNotify.reset();
     setState(ADatabase::State::Disconnected, {});
 }
 

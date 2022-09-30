@@ -106,12 +106,20 @@ public:
         : m_conn(PQconnectStart(connInfo.toUtf8().constData()))
     {
     }
-    ~APgConn() {
+    ~APgConn()
+    {
         PQfinish(m_conn);
     }
 
     PGconn *conn() const
-    { return m_conn; }
+    {
+        return m_conn;
+    }
+
+    PGnotify *notifies() const
+    {
+        return PQnotifies(m_conn);
+    }
 
     int socket() const
     {
