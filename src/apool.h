@@ -76,12 +76,12 @@ public:
      *
      * This method is only useful if the pool has a limit of maximum connections allowed,
      * when the limit is reached instead of immediately returning a database object it will
-     * queue the request and once an object is freed the callback is issued.
+     * queue the request and once a connection is freed the callback is issued.
      *
      * \param receiver
      * \param connectionName
      */
-    static void database(std::function<void(ADatabase &database)>, QObject *receiver = nullptr, QStringView poolName = defaultPool);
+    static void database(QObject *receiver, std::function<void(ADatabase &database)> cb, QStringView poolName = defaultPool);
 
     /*!
      * \brief setMaxIdleConnections maximum number of idle connections of the pool

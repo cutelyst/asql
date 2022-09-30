@@ -154,7 +154,7 @@ int APool::currentConnections(QStringView poolName)
     return 0;
 }
 
-void APool::database(std::function<void (ADatabase &)> cb, QObject *receiver, QStringView poolName)
+void APool::database(QObject *receiver, std::function<void (ADatabase &)> cb, QStringView poolName)
 {
     ADatabase db;
     auto it = m_connectionPool.find(poolName);

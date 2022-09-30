@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 
 //        ADatabase().rollback(); assert
 
-        APool::database([=] (ADatabase &db) {
+        APool::database(nullptr, [=] (ADatabase &db) {
             qDebug() << "Got db" << db.isOpen() << db.state();
 
             db.exec(QStringLiteral("SELECT now()"), nullptr, [=] (AResult &result) {
