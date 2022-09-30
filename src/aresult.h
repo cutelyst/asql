@@ -101,10 +101,22 @@ public:
     QJsonObject toJsonObject() const;
 
     /*!
+     * \brief toCborMap returns the first row as a Cbor map
+     * \return
+     */
+    QCborMap toCborMap() const;
+
+    /*!
      * \brief toJsonArray returns all rows as an array of JSON objects.
      * \return
      */
     QJsonArray toJsonArray() const;
+
+    /*!
+     * \brief toCborArray returns all rows as an array of Cbor maps.
+     * \return
+     */
+    QCborArray toCborArray() const;
 
     AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;
@@ -186,6 +198,25 @@ public:
         inline ARow operator*() const { return ARow(d, i); }
 
         inline int at() const { return i; }
+
+        /*!
+         * \brief hash returns the row as a QHash object
+         * \return
+         */
+        QVariantHash toHash() const;
+
+        /*!
+         * \brief toJsonObject returns the row as a JSON object
+         * \return
+         */
+        QJsonObject toJsonObject() const;
+
+        /*!
+         * \brief toCborMap returns the row as a Cbor map
+         * \return
+         */
+        QCborMap toCborMap() const;
+
         inline QVariant value(int column) const { return d->value(i, column); }
         inline QVariant value(const QString &name) const { return d->value(i, d->indexOfField(name)); }
         inline QVariant value(QLatin1String name) const { return d->value(i, d->indexOfField(name)); }

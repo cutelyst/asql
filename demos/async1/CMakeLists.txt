@@ -39,6 +39,7 @@ target_link_libraries(prepared
 add_executable(migrations migrations.cpp)
 target_link_libraries(migrations
     ASql::Core
+    ASql::Migrations
     ASql::Pg
     Qt::Core
 )

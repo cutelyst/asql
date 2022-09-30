@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
                 qDebug() << "Error 3" << result.errorString();
             }
 
-            for (auto &row : result) {
+            for (const auto &row : result) {
                 for (int i = 0; i < result.fields(); ++i) {
                     qDebug() << "cached 3" << row.value(i) << row[i].value();
                 }
