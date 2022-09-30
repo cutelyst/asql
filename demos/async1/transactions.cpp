@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
         auto db = APool::database();
         ATransaction t(db);
         t.begin();
-        db.exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+        db.exec(QStringLiteral("SELECT now()"), nullptr, [=] (AResult &result) {
             if (result.error()) {
                 qDebug() << "SELECT error" << result.errorString();
                 return;
@@ -51,14 +51,14 @@ int main(int argc, char *argv[])
 
     {
         ATransaction t(APool::database());
-        t.begin([t] (AResult &result){
+        t.begin(nullptr, [t] (AResult &result){
             if (result.error()) {
                 qDebug() << "BEGIN error" << result.errorString();
                 return;
             }
 
             ADatabase(t.database()).exec(QStringLiteral("SELECT now()"),
-                                         [=] (AResult &result) {
+                                         nullptr, [=] (AResult &result) {
                 if (result.error()) {
                     qDebug() << "SELECT error" << result.errorString();
                     return;

@@ -91,7 +91,7 @@ public:
      *
      * \param cb
      */
-    void open(std::function<void(bool isOpen, const QString &error)> cb = {});
+    void open(QObject *receiver = nullptr, std::function<void(bool isOpen, const QString &error)> cb = {});
 
     /*!
      * \brief state
@@ -106,7 +106,7 @@ public:
      *
      * \param cb
      */
-    void onStateChanged(std::function<void(State state, const QString &status)> cb);
+    void onStateChanged(QObject *receiver, std::function<void(State state, const QString &status)> cb);
 
     /*!
      * \brief isOpen returns if the database connection is open.
@@ -120,7 +120,7 @@ public:
      *
      * \param cb
      */
-    void begin(AResultFn cb = {}, QObject *receiver = nullptr);
+    void begin(QObject *receiver = nullptr, AResultFn cb = {});
 
     /*!
      * \brief commit a transaction, this operation usually succeeds,
@@ -128,7 +128,7 @@ public:
      *
      * \param cb
      */
-    void commit(AResultFn cb = {}, QObject *receiver = nullptr);
+    void commit(QObject *receiver = nullptr, AResultFn cb = {});
 
     /*!
      * \brief rollback a transaction, this operation usually succeeds,
@@ -136,7 +136,7 @@ public:
      *
      * \param cb
      */
-    void rollback(AResultFn cb = {}, QObject *receiver = nullptr);
+    void rollback(QObject *receiver = nullptr, AResultFn cb = {});
 
     /*!
      * \brief exec excutes a \param query against this database connection,
@@ -152,7 +152,7 @@ public:
      * \param query
      * \param cb
      */
-    void exec(QStringView query, AResultFn cb, QObject *receiver = nullptr);
+    void exec(QStringView query, QObject *receiver = nullptr, AResultFn cb = {});
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     /*!
@@ -172,7 +172,7 @@ public:
      * \param query
      * \param cb
      */
-    void exec(QUtf8StringView query, AResultFn cb, QObject *receiver = nullptr);
+    void exec(QUtf8StringView query, QObject *receiver = nullptr, AResultFn cb = {});
 #endif
 
     /*!
@@ -186,7 +186,7 @@ public:
      * \param query
      * \param cb
      */
-    void exec(const APreparedQuery &query, AResultFn cb, QObject *receiver = nullptr);
+    void exec(const APreparedQuery &query, QObject *receiver = nullptr, AResultFn cb = {});
 
     /*!
      * \brief exec executes a \param query against this database connection,
@@ -197,7 +197,7 @@ public:
      * \param params
      * \param cb
      */
-    void exec(QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
+    void exec(QStringView query, const QVariantList &params, QObject *receiver = nullptr, AResultFn cb = {});
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     /*!
@@ -212,7 +212,7 @@ public:
      * \param params
      * \param cb
      */
-    void exec(QUtf8StringView query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
+    void exec(QUtf8StringView query, const QVariantList &params, QObject *receiver = nullptr, AResultFn cb = {});
 #endif
 
     /*!
@@ -227,7 +227,7 @@ public:
      * \param query
      * \param cb
      */
-    void exec(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver = nullptr);
+    void exec(const APreparedQuery &query, const QVariantList &params, QObject *receiver = nullptr, AResultFn cb = {});
 
     /**
      * @brief setSingleRowMode
@@ -281,7 +281,7 @@ public:
      * \param channel name of the channel
      * \param cb
      */
-    void subscribeToNotification(const QString &channel, ANotificationFn cb, QObject *receiver = nullptr);
+    void subscribeToNotification(const QString &channel, QObject *receiver, ANotificationFn cb);
 
     /**
      * @brief subscribedToNotifications

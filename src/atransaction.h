@@ -40,7 +40,7 @@ public:
      *
      * \param cb
      */
-    void begin(AResultFn cb = {}, QObject *receiver = nullptr);
+    void begin(QObject *receiver = nullptr, AResultFn cb = {});
 
     /*!
      * \brief commit a transaction, this operation usually succeeds,
@@ -49,7 +49,7 @@ public:
      *
      * \param cb
      */
-    void commit(AResultFn cb = {}, QObject *receiver = nullptr);
+    void commit(QObject *receiver = nullptr, AResultFn cb = {});
 
     /*!
      * \brief rollback a transaction, this operation usually succeeds,
@@ -58,7 +58,7 @@ public:
      *
      * \param cb
      */
-    void rollback(AResultFn cb = {}, QObject *receiver = nullptr);
+    void rollback(QObject *receiver = nullptr, AResultFn cb = {});
 
 private:
     std::shared_ptr<ATransactionPrivate> d;

@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
         APool::setMaxIdleConnections(0, u"delete_db_after_use");
 
         {
-            APool::database(u"delete_db_after_use").exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", [] (AResult &result) {
+            APool::database(u"delete_db_after_use").exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [] (AResult &result) {
                 qDebug() << "=====iterator single row" << result.toHash();
                 if (result.error()) {
                     qDebug() << "Error" << result.errorString();
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
         auto db = APool::database();
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         // Zero-copy and zero allocation
-        db.exec(u8"SELECT 'I ♥ Cutelyst!' AS utf8", [] (AResult &result) {
+        db.exec(u8"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [] (AResult &result) {
             qDebug() << "=====iterator single row" << result.toHash();
             if (result.error()) {
                 qDebug() << "Error" << result.errorString();
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
         });
 #endif
         // Zero-copy but allocates due toUtf8()
-        db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", [] (AResult &result) {
+        db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [] (AResult &result) {
             qDebug() << "=====iterator single row" << result.toHash();
             if (result.error()) {
                 qDebug() << "Error" << result.errorString();
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     {
         auto db = APool::database();
         qDebug() << "123";
-        db.exec(u"SELECT generate_series(1, 10) AS number", [&series] (AResult &result) mutable {
+        db.exec(u"SELECT generate_series(1, 10) AS number", nullptr, [&series] (AResult &result) mutable {
             qDebug() << "=====iterator single row" << result.errorString() << result.size() << "last" << result.lastResulSet() << "mutable" << series.size();
             if (result.error()) {
                 qDebug() << "Error" << result.errorString();
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
         });
         db.setLastQuerySingleRowMode();
 
-        db.exec(QStringLiteral("SELECT generate_series(1, 10) AS number"), [&series] (AResult &result) mutable {
+        db.exec(QStringLiteral("SELECT generate_series(1, 10) AS number"), nullptr, [&series] (AResult &result) mutable {
             qDebug() << "=====iterator" << result.errorString() << result.size() << "last" << result.lastResulSet() << "mutable" << series.size();
             if (result.error()) {
                 qDebug() << "Error" << result.errorString();
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 
     APool::database().exec(QStringLiteral("SELECT $1, $2, $3, $4, now()"),
                            {QJsonValue(true), QJsonValue(123.4567), QJsonValue(QStringLiteral("fooo")), QJsonValue(QJsonObject{})},
-                           [&series] (AResult &result) mutable {
+                           nullptr, [&series] (AResult &result) mutable {
         qDebug() << "=====iterator JSON" << result.errorString() << result.size() << "last" << result.lastResulSet() << "mutable" << series.size();
         if (result.error()) {
             qDebug() << "Error" << result.errorString();
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
     });
 
     APool::database().exec(QStringLiteral("select jsonb_build_object('foo', now());"),
-                           [] (AResult &result) mutable {
+                           nullptr, [] (AResult &result) mutable {
         qDebug() << "=====iterator JSON" << result.errorString() << result.size() << "last" << result[0][0].toJsonValue();
         if (result.error()) {
             qDebug() << "Error" << result.errorString();
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 
     auto cache = new ACache;
     cache->setDatabase(APool::database());
-    cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+    cache->exec(QStringLiteral("SELECT now()"), nullptr, [=] (AResult &result) {
         qDebug() << "CACHED 1" << result.errorString() << result.size();
         if (result.error()) {
             qDebug() << "Error" << result.errorString();
@@ -159,10 +159,10 @@ int main(int argc, char *argv[])
 //                qDebug() << "cached 1" << result.at() << i << result.value(i);
 //            }
         }
-    }, new QObject);
+    });
 
     QTimer::singleShot(2000, cache, [=] {
-        cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+        cache->exec(QStringLiteral("SELECT now()"), nullptr, [=] (AResult &result) {
             qDebug() << "CACHED 2" << result.errorString() << result.size();
             if (result.error()) {
                 qDebug() << "Error" << result.errorString();
@@ -173,23 +173,23 @@ int main(int argc, char *argv[])
                     qDebug() << "cached 2" << i<< row.value(i);
                 }
             }
-        }, new QObject);
+        });
 
         bool ret = cache->clear(QStringLiteral("SELECT now()"));
         qDebug() << "CACHED - CLEARED" << ret;
 
-        cache->exec(QStringLiteral("SELECT now()"), [=] (AResult &result) {
+        cache->exec(QStringLiteral("SELECT now()"), nullptr, [=] (AResult &result) {
             qDebug() << "CACHED 3" << result.errorString() << result.size();
             if (result.error()) {
                 qDebug() << "Error 3" << result.errorString();
             }
 
-            for (auto row : result) {
+            for (auto &row : result) {
                 for (int i = 0; i < result.fields(); ++i) {
                     qDebug() << "cached 3" << row.value(i) << row[i].value();
                 }
             }
-        }, new QObject);
+        });
     });
 
     //    auto obj = new QObject;
@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
     loopT->setSingleShot(false);
     QObject::connect(loopT, &QTimer::timeout, loopT, [=] {
         auto db = APool::database();
-        db.exec(u"SELECT now()", [] (AResult &result) {
+        db.exec(u"SELECT now()", nullptr, [] (AResult &result) {
             if (result.error()) {
                 qDebug() << "Error" << result.errorString();
             } else {

@@ -41,14 +41,14 @@ bool ADatabase::isValid()
     return d && d->isValid();
 }
 
-void ADatabase::open(std::function<void(bool error, const QString &fff)> cb)
+void ADatabase::open(QObject *receiver, std::function<void(bool error, const QString &fff)> cb)
 {
     if (!d) {
         d = std::make_shared<ADriver>();
     }
 
     if (d->state() == ADatabase::State::Disconnected) {
-        d->open(cb);
+        d->open(receiver, cb);
     }
 }
 
@@ -60,10 +60,10 @@ ADatabase::State ADatabase::state() const
     return ADatabase::State::Disconnected;
 }
 
-void ADatabase::onStateChanged(std::function<void (ADatabase::State, const QString &)> cb)
+void ADatabase::onStateChanged(QObject *receiver, std::function<void (ADatabase::State, const QString &)> cb)
 {
     Q_ASSERT(d);
-    d->onStateChanged(cb);
+    d->onStateChanged(receiver, cb);
 }
 
 bool ADatabase::isOpen() const
@@ -72,62 +72,62 @@ bool ADatabase::isOpen() const
     return d && d->isOpen();
 }
 
-void ADatabase::begin(AResultFn cb, QObject *receiver)
+void ADatabase::begin(QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
-    d->begin(d, cb, receiver);
+    d->begin(d, receiver, cb);
 }
 
-void ADatabase::commit(AResultFn cb, QObject *receiver)
+void ADatabase::commit(QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
-    d->commit(d, cb, receiver);
+    d->commit(d, receiver, cb);
 }
 
-void ADatabase::rollback(AResultFn cb, QObject *receiver)
+void ADatabase::rollback(QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
-    d->rollback(d, cb, receiver);
+    d->rollback(d, receiver, cb);
 }
 
-void ADatabase::exec(QStringView query, AResultFn cb, QObject *receiver)
+void ADatabase::exec(QStringView query, QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
-    d->exec(d, query, QVariantList(), cb, receiver);
-}
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-void ADatabase::exec(QUtf8StringView query, AResultFn cb, QObject *receiver)
-{
-    Q_ASSERT(d);
-    d->exec(d, query, QVariantList(), cb, receiver);
-}
-#endif
-
-void ADatabase::exec(const APreparedQuery &query, AResultFn cb, QObject *receiver)
-{
-    Q_ASSERT(d);
-    d->exec(d, query, QVariantList(), cb, receiver);
-}
-
-void ADatabase::exec(QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
-{
-    Q_ASSERT(d);
-    d->exec(d, query, params, cb, receiver);
+    d->exec(d, query, QVariantList(), receiver, cb);
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-void ADatabase::exec(QUtf8StringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADatabase::exec(QUtf8StringView query, QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
-    d->exec(d, query, params, cb, receiver);
+    d->exec(d, query, QVariantList(), receiver, cb);
 }
 #endif
 
-void ADatabase::exec(const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADatabase::exec(const APreparedQuery &query, QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
-    d->exec(d, query, params, cb, receiver);
+    d->exec(d, query, QVariantList(), receiver, cb);
+}
+
+void ADatabase::exec(QStringView query, const QVariantList &params, QObject *receiver, AResultFn cb)
+{
+    Q_ASSERT(d);
+    d->exec(d, query, params, receiver, cb);
+}
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+void ADatabase::exec(QUtf8StringView query, const QVariantList &params, QObject *receiver, AResultFn cb)
+{
+    Q_ASSERT(d);
+    d->exec(d, query, params, receiver, cb);
+}
+#endif
+
+void ADatabase::exec(const APreparedQuery &query, const QVariantList &params, QObject *receiver, AResultFn cb)
+{
+    Q_ASSERT(d);
+    d->exec(d, query, params, receiver, cb);
 }
 
 void ADatabase::setLastQuerySingleRowMode()
@@ -160,10 +160,10 @@ bool ADatabase::pipelineSync()
     return d->pipelineSync();
 }
 
-void ADatabase::subscribeToNotification(const QString &channel, ANotificationFn cb, QObject *receiver)
+void ADatabase::subscribeToNotification(const QString &channel, QObject *receiver, ANotificationFn cb)
 {
     Q_ASSERT(d);
-    d->subscribeToNotification(d, channel, cb, receiver);
+    d->subscribeToNotification(d, channel, receiver, cb);
 }
 
 QStringList ADatabase::subscribedToNotifications() const

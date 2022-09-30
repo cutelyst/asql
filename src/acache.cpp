@@ -41,8 +41,8 @@ public:
         Pool,
     };
 
-    bool searchOrQueue(QStringView query, qint64 maxAgeMs, const QVariantList &args, AResultFn cb, QObject *receiver);
-    void requestData(const QString &query, qint64 maxAgeMs, const QVariantList &args, AResultFn cb, QObject *receiver);
+    bool searchOrQueue(QStringView query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb);
+    void requestData(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb);
 
     QString poolName;
     ADatabase db;
@@ -50,7 +50,7 @@ public:
     DbSource dbSource = DbSource::Unset;
 };
 
-bool ACachePrivate::searchOrQueue(QStringView query, qint64 maxAgeMs, const QVariantList &args, AResultFn cb, QObject *receiver)
+bool ACachePrivate::searchOrQueue(QStringView query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb)
 {
     auto it = cache.find(query);
     while (it != cache.end() && it.key() == query) {
@@ -92,7 +92,7 @@ bool ACachePrivate::searchOrQueue(QStringView query, qint64 maxAgeMs, const QVar
     return false;
 }
 
-void ACachePrivate::requestData(const QString &query, qint64 maxAgeMs, const QVariantList &args, AResultFn cb, QObject *receiver)
+void ACachePrivate::requestData(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb)
 {
     qCDebug(ASQL_CACHE) << "requesting data" << query << int(dbSource);
 
@@ -123,7 +123,7 @@ void ACachePrivate::requestData(const QString &query, qint64 maxAgeMs, const QVa
     auto it = cache.insert(query, _value);
 #endif
 
-    _db.exec(query, args, [query, args, this] (AResult &result) {
+    _db.exec(query, args, it->cancellable.get(), [query, args, this] (AResult &result) {
         auto it = cache.find(query);
         while (it != cache.end() && it.key() == query) {
             ACacheValue &value = it.value();
@@ -141,7 +141,7 @@ void ACachePrivate::requestData(const QString &query, qint64 maxAgeMs, const QVa
             }
             ++it;
         }
-    }, it->cancellable.get());
+    });
 }
 
 }
@@ -231,49 +231,49 @@ int ACache::expireAll(qint64 maxAgeMs)
     return ret;
 }
 
-void ACache::exec(QStringView query, AResultFn cb, QObject *receiver)
+void ACache::exec(QStringView query, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, -1, {}, cb, receiver);
+    execExpiring(query, -1, {}, receiver, cb);
 }
 
-void ACache::exec(QStringView query, const QVariantList &args, AResultFn cb, QObject *receiver)
+void ACache::exec(QStringView query, const QVariantList &args, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, -1, args, cb, receiver);
+    execExpiring(query, -1, args, receiver, cb);
 }
 
-void ACache::execExpiring(QStringView query, qint64 maxAgeMs, AResultFn cb, QObject *receiver)
+void ACache::execExpiring(QStringView query, qint64 maxAgeMs, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, maxAgeMs, {}, cb, receiver);
+    execExpiring(query, maxAgeMs, {}, receiver, cb);
 }
 
-void ACache::execExpiring(QStringView query, qint64 maxAgeMs, const QVariantList &args, AResultFn cb, QObject *receiver)
+void ACache::execExpiring(QStringView query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb)
 {
     Q_D(ACache);
-    if (!d->searchOrQueue(query, maxAgeMs, args, cb, receiver)) {
-        d->requestData(query.toString(), maxAgeMs, args, cb, receiver);
+    if (!d->searchOrQueue(query, maxAgeMs, args, receiver, cb)) {
+        d->requestData(query.toString(), args, receiver, cb);
     }
 }
 
-void ACache::exec(const QString &query, AResultFn cb, QObject *receiver)
+void ACache::exec(const QString &query, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, -1, {}, cb, receiver);
+    execExpiring(query, -1, {}, receiver, cb);
 }
 
-void ACache::exec(const QString &query, const QVariantList &args, AResultFn cb, QObject *receiver)
+void ACache::exec(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, -1, args, cb, receiver);
+    execExpiring(query, -1, args, receiver, cb);
 }
 
-void ACache::execExpiring(const QString &query, qint64 maxAgeMs, AResultFn cb, QObject *receiver)
+void ACache::execExpiring(const QString &query, qint64 maxAgeMs, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, maxAgeMs, {}, cb, receiver);
+    execExpiring(query, maxAgeMs, {}, receiver, cb);
 }
 
-void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantList &args, AResultFn cb, QObject *receiver)
+void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb)
 {
     Q_D(ACache);
-    if (!d->searchOrQueue(query, maxAgeMs, args, cb, receiver)) {
-        d->requestData(query, maxAgeMs, args, cb, receiver);
+    if (!d->searchOrQueue(query, maxAgeMs, args, receiver, cb)) {
+        d->requestData(query, args, receiver, cb);
     }
 }
 

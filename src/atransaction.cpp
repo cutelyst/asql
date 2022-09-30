@@ -60,34 +60,34 @@ ATransaction &ATransaction::operator =(const ATransaction &copy)
     return *this;
 }
 
-void ATransaction::begin(AResultFn cb, QObject *receiver)
+void ATransaction::begin(QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
     if (!d->running) {
         d->running = true;
-        d->db.begin(cb, receiver);
+        d->db.begin(receiver, cb);
     } else {
         qWarning(ASQL_TRANSACTION, "Transaction already started");
     }
 }
 
-void ATransaction::commit(AResultFn cb, QObject *receiver)
+void ATransaction::commit(QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
     if (d->running) {
         d->running = false;
-        d->db.commit(cb, receiver);
+        d->db.commit(receiver, cb);
     } else {
         qWarning(ASQL_TRANSACTION, "Transaction not started");
     }
 }
 
-void ATransaction::rollback(AResultFn cb, QObject *receiver)
+void ATransaction::rollback(QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
     if (d->running) {
         d->running = false;
-        d->db.rollback(cb, receiver);
+        d->db.rollback(receiver, cb);
     } else {
         qWarning(ASQL_TRANSACTION, "Transaction not started");
     }

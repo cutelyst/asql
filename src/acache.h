@@ -37,15 +37,15 @@ public:
     bool expire(qint64 maxAgeMs, QStringView query, const QVariantList &params = {});
     int expireAll(qint64 maxAgeMs);
 
-    void exec(QStringView query, AResultFn cb, QObject *receiver = nullptr);
-    void exec(QStringView query, const QVariantList &args, AResultFn cb, QObject *receiver = nullptr);
-    void execExpiring(QStringView query, qint64 maxAgeMs, AResultFn cb, QObject *receiver = nullptr);
-    void execExpiring(QStringView query, qint64 maxAgeMs, const QVariantList &args, AResultFn cb, QObject *receiver = nullptr);
+    void exec(QStringView query, QObject *receiver, AResultFn cb);
+    void exec(QStringView query, const QVariantList &args, QObject *receiver, AResultFn cb);
+    void execExpiring(QStringView query, qint64 maxAgeMs, QObject *receiver, AResultFn cb);
+    void execExpiring(QStringView query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb);
 
-    void exec(const QString &query, AResultFn cb, QObject *receiver = nullptr);
-    void exec(const QString &query, const QVariantList &args, AResultFn cb, QObject *receiver = nullptr);
-    void execExpiring(const QString &query, qint64 maxAgeMs, AResultFn cb, QObject *receiver = nullptr);
-    void execExpiring(const QString &query, qint64 maxAgeMs, const QVariantList &args, AResultFn cb, QObject *receiver = nullptr);
+    void exec(const QString &query, QObject *receiver, AResultFn cb);
+    void exec(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb);
+    void execExpiring(const QString &query, qint64 maxAgeMs, QObject *receiver, AResultFn cb);
+    void execExpiring(const QString &query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb);
 
 private:
     ACachePrivate *d_ptr;

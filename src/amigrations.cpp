@@ -66,13 +66,13 @@ name text primary key,
 version bigint not null check (version >= 0)
 )
 )V0G0N",
-                   [=] (AResult &result) {
+                   this, [=] (AResult &result) {
         if (result.error()) {
             qDebug(ASQL_MIG) << "Create migrations table" << result.errorString();
         }
 
         d_ptr->db.exec(u"SELECT version FROM public.asql_migrations WHERE name=$1",
-                       {name}, [=] (AResult &result2) {
+                       {name}, this, [=] (AResult &result2) {
             if (result2.error()) {
                 Q_EMIT ready(true, result2.errorString());
                 return;
@@ -84,8 +84,8 @@ version bigint not null check (version >= 0)
                 d_ptr->active = 0;
             }
             Q_EMIT ready(false, QString());
-        }, this);
-    }, this);
+        });
+    });
 }
 
 int AMigrations::active() const
@@ -239,14 +239,14 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
     }
 
     ATransaction t(d->db);
-    t.begin([=] (AResult &result) mutable {
+    t.begin(this, [=] (AResult &result) mutable {
         if (result.error()) {
             cb(true, result.errorString());
             return;
         }
 
         d->db.exec(u"SELECT version FROM public.asql_migrations WHERE name=$1 FOR UPDATE",
-        {d->name}, [=] (AResult &result) mutable {
+        {d->name}, this, [=] (AResult &result) mutable {
             if (result.error()) {
                 cb(true, result.errorString());
                 return;
@@ -282,23 +282,23 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
                     return;
                 }
 
-                d->db.exec(migration.versionQuery, [=] (AResult &result) mutable {
+                d->db.exec(migration.versionQuery, this, [=] (AResult &result) mutable {
                     if (result.error()) {
                         qCritical(ASQL_MIG) << "Failed to update version" << result.errorString();
                     }
-                }, this);
+                });
             }
 
             ADatabase db = migration.noTransaction ? d->noTransactionDB : d->db;
             db.exec(migration.noTransaction ? migration.query : migration.versionQuery + migration.query,
-                       [=] (AResult &result) mutable {
+                       this, [=] (AResult &result) mutable {
                 if (result.error()) {
                     if (cb) {
                         cb(true, result.errorString());
                     }
                 } else if (result.lastResulSet()) {
                     if (migration.noTransaction || !dryRun) {
-                        t.commit([=] (AResult &result) {
+                        t.commit(this, [=] (AResult &result) {
                             if (result.error()) {
                                 if (cb) {
                                     cb(true, result.errorString());
@@ -313,17 +313,17 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
                                     migrate(targetVersion, cb, dryRun);
                                 }
                             }
-                        }, this);
+                        });
                     } else {
-                        t.rollback([=] (AResult &result) {
+                        t.rollback(this, [=] (AResult &result) {
                             if (cb) {
                                 cb(true, result.errorString());
                             }
-                        }, this);
+                        });
                     }
                 }
-            }, this);
-        }, this);
+            });
+        });
     });
 }
 

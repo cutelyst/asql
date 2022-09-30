@@ -59,8 +59,9 @@ bool ADriver::isValid() const
     return false;
 }
 
-void ADriver::open(std::function<void (bool, const QString &)> cb)
+void ADriver::open(QObject *receiver, std::function<void (bool, const QString &)> cb)
 {
+    Q_UNUSED(receiver);
     if (cb) {
         cb(false, QStringLiteral("INVALID DATABASE DRIVER"));
     }
@@ -71,9 +72,10 @@ ADatabase::State ADriver::state() const
     return ADatabase::State::Disconnected;
 }
 
-void ADriver::onStateChanged(std::function<void (ADatabase::State, const QString &)> cb)
+void ADriver::onStateChanged(QObject *receiver, std::function<void (ADatabase::State, const QString &)> cb)
 {
-    Q_UNUSED(cb)
+    Q_UNUSED(receiver);
+    Q_UNUSED(cb);
 }
 
 bool ADriver::isOpen() const
@@ -81,37 +83,37 @@ bool ADriver::isOpen() const
     return false;
 }
 
-void ADriver::begin(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
+void ADriver::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    Q_UNUSED(db)
-    Q_UNUSED(receiver)
+    Q_UNUSED(db);
+    Q_UNUSED(receiver);
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
         cb(result);
     }
 }
 
-void ADriver::commit(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
+void ADriver::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    Q_UNUSED(db)
-    Q_UNUSED(receiver)
+    Q_UNUSED(db);
+    Q_UNUSED(receiver);
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
         cb(result);
     }
 }
 
-void ADriver::rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
+void ADriver::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    Q_UNUSED(db)
-    Q_UNUSED(receiver)
+    Q_UNUSED(db);
+    Q_UNUSED(receiver);
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
         cb(result);
     }
 }
 
-void ADriver::exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriver::exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, QObject *receiver, AResultFn cb)
 {
     Q_UNUSED(db)
     Q_UNUSED(query)
@@ -124,12 +126,12 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db, QStringView query, const 
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-void ADriver::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriver::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, const QVariantList &params, QObject *receiver, AResultFn cb)
 {
-    Q_UNUSED(db)
-    Q_UNUSED(query)
-    Q_UNUSED(params)
-    Q_UNUSED(receiver)
+    Q_UNUSED(db);
+    Q_UNUSED(query);
+    Q_UNUSED(params);
+    Q_UNUSED(receiver);
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
         cb(result);
@@ -137,12 +139,12 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, co
 }
 #endif
 
-void ADriver::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriver::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &query, const QVariantList &params, QObject *receiver, AResultFn cb)
 {
-    Q_UNUSED(db)
-    Q_UNUSED(query)
-    Q_UNUSED(params)
-    Q_UNUSED(receiver)
+    Q_UNUSED(db);
+    Q_UNUSED(query);
+    Q_UNUSED(params);
+    Q_UNUSED(receiver);
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
         cb(result);
@@ -175,12 +177,12 @@ bool ADriver::pipelineSync()
     return false;
 }
 
-void ADriver::subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, ANotificationFn cb, QObject *receiver)
+void ADriver::subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, QObject *receiver, ANotificationFn cb)
 {
-    Q_UNUSED(db)
-    Q_UNUSED(name)
-    Q_UNUSED(cb)
-    Q_UNUSED(receiver)
+    Q_UNUSED(db);
+    Q_UNUSED(name);
+    Q_UNUSED(cb);
+    Q_UNUSED(receiver);
 }
 
 QStringList ADriver::subscribedToNotifications() const
@@ -190,8 +192,8 @@ QStringList ADriver::subscribedToNotifications() const
 
 void ADriver::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name)
 {
-    Q_UNUSED(db)
-    Q_UNUSED(name)
+    Q_UNUSED(db);
+    Q_UNUSED(name);
 }
 
 #include "moc_adriver.cpp"

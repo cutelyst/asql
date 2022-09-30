@@ -57,7 +57,7 @@ APool::setMaxIdleConnections(15, "my_read_only_pool");
 Please if you have user input values that you need to pass to your query, do yourself a favour and pass it as parameters, thus reducing the risk of SQL injection attacks.  
 ```c++
 auto db = APool::database();
-db.exec(u"SELECT id, message FROM messages LIMIT 5", [=] (AResult &result) {
+db.exec(u"SELECT id, message FROM messages LIMIT 5", nullptr, [=] (AResult &result) {
     if (result.error()) {
         qDebug() << result.errorString();
         return;
@@ -78,7 +78,7 @@ db.exec(u"SELECT id, message FROM messages LIMIT 5", [=] (AResult &result) {
 When you are not sending parameters PostgreSQL allows for multiple queries, this results into multiple calls to your lambda, if one query fails the remaining queries are ignored as if they where in a transaction block. It's possible to check if the last result has arrived
 ```c++
 // This query is at the same scope at the previou one, this mean ADatabase will queue them
-db.exec(u"SELECT * FROM logs LIMIT 5; SELECT * FROM messages LIMIT 5", [=] (AResult &result) {
+db.exec(u"SELECT * FROM logs LIMIT 5; SELECT * FROM messages LIMIT 5", nullptr, [=] (AResult &result) {
     if (result.error()) {
         qDebug() << result.errorString();
         return;
@@ -119,7 +119,7 @@ db.exec(APreparedQueryLiteral(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6,
      QJsonObject{
           {"foo", true}
      }
-}, [=] (AResult &result) {
+}, nullptr, [=] (AResult &result) {
     if (result.error()) {
         qDebug() << result.errorString();
         return;
@@ -148,7 +148,7 @@ db.exec(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
      QJsonObject{
           {"foo", true}
      }
-}, [=] (AResult &result) mutable {
+}, nullptr, [=] (AResult &result) mutable {
     if (result.error()) {
         qDebug() << result.errorString();
         return; // Auto rollback
@@ -163,17 +163,19 @@ db.exec(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
 ASql was created with web usage in mind, namely to be used in Cutelyst but can also be used on Desktop/Mobile apps too, so in order to cancel
 or avoid a crash due some invalid pointer captured by the lambda you can pass a QObject pointer, that if deleted and was set for the current
 query will send a cancelation packet, this doesn't always work (due the packet arriving after the query was done), but your lambda will not be called anymore.
+
 ```c++
 auto cancelator = new QObject;
-db.exec(u"SELECT pg_sleep(5)", [=] (AResult &result) {
+db.exec(u"SELECT pg_sleep(5)", cancelator, [=] (AResult &result) {
     // This will never be called but it would crash
     // if cancelator was dangling reference and not passed as last parameter
     cancelator->setProperty("foo");
 
-}, cancelator); // notice the object being passed here
+}); // notice the object being passed here
     
 delete cancelator;
 ```
+
 ### Notifications (Postgres only)
 
 Each Database object can have a single function subscribed to one notification, if the connection is closed the subscription is cleared and a new subscription has to be made, this it's handy to have the subcription call on a named lambda:
@@ -188,7 +190,7 @@ auto subscribe = [=] () mutable {
    }, this);
 };
 
-db.onStateChanged([=] (ADatabase::State state, const QString &status) mutable {
+db.onStateChanged(nullptr, [=] (ADatabase::State state, const QString &status) mutable {
    qDebug() << "state changed" << state << status << db.isOpen();
 
    if (state == ADatabase::Disconnected) {

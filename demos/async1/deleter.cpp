@@ -30,14 +30,14 @@ int main(int argc, char *argv[])
     APool::create(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
     APool::setSetupCallback([] (ADatabase &db) {
         qDebug() << "setup db";
-        db.exec(u"SET TIME ZONE 'Europe/Rome';", [] (AResult &result) {
+        db.exec(u"SET TIME ZONE 'Europe/Rome';", nullptr, [] (AResult &result) {
             qDebug() << "SETUP" << result.error() << result.errorString() << result.toJsonObject();
         });
     });
 
     APool::setReuseCallback([] (ADatabase &db) {
         qDebug() << "reuse db";
-        db.exec(u"DISCARD ALL", [] (AResult &result) {
+        db.exec(u"DISCARD ALL", nullptr, [] (AResult &result) {
             qDebug() << "REUSE" << result.error() << result.errorString() << result.toJsonObject();
         });
     });
@@ -46,11 +46,11 @@ int main(int argc, char *argv[])
     auto obj = new QObject;
     {
         ADatabase db(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
-        db.open([] (bool ok, const QString &status) {
+        db.open(nullptr, [] (bool ok, const QString &status) {
             qDebug() << "OPEN value" << ok << status;
 
         });
-        db.exec(QStringLiteral("SELECT now()"), [] (AResult &result) {
+        db.exec(QStringLiteral("SELECT now()"), obj, [] (AResult &result) {
             if (result.error()) {
                 qDebug() << "SELECT error" << result.errorString();
                 return;
@@ -59,16 +59,16 @@ int main(int argc, char *argv[])
             if (result.size()) {
                 qDebug() << "SELECT value" << result.begin().value(0);
             }
-        }, obj);
+        });
     }
 
-    APool::database().exec(u"SELECT pg_sleep(5)", [] (AResult &result) {
+    APool::database().exec(u"SELECT pg_sleep(5)", obj, [] (AResult &result) {
         qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.size();
-    }, obj);
+    });
 
-    APool::database().exec(u"SELECT now()", [] (AResult &result) {
+    APool::database().exec(u"SELECT now()", obj, [] (AResult &result) {
         qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.toJsonObject();
-    }, obj);
+    });
 
     QTimer::singleShot(2000, obj, [=] {
         qDebug() << "Delete Obj";
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 
     QTimer::singleShot(2500, [=] {
         qDebug() << "Reuse Timer Obj";
-        APool::database().exec(u"SELECT now()", [] (AResult &result) {
+        APool::database().exec(u"SELECT now()", nullptr, [] (AResult &result) {
             qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.toJsonObject();
         });
     });

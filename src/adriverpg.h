@@ -153,22 +153,22 @@ public:
     virtual ~ADriverPg();
 
     bool isValid() const override;
-    void open(std::function<void(bool isOpen, const QString &error)> cb) override;
+    void open(QObject *receiver, std::function<void(bool isOpen, const QString &error)> cb) override;
     bool isOpen() const override;
 
     void setState(ADatabase::State state, const QString &status);
     ADatabase::State state() const override;
-    void onStateChanged(std::function<void(ADatabase::State state, const QString &status)> cb) override;
+    void onStateChanged(QObject *receiver, std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
-    void begin(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver) override;
-    void commit(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver) override;
-    void rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver) override;
+    void begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
+    void commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
+    void rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    void exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    void exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, const QVariantList &params, QObject *receiver, AResultFn cb) override;
 #endif
-    void exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
-    void exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver) override;
+    void exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, QObject *receiver, AResultFn cb) override;
+    void exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &query, const QVariantList &params, QObject *receiver, AResultFn cb) override;
 
     void setLastQuerySingleRowMode() override;
 
@@ -180,7 +180,7 @@ public:
 
     bool pipelineSync() override;
 
-    void subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, ANotificationFn cb, QObject *receiver) override;
+    void subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, QObject *receiver, ANotificationFn cb) override;
     QStringList subscribedToNotifications() const override;
     void unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name) override;
 
@@ -197,6 +197,7 @@ private:
     inline void cmdFlush();
     inline bool isConnected() const;
 
+    QPointer<QObject> m_stateChangedReceiver;
     std::function<void (ADatabase::State, const QString &)> m_stateChangedCb;
     QHash<QString, ANotificationFn> m_subscribedNotifications;
     std::queue<APGQuery> m_queuedQueries;
@@ -208,6 +209,7 @@ private:
     std::unique_ptr<APgConn> m_conn;
     ADatabase::State m_state = ADatabase::State::Disconnected;
     int m_pipelineSync = 0;
+    bool m_stateChangedReceiverSet = false;
     bool m_flush = false;
     bool m_queryRunning = false;
     bool m_notificationPtrSet = false;

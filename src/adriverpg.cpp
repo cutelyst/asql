@@ -83,11 +83,12 @@ QString connectionStatus(ConnStatusType type) {
     }
 }
 
-void ADriverPg::open(std::function<void(bool, const QString &)> cb)
+void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &)> cb)
 {
     qDebug(ASQL_PG) << "Open" << connectionInfo();
     m_conn = std::make_unique<APgConn>(connectionInfo());
     if (m_conn->conn()) {
+        QPointer<QObject> receiverPtr(receiver);
         const auto socket = m_conn->socket();
         if (socket > 0) {
             m_writeNotify = std::make_unique<QSocketNotifier>(socket, QSocketNotifier::Write);
@@ -111,7 +112,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                     qDebug(ASQL_PG) << "PGRES_POLLING_OK 1" << type << m_writeNotify->isEnabled();
                     m_writeNotify->setEnabled(false);
                     setState(ADatabase::State::Connected, QString());
-                    if (cb) {
+                    if ((!receiver || receiverPtr.isNull()) && cb) {
                         cb(true, QString());
                     }
 
@@ -125,7 +126,7 @@ void ADriverPg::open(std::function<void(bool, const QString &)> cb)
                     finishConnection();
 
                     setState(ADatabase::State::Disconnected, error);
-                    if (cb) {
+                    if ((!receiver || receiverPtr.isNull()) && cb) {
                         cb(false, error);
                     }
                     return;
@@ -275,7 +276,7 @@ bool ADriverPg::isOpen() const
 void ADriverPg::setState(ADatabase::State state, const QString &status)
 {
     m_state = state;
-    if (m_stateChangedCb) {
+    if (m_stateChangedCb && (!m_stateChangedReceiverSet || m_stateChangedReceiver.isNull())) {
         m_stateChangedCb(state, status);
     }
 }
@@ -285,24 +286,26 @@ ADatabase::State ADriverPg::state() const
     return m_state;
 }
 
-void ADriverPg::onStateChanged(std::function<void (ADatabase::State, const QString &)> cb)
+void ADriverPg::onStateChanged(QObject *receiver, std::function<void (ADatabase::State, const QString &)> cb)
 {
     m_stateChangedCb = cb;
+    m_stateChangedReceiver = receiver;
+    m_stateChangedReceiverSet = receiver;
 }
 
-void ADriverPg::begin(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
+void ADriverPg::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"BEGIN", QVariantList(), cb, receiver);
+    exec(db, u"BEGIN", QVariantList(), receiver, cb);
 }
 
-void ADriverPg::commit(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
+void ADriverPg::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"COMMIT", QVariantList(), cb, receiver);
+    exec(db, u"COMMIT", QVariantList(), receiver, cb);
 }
 
-void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, AResultFn cb, QObject *receiver)
+void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"ROLLBACK", QVariantList(), cb, receiver);
+    exec(db, u"ROLLBACK", QVariantList(), receiver, cb);
 }
 
 void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
@@ -310,7 +313,7 @@ void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
     if (receiver) {
         pgQuery.receiver = receiver;
         pgQuery.checkReceiver = receiver;
-        connect(pgQuery.checkReceiver, &QObject::destroyed, this, [=] (QObject *obj) {
+        connect(receiver, &QObject::destroyed, this, [=] (QObject *obj) {
             if (m_queryRunning && !m_queuedQueries.empty() && m_queuedQueries.front().checkReceiver == obj && m_conn) {
                 PGcancel *cancel = PQgetCancel(m_conn->conn());
                 char errbuf[256];
@@ -359,7 +362,7 @@ bool ADriverPg::queryShouldBeQueued() const
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, const QVariantList &params, QObject *receiver, AResultFn cb)
 {
     APGQuery pgQuery;
     pgQuery.query.setRawData(query.data(), query.size());
@@ -375,7 +378,7 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, 
 }
 #endif
 
-void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, QObject *receiver, AResultFn cb)
 {
     APGQuery pgQuery;
     pgQuery.query = query.toUtf8();
@@ -390,7 +393,7 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QStringView query, cons
     }
 }
 
-void ADriverPg::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &query, const QVariantList &params, AResultFn cb, QObject *receiver)
+void ADriverPg::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &query, const QVariantList &params, QObject *receiver, AResultFn cb)
 {
     APGQuery pgQuery;
     pgQuery.preparedQuery = query;
@@ -467,7 +470,7 @@ bool ADriverPg::pipelineSync()
     return false;
 }
 
-void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, ANotificationFn cb, QObject *receiver)
+void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, QObject *receiver, ANotificationFn cb)
 {
     if (m_subscribedNotifications.contains(name)) {
         qWarning(ASQL_PG) << "Already subscribed to notification" << name;
@@ -475,12 +478,12 @@ void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db, cons
     }
 
     m_subscribedNotifications.insert(name, cb);
-    exec(db, QString(u"LISTEN " + name), {}, [=] (AResult &result) {
+    exec(db, QString{QLatin1String("LISTEN ") + name}, {}, this, [this, name] (AResult &result) {
         qDebug(ASQL_PG) << "subscribed" << !result.error() << result.errorString();
         if (result.error()) {
             m_subscribedNotifications.remove(name);
         }
-    }, receiver);
+    });
 
     connect(receiver, &QObject::destroyed, this, [=] {
         m_subscribedNotifications.remove(name);
@@ -495,9 +498,9 @@ QStringList ADriverPg::subscribedToNotifications() const
 void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name)
 {
     if (m_subscribedNotifications.remove(name)) {
-        exec(db, QString(u"UNLISTEN " + name), {}, [=] (AResult &result) {
+        exec(db, QString{QStringLiteral("UNLISTEN ") + name}, {}, this, [=] (AResult &result) {
             qDebug(ASQL_PG) << "unsubscribed" << !result.error() << result.errorString();
-        }, this);
+        });
     }
 }
 
