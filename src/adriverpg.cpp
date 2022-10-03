@@ -276,7 +276,7 @@ bool ADriverPg::isOpen() const
 void ADriverPg::setState(ADatabase::State state, const QString &status)
 {
     m_state = state;
-    if (m_stateChangedCb && (!m_stateChangedReceiverSet || m_stateChangedReceiver.isNull())) {
+    if (m_stateChangedCb && (!m_stateChangedReceiverSet || !m_stateChangedReceiver.isNull())) {
         m_stateChangedCb(state, status);
     }
 }
