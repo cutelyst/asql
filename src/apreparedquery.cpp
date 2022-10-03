@@ -27,11 +27,27 @@ APreparedQuery::APreparedQuery(QStringView query)
 {
 }
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+APreparedQuery::APreparedQuery(QUtf8StringView query)
+    : m_query(query.data(), query.size())
+    , m_identification(identificationCounter())
+{
+}
+#endif
+
 APreparedQuery::APreparedQuery(QStringView query, QStringView identification)
     : m_query(query.toUtf8())
     , m_identification(identification.toUtf8())
 {
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+APreparedQuery::APreparedQuery(QUtf8StringView query, QUtf8StringView identification)
+    : m_query(query.data(), query.size())
+    , m_identification(identification.data(), identification.size())
+{
+}
+#endif
 
 QByteArray APreparedQuery::query() const
 {
