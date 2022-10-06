@@ -189,8 +189,7 @@ private:
     inline bool runQuery(APGQuery &pgQuery);
     inline bool queryShouldBeQueued() const;
     void nextQuery();
-    void finishConnection();
-    void finishQueries(const QString &error);
+    void finishConnection(const QString &error);
     inline int doExec(APGQuery &pgQuery);
     inline int doExecParams(APGQuery &query);
     inline void setSingleRowMode();

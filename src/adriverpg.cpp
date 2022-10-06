@@ -123,12 +123,12 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                 {
                     const QString error = m_conn->errorMessage();
                     qDebug(ASQL_PG) << "PGRES_POLLING_FAILED" << type << error;
-                    finishConnection();
 
-                    setState(ADatabase::State::Disconnected, error);
                     if ((!receiver || receiverPtr.isNull()) && cb) {
                         cb(false, error);
                     }
+
+                    finishConnection(error);
                     return;
                 }
                 default:
@@ -245,10 +245,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                         const QString error = m_conn->errorMessage();
                         qDebug(ASQL_PG) << "CONSUME ERROR" <<  error << m_conn->status() << connectionStatus(m_conn->status());
                         if (m_conn->status() == CONNECTION_BAD) {
-                            finishConnection();
-                            finishQueries(error);
-
-                            setState(ADatabase::State::Disconnected, error);
+                            finishConnection(error);
                         }
                     }
                 }
@@ -518,7 +515,7 @@ void ADriverPg::nextQuery()
     }
 }
 
-void ADriverPg::finishConnection()
+void ADriverPg::finishConnection(const QString &error)
 {
     m_conn.reset();
 
@@ -528,11 +525,8 @@ void ADriverPg::finishConnection()
     m_autoSyncTimer.reset();
     m_readNotify.reset();
     m_writeNotify.reset();
-    setState(ADatabase::State::Disconnected, {});
-}
+    setState(ADatabase::State::Disconnected, error);
 
-void ADriverPg::finishQueries(const QString &error)
-{
     while (!m_queuedQueries.empty()) {
         APGQuery pgQuery = m_queuedQueries.front();
         m_queuedQueries.pop();
