@@ -160,13 +160,25 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
 
                             if (result) {
                                 auto safeResult = std::make_shared<AResultPg>(result);
+
+                                ExecStatusType status = safeResult->status();
+                                switch (status) {
 #ifdef LIBPQ_HAS_PIPELINING
-                                ExecStatusType status = PQresultStatus(result);
-                                if (status == PGRES_PIPELINE_SYNC) {
+                                case PGRES_PIPELINE_SYNC:
                                     --m_pipelineSync;
                                     continue;
-                                }
 #endif
+                                case PGRES_TUPLES_OK:
+                                    [[fallthrough]];
+                                case PGRES_SINGLE_TUPLE:
+                                    [[fallthrough]];
+                                case PGRES_COMMAND_OK:
+                                    break;
+                                default:
+                                    safeResult->m_error = true;
+                                    safeResult->m_errorString = QString::fromLocal8Bit(PQresultErrorMessage(result));
+                                    break;
+                                }
 
                                 APGQuery &pgQuery = m_queuedQueries.front();
 //                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << bool(pgQuery.result);
@@ -530,6 +542,7 @@ void ADriverPg::finishConnection(const QString &error)
     while (!m_queuedQueries.empty()) {
         APGQuery pgQuery = m_queuedQueries.front();
         m_queuedQueries.pop();
+        pgQuery.result = std::make_shared<AResultPg>(nullptr);
         pgQuery.result->m_error = true;
         pgQuery.result->m_errorString = error;
         pgQuery.done();
@@ -776,26 +789,16 @@ bool ADriverPg::isConnected() const
 
 AResultPg::AResultPg(PGresult *result) : m_result{result}
 {
-    ExecStatusType status = PQresultStatus(m_result);
-    switch (status) {
-    case PGRES_TUPLES_OK:
-    case PGRES_SINGLE_TUPLE:
-    case PGRES_COMMAND_OK:
-#ifdef LIBPQ_HAS_PIPELINING
-    case PGRES_PIPELINE_SYNC:
-#endif
-        return;
-    default:
-        break;
-    }
-
-    m_error = true;
-    m_errorString = QString::fromLocal8Bit(PQresultErrorMessage(m_result));
 }
 
 AResultPg::~AResultPg()
 {
     PQclear(m_result);
+}
+
+ExecStatusType AResultPg::status() const
+{
+    return PQresultStatus(m_result);
 }
 
 bool AResultPg::lastResulSet() const

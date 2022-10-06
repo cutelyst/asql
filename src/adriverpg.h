@@ -28,6 +28,8 @@ public:
     AResultPg(PGresult *result);
     virtual ~AResultPg();
 
+    ExecStatusType status() const;
+
     bool lastResulSet() const override;
     bool error() const override;
     QString errorString() const override;
