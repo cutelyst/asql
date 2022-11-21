@@ -33,8 +33,31 @@ int main(int argc, char *argv[])
     APool::setMaxIdleConnections(2);
     APool::setMaxConnections(4);
 
+    auto callBD = []() {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        auto prep = u8"SELECT now()"_prepared;
+#else
+        auto prep = u"SELECT now()"_prepared;
+#endif
+        qDebug() << "Prepared " << prep.identification();
+
+        auto db = APool::database();
+        db.exec(prep, nullptr, [=] (AResult &result) {
+            if (result.error()) {
+                qDebug() << "SELECT operator error" << result.errorString();
+                return;
+            }
+
+            qDebug() << "PREPARED operator size" << result.toHashList();
+        });
+    };
+
+    callBD();
+
+    callBD();
+
     auto simpleDb = APool::database();
-    simpleDb.exec(APreparedQueryLiteral(u"SELECT $1, now()"), { qint64(12345) }, nullptr, [=] (AResult &result) {
+    simpleDb.exec(u"SELECT $1, now()"_prepared, { qint64(12345) }, nullptr, [=] (AResult &result) {
         if (result.error()) {
             qDebug() << "SELECT error" << result.errorString();
             return;
