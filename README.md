@@ -104,11 +104,11 @@ means faster execution, this is because the planner can often make better planni
 Our advice is that you try to mesure your execution with real data, switching from prepared to not prepared is also very trivial.
 
 It's very important that the APreparedQuery object doesn't get deleted (by getting out of scope), this is because
-it holds an unique identification for your query, in order to make this easier one can use the `_prepared` operator or the APreparedQueryLiteral macro.
+it holds an unique identification for your query, in order to make this easier one can use the APreparedQueryLiteral macro.
 You can also manually create a static APreparedQuery object or have your prepared query as a member of a class that isn't going to be deleted soon.
 ```c++
 // PostgreSQL uses numered place holders, and yes you can repeat them :)
-db.exec(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"_prepared,
+db.exec(APreparedQuery(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
 {
      true,
      QStringLiteral("foo"),

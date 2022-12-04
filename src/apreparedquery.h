@@ -81,27 +81,6 @@ private:
     QByteArray m_identification;
 };
 
-ASQL_EXPORT inline APreparedQuery operator"" _prepared(const char16_t *str, size_t size)
-{
-    static const APreparedQuery aprepared_literal_temp(QStringView(str, size));
-    return aprepared_literal_temp;
-}
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-#if defined(__cpp_char8_t)
-ASQL_EXPORT inline APreparedQuery operator"" _prepared(const char8_t *str, size_t size)
-{
-    static const APreparedQuery aprepared_literal_temp(QUtf8StringView(str, size));
-    return aprepared_literal_temp;
-}
-#else
-ASQL_EXPORT inline APreparedQuery operator"" _prepared(const char *str, size_t size)
-{
-    static const APreparedQuery aprepared_literal_temp(QUtf8StringView(str, size));
-    return aprepared_literal_temp;
-}
-#endif
-#endif
-
 }
 
 #endif // APREPAREDQUERY_H

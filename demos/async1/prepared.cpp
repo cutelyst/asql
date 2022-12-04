@@ -33,16 +33,15 @@ int main(int argc, char *argv[])
     APool::setMaxIdleConnections(2);
     APool::setMaxConnections(4);
 
-    auto callBD = []() {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-        auto prep = u8"SELECT now()"_prepared;
-#else
-        auto prep = u"SELECT now()"_prepared;
-#endif
-        qDebug() << "Prepared " << prep.identification();
+    {
+        APreparedQuery q1("SELECT now()");
+        APreparedQuery q2("SELECT now()");
+        Q_ASSERT(q1.identification() != q2.identification());
+    }
 
+    auto callBD = []() {
         auto db = APool::database();
-        db.exec(prep, nullptr, [=] (AResult &result) {
+        db.exec(APreparedQuery("SELECT now()"), nullptr, [=] (AResult &result) {
             if (result.error()) {
                 qDebug() << "SELECT operator error" << result.errorString();
                 return;
@@ -57,7 +56,7 @@ int main(int argc, char *argv[])
     callBD();
 
     auto simpleDb = APool::database();
-    simpleDb.exec(u"SELECT $1, now()"_prepared, { qint64(12345) }, nullptr, [=] (AResult &result) {
+    simpleDb.exec(APreparedQuery(u"SELECT $1, now()"), { qint64(12345) }, nullptr, [=] (AResult &result) {
         if (result.error()) {
             qDebug() << "SELECT error" << result.errorString();
             return;
