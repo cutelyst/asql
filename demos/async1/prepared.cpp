@@ -34,14 +34,14 @@ int main(int argc, char *argv[])
     APool::setMaxConnections(4);
 
     {
-        APreparedQuery q1("SELECT now()");
-        APreparedQuery q2("SELECT now()");
+        APreparedQuery q1(u"SELECT now()");
+        APreparedQuery q2(u"SELECT now()");
         Q_ASSERT(q1.identification() != q2.identification());
     }
 
     auto callBD = []() {
         auto db = APool::database();
-        db.exec(APreparedQuery("SELECT now()"), nullptr, [=] (AResult &result) {
+        db.exec(APreparedQuery(u"SELECT now()"), nullptr, [=] (AResult &result) {
             if (result.error()) {
                 qDebug() << "SELECT operator error" << result.errorString();
                 return;
