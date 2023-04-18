@@ -165,9 +165,9 @@ int main(int argc, char *argv[])
     auto loopFn = [=] {
         auto queryStatic = APreparedQueryLiteral(u"SELECT $1, now()");
         ADatabase(db).exec(queryStatic,
-            {qint64(12345)},
-            nullptr,
-            [=](AResult &result) {
+                           {qint64(12345)},
+                           nullptr,
+                           [=](AResult &result) {
             if (result.error()) {
                 qDebug() << "SELECT error" << result.errorString();
                 return;

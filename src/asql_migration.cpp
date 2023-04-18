@@ -36,26 +36,26 @@ int main(int argc, char *argv[])
     parser.addOption(confirmOption);
 
     QCommandLineOption dryRunOption({QStringLiteral("d"), QStringLiteral("dry-run")},
-        QCoreApplication::translate("main", "Do not actually commit changes to the database."));
+                                    QCoreApplication::translate("main", "Do not actually commit changes to the database."));
     parser.addOption(dryRunOption);
 
     QCommandLineOption showSqlOption({QStringLiteral("s"), QStringLiteral("show-sql")},
-        QCoreApplication::translate("main", "Show migration SQL."));
+                                     QCoreApplication::translate("main", "Show migration SQL."));
     parser.addOption(showSqlOption);
 
     QCommandLineOption connOption({QStringLiteral("c"), QStringLiteral("connection")},
-        QCoreApplication::translate("main", "Connection URL to the database."),
-        QCoreApplication::translate("main", "url"));
+                                  QCoreApplication::translate("main", "Connection URL to the database."),
+                                  QCoreApplication::translate("main", "url"));
     parser.addOption(connOption);
 
     QCommandLineOption nameOption({QStringLiteral("n"), QStringLiteral("name")},
-        QCoreApplication::translate("main", "Migration name."),
-        QCoreApplication::translate("main", "name"));
+                                  QCoreApplication::translate("main", "Migration name."),
+                                  QCoreApplication::translate("main", "name"));
     parser.addOption(nameOption);
 
     QCommandLineOption targetVersionOption(QStringLiteral("target"),
-        QCoreApplication::translate("main", "Migrate database to target <version>."),
-        QCoreApplication::translate("main", "version"));
+                                           QCoreApplication::translate("main", "Migrate database to target <version>."),
+                                           QCoreApplication::translate("main", "version"));
     parser.addOption(targetVersionOption);
 
     // Process the actual command line arguments given by the user

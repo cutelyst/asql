@@ -112,14 +112,14 @@ int main(int argc, char *argv[])
     }
 
     APool::database().exec(QStringLiteral("SELECT $1, $2, $3, $4, now()"),
-        {
-            QJsonValue(true),
-            QJsonValue(123.4567),
-            QJsonValue(QStringLiteral("fooo")),
-            QJsonValue(QJsonObject{}),
-        },
-        nullptr,
-        [&series](AResult &result) mutable {
+                           {
+                               QJsonValue(true),
+                               QJsonValue(123.4567),
+                               QJsonValue(QStringLiteral("fooo")),
+                               QJsonValue(QJsonObject{}),
+                           },
+                           nullptr,
+                           [&series](AResult &result) mutable {
         qDebug() << "=====iterator JSON" << result.errorString() << result.size() << "last" << result.lastResulSet() << "mutable" << series.size();
         if (result.error()) {
             qDebug() << "Error" << result.errorString();
@@ -130,8 +130,8 @@ int main(int argc, char *argv[])
     });
 
     APool::database().exec(QStringLiteral("select jsonb_build_object('foo', now());"),
-        nullptr,
-        [](AResult &result) mutable {
+                           nullptr,
+                           [](AResult &result) mutable {
         qDebug() << "=====iterator JSON" << result.errorString() << result.size() << "last" << result[0][0].toJsonValue();
         if (result.error()) {
             qDebug() << "Error" << result.errorString();
@@ -300,8 +300,8 @@ int main(int argc, char *argv[])
     auto db1 = APool::database();
     for (int i = 0; i < 100000; ++i) {
         db1.exec(APreparedQueryLiteral(u"SELECT * from world"),
-            {},
-            [&count, t](AResult &result) mutable {
+                 {},
+                 [&count, t](AResult &result) mutable {
             (*count)++;
             if (!result.error()) {
                 auto data = result.toHash();

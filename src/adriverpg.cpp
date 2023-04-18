@@ -557,10 +557,10 @@ int ADriverPg::doExec(APGQuery &pgQuery)
         bool isPrepared = m_preparedQueries.contains(pgQuery.preparedQuery->identification());
         if (!isPrepared) {
             ret = PQsendPrepare(m_conn->conn(),
-                pgQuery.preparedQuery->identification().constData(),
-                pgQuery.preparedQuery->query().constData(),
-                0,
-                nullptr); // perhaps later use binary results
+                                pgQuery.preparedQuery->identification().constData(),
+                                pgQuery.preparedQuery->query().constData(),
+                                0,
+                                nullptr); // perhaps later use binary results
 
             if (ret == 1 && pipelineStatus() == ADatabase::PipelineStatus::On) {
                 // pretend that it was prepared otherwise it can't be used in in the pipeline
@@ -572,12 +572,12 @@ int ADriverPg::doExec(APGQuery &pgQuery)
 
         if (isPrepared) {
             ret = PQsendQueryPrepared(m_conn->conn(),
-                pgQuery.preparedQuery->identification().constData(),
-                0,
-                nullptr,
-                nullptr,
-                nullptr,
-                0); // perhaps later use binary results
+                                      pgQuery.preparedQuery->identification().constData(),
+                                      0,
+                                      nullptr,
+                                      nullptr,
+                                      nullptr,
+                                      0); // perhaps later use binary results
         }
     } else {
         ret = PQsendQuery(m_conn->conn(), pgQuery.query.constData());
@@ -726,10 +726,10 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
         bool isPrepared = m_preparedQueries.contains(pgQuery.preparedQuery->identification());
         if (!isPrepared) {
             ret = PQsendPrepare(m_conn->conn(),
-                pgQuery.preparedQuery->identification().constData(),
-                pgQuery.preparedQuery->query().constData(),
-                params.size(),
-                paramTypes.get());
+                                pgQuery.preparedQuery->identification().constData(),
+                                pgQuery.preparedQuery->query().constData(),
+                                params.size(),
+                                paramTypes.get());
 
             if (ret == 1 && pipelineStatus() == ADatabase::PipelineStatus::On) {
                 // pretend that it was prepared otherwise it can't be used in in the pipeline
@@ -741,22 +741,22 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
 
         if (isPrepared) {
             ret = PQsendQueryPrepared(m_conn->conn(),
-                pgQuery.preparedQuery->identification().constData(),
-                params.size(),
-                paramValues.get(),
-                paramLengths.get(),
-                paramFormats.get(),
-                0); // perhaps later use binary results
+                                      pgQuery.preparedQuery->identification().constData(),
+                                      params.size(),
+                                      paramValues.get(),
+                                      paramLengths.get(),
+                                      paramFormats.get(),
+                                      0); // perhaps later use binary results
         }
     } else {
         ret = PQsendQueryParams(m_conn->conn(),
-            pgQuery.query.constData(),
-            params.size(),
-            paramTypes.get(),
-            paramValues.get(),
-            paramLengths.get(),
-            paramFormats.get(),
-            0); // perhaps later use binary results
+                                pgQuery.query.constData(),
+                                params.size(),
+                                paramTypes.get(),
+                                paramValues.get(),
+                                paramLengths.get(),
+                                paramFormats.get(),
+                                0); // perhaps later use binary results
     }
 
     return ret;

@@ -3,7 +3,7 @@
 # but meh for ASql lambdas which LambdaBodyIndentation ins't enough
 ---
 AccessModifierOffset: -4
-AlignAfterOpenBracket: DontAlign
+AlignAfterOpenBracket: Align
 AlignConsecutiveMacros: 'false'
 AlignConsecutiveAssignments: 'false'
 AlignConsecutiveDeclarations: 'false'
