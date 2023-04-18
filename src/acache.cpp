@@ -81,7 +81,7 @@ bool ACachePrivate::searchOrQueue(QStringView query, qint64 maxAgeMs, const QVar
                 value.receivers.emplace_back(ACacheReceiverCb{
                     cb,
                     receiver,
-                    receiver });
+                    receiver});
             }
 
             return true;
@@ -102,7 +102,7 @@ void ACachePrivate::requestData(const QString &query, const QVariantList &args, 
     cacheValue.receivers.emplace_back(ACacheReceiverCb{
         cb,
         receiver,
-        receiver });
+        receiver});
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     cache.emplace(query, std::move(cacheValue));

@@ -73,7 +73,7 @@ version bigint not null check (version >= 0)
         }
 
         d_ptr->db.exec(u"SELECT version FROM public.asql_migrations WHERE name=$1",
-            { name },
+            {name},
             this,
             [=, this](AResult &result2) {
             if (result2.error()) {
@@ -249,7 +249,7 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
         }
 
         d->db.exec(u"SELECT version FROM public.asql_migrations WHERE name=$1 FOR UPDATE",
-            { d->name },
+            {d->name},
             this,
             [=, this](AResult &result) mutable {
             if (result.error()) {
@@ -353,8 +353,7 @@ RETURNING version;
                     query.arg(name).arg(it.key()),
                     it.value().query,
                     it.key(),
-                    it.value().noTransaction
-                };
+                    it.value().noTransaction};
                 break;
             }
             ++it;
@@ -368,8 +367,7 @@ RETURNING version;
                     query.arg(name).arg(it.key() - 1),
                     it.value().query,
                     it.key() - 1,
-                    it.value().noTransaction
-                };
+                    it.value().noTransaction};
             }
             ++it;
         }

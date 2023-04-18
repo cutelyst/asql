@@ -112,7 +112,12 @@ int main(int argc, char *argv[])
     }
 
     APool::database().exec(QStringLiteral("SELECT $1, $2, $3, $4, now()"),
-        { QJsonValue(true), QJsonValue(123.4567), QJsonValue(QStringLiteral("fooo")), QJsonValue(QJsonObject{}) },
+        {
+            QJsonValue(true),
+            QJsonValue(123.4567),
+            QJsonValue(QStringLiteral("fooo")),
+            QJsonValue(QJsonObject{}),
+        },
         nullptr,
         [&series](AResult &result) mutable {
         qDebug() << "=====iterator JSON" << result.errorString() << result.size() << "last" << result.lastResulSet() << "mutable" << series.size();
@@ -290,7 +295,7 @@ int main(int argc, char *argv[])
     QElapsedTimer t;
     t.start();
 
-    auto count = new int{ 0 };
+    auto count = new int{0};
 
     auto db1 = APool::database();
     for (int i = 0; i < 100000; ++i) {
@@ -308,7 +313,7 @@ int main(int argc, char *argv[])
         });
     }
 
-    auto loopT = new QTimer{ &app };
+    auto loopT = new QTimer{&app};
     loopT->setInterval(1000);
     loopT->setSingleShot(false);
     QObject::connect(loopT, &QTimer::timeout, loopT, [=] {

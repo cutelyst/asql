@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     callBD();
 
     auto simpleDb = APool::database();
-    simpleDb.exec(APreparedQuery(u"SELECT $1, now()"), { qint64(12345) }, nullptr, [=](AResult &result) {
+    simpleDb.exec(APreparedQuery(u"SELECT $1, now()"), {qint64(12345)}, nullptr, [=](AResult &result) {
         if (result.error()) {
             qDebug() << "SELECT error" << result.errorString();
             return;
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 
         qDebug() << "PREPARED size" << result.size();
     });
-    simpleDb.exec(APreparedQueryLiteral(u"SELECT broken"), { qint64(12345) }, nullptr, [=](AResult &result) {
+    simpleDb.exec(APreparedQueryLiteral(u"SELECT broken"), {qint64(12345)}, nullptr, [=](AResult &result) {
         if (result.error()) {
             qDebug() << "SELECT broken error" << result.errorString();
             return;
@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
     });
 
     static APreparedQuery query2(QStringLiteral("SELECT now(), $1"));
-    db.exec(query2, { qint64(12345) }, nullptr, [=](AResult &result) {
+    db.exec(query2, {qint64(12345)}, nullptr, [=](AResult &result) {
         if (result.error()) {
             qDebug() << "SELECT error" << result.errorString();
             return;
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
         }
     });
 
-    db.exec(query2, { qint64(12345) }, nullptr, [=](AResult &result) {
+    db.exec(query2, {qint64(12345)}, nullptr, [=](AResult &result) {
         if (result.error()) {
             qDebug() << "SELECT error" << result.errorString();
             return;
@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
     auto loopFn = [=] {
         auto queryStatic = APreparedQueryLiteral(u"SELECT $1, now()");
         ADatabase(db).exec(queryStatic,
-            { qint64(12345) },
+            {qint64(12345)},
             nullptr,
             [=](AResult &result) {
             if (result.error()) {

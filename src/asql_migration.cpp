@@ -35,20 +35,20 @@ int main(int argc, char *argv[])
     QCommandLineOption confirmOption(QStringLiteral("y"), QCoreApplication::translate("main", "Automatically confirm migration"));
     parser.addOption(confirmOption);
 
-    QCommandLineOption dryRunOption({ QStringLiteral("d"), QStringLiteral("dry-run") },
+    QCommandLineOption dryRunOption({QStringLiteral("d"), QStringLiteral("dry-run")},
         QCoreApplication::translate("main", "Do not actually commit changes to the database."));
     parser.addOption(dryRunOption);
 
-    QCommandLineOption showSqlOption({ QStringLiteral("s"), QStringLiteral("show-sql") },
+    QCommandLineOption showSqlOption({QStringLiteral("s"), QStringLiteral("show-sql")},
         QCoreApplication::translate("main", "Show migration SQL."));
     parser.addOption(showSqlOption);
 
-    QCommandLineOption connOption({ QStringLiteral("c"), QStringLiteral("connection") },
+    QCommandLineOption connOption({QStringLiteral("c"), QStringLiteral("connection")},
         QCoreApplication::translate("main", "Connection URL to the database."),
         QCoreApplication::translate("main", "url"));
     parser.addOption(connOption);
 
-    QCommandLineOption nameOption({ QStringLiteral("n"), QStringLiteral("name") },
+    QCommandLineOption nameOption({QStringLiteral("n"), QStringLiteral("name")},
         QCoreApplication::translate("main", "Migration name."),
         QCoreApplication::translate("main", "name"));
     parser.addOption(nameOption);

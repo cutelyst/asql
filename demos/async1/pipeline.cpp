@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
             qDebug() << "PIPELINE STATUS" << int(db.pipelineStatus());
             auto callDb = [db](int id) mutable {
-                db.exec(u"SELECT now(), $1", { id }, nullptr, [=](AResult &result) {
+                db.exec(u"SELECT now(), $1", {id}, nullptr, [=](AResult &result) {
                     if (result.error()) {
                         qDebug() << "PIPELINE SELECT error" << id << result.errorString();
                         return;
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 
             qDebug() << "2 PIPELINE STATUS" << int(db.pipelineStatus());
             auto callDb = [db](int id) mutable {
-                db.exec(APreparedQuery(u"SELECT now(), $1"), { id }, nullptr, [=](AResult &result) {
+                db.exec(APreparedQuery(u"SELECT now(), $1"), {id}, nullptr, [=](AResult &result) {
                     if (result.error()) {
                         qDebug() << "2 PIPELINE SELECT error" << id << result.errorString();
                         return;
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
             };
 
             auto callStaticDb = [db](int id) mutable {
-                db.exec(APreparedQueryLiteral(u"SELECT now(), $1"), { id }, nullptr, [=](AResult &result) {
+                db.exec(APreparedQueryLiteral(u"SELECT now(), $1"), {id}, nullptr, [=](AResult &result) {
                     if (result.error()) {
                         qDebug() << "2 PIPELINE SELECT error" << id << result.errorString();
                         return;
