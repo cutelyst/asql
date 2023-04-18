@@ -34,8 +34,7 @@ struct ACacheValue {
 class ACachePrivate
 {
 public:
-    enum class DbSource
-    {
+    enum class DbSource {
         Unset,
         Database,
         Pool,

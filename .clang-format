@@ -28,7 +28,7 @@ BreakBeforeBraces: Custom
 BraceWrapping:
     AfterCaseLabel: 'true'
     AfterClass: 'true'
-    AfterEnum: 'true'
+    AfterEnum: 'false'
     AfterFunction:   true
     SplitEmptyFunction: 'true'
     SplitEmptyRecord: 'true'

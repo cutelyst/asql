@@ -35,8 +35,7 @@ class ASQL_EXPORT ADatabase
 {
     Q_GADGET
 public:
-    enum class State
-    {
+    enum class State {
         Disconnected,
         Connecting,
         Connected
@@ -251,8 +250,7 @@ public:
      */
     bool exitPipelineMode();
 
-    enum class PipelineStatus
-    {
+    enum class PipelineStatus {
         Off,
         On,
         Aborted,
