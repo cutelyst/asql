@@ -42,7 +42,7 @@ ConstructorInitializerAllOnOneLineOrOnePerLine: 'false'
 ConstructorInitializerIndentWidth: '4'
 ContinuationIndentWidth: '4'
 ColumnLimit: 0
-Cpp11BracedListStyle: 'false'
+Cpp11BracedListStyle: 'true'
 FixNamespaceComments: 'true'
 ForEachMacros:
   - forever # avoids { wrapped to next line
