@@ -7,18 +7,18 @@
 
 #include "aresult.h"
 
-#include <QLoggingCategory>
-#include <QThread>
+#include <libpq-fe.h>
+
 #include <QDate>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonArray>
+#include <QLoggingCategory>
+#include <QThread>
+#include <QTimer>
 #include <QUrlQuery>
 #include <QUuid>
 #include <QtEndian>
-#include <QTimer>
-
-#include <libpq-fe.h>
 
 Q_LOGGING_CATEGORY(ASQL_PG, "asql.pg", QtInfoMsg)
 
@@ -53,9 +53,9 @@ Q_LOGGING_CATEGORY(ASQL_PG, "asql.pg", QtInfoMsg)
 
 using namespace ASql;
 
-ADriverPg::ADriverPg(const QString &connInfo) : ADriver(connInfo)
+ADriverPg::ADriverPg(const QString &connInfo)
+    : ADriver(connInfo)
 {
-
 }
 
 ADriverPg::~ADriverPg() = default;
@@ -65,7 +65,8 @@ bool ADriverPg::isValid() const
     return true;
 }
 
-QString connectionStatus(ConnStatusType type) {
+QString connectionStatus(ConnStatusType type)
+{
     switch (type) {
     case CONNECTION_OK:
         return QStringLiteral("CONNECTION_OK");
@@ -97,12 +98,12 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
             const QString error = m_conn->errorMessage();
             setState(ADatabase::State::Connecting, error);
 
-            auto connFn = [=, this]  {
+            auto connFn = [=, this] {
                 PostgresPollingStatusType type = m_conn->connectPoll();
-//                qDebug(ASQL_PG) << "poll" << type << "status" << connectionStatus(PQstatus(m_conn));
+                //                qDebug(ASQL_PG) << "poll" << type << "status" << connectionStatus(PQstatus(m_conn));
                 switch (type) {
                 case PGRES_POLLING_READING:
-//                    qDebug(ASQL_PG) << "PGRES_POLLING_READING" << type;
+                    //                    qDebug(ASQL_PG) << "PGRES_POLLING_READING" << type;
                     return;
                 case PGRES_POLLING_WRITING:
                     qDebug(ASQL_PG) << "PGRES_POLLING_WRITING 1" << type << m_writeNotify->isEnabled();
@@ -138,7 +139,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
             };
 
             connect(m_writeNotify.get(), &QSocketNotifier::activated, this, [=, this] {
-//                qDebug(ASQL_PG) << "PG write" << connectionStatus(PQstatus(m_conn)) << PQisBusy(m_conn);
+                //                qDebug(ASQL_PG) << "PG write" << connectionStatus(PQstatus(m_conn)) << PQisBusy(m_conn);
                 m_writeNotify->setEnabled(false);
                 if (!isConnected()) {
                     connFn();
@@ -156,7 +157,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                         while (PQisBusy(m_conn->conn()) == 0) {
                             PGresult *result = PQgetResult(m_conn->conn());
 
-//                            qWarning() << "Not busy: RESULT" << result << "queue" << m_queuedQueries.size();
+                            //                            qWarning() << "Not busy: RESULT" << result << "queue" << m_queuedQueries.size();
 
                             if (result) {
                                 auto safeResult = std::make_shared<AResultPg>(result);
@@ -181,7 +182,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                                 }
 
                                 APGQuery &pgQuery = m_queuedQueries.front();
-//                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << bool(pgQuery.result);
+                                //                                qDebug(ASQL_PG) << "RESULT" << result << "status" << status << PGRES_TUPLES_OK << "shared_ptr result" << bool(pgQuery.result);
                                 if (pgQuery.result) {
                                     // when we had already had a result it means we should emit the
                                     // first one and keep waiting till a null result is returned
@@ -224,17 +225,17 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                                 break;
                             }
                         }
-//                        qDebug(ASQL_PG) << "Not busy OUT" << this;
+                        //                        qDebug(ASQL_PG) << "Not busy OUT" << this;
 
                         if (!m_queuedQueries.empty() && m_pipelineSync == 0 &&
-                                pipelineStatus() != ADatabase::PipelineStatus::Off && m_autoSyncTimer && !m_autoSyncTimer->isActive()) {
+                            pipelineStatus() != ADatabase::PipelineStatus::Off && m_autoSyncTimer && !m_autoSyncTimer->isActive()) {
                             m_autoSyncTimer->start();
                         }
 
                         PGnotify *notify = nullptr;
                         while ((notify = m_conn->notifies()) != nullptr) {
                             const QString name = QString::fromUtf8(notify->relname);
-//                            qDebug(ASQL_PG) << "NOTIFICATION" << name << notify;
+                            //                            qDebug(ASQL_PG) << "NOTIFICATION" << name << notify;
 
                             auto it = m_subscribedNotifications.constFind(name);
                             if (it != m_subscribedNotifications.constEnd()) {
@@ -244,8 +245,8 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                                         payload = QString::fromUtf8(notify->extra);
                                     }
                                     const bool self = (notify->be_pid == PQbackendPID(m_conn->conn())) ? true : false;
-//                                qDebug(ASQL_PG) << "NOTIFICATION" << self << name << payload;
-                                    it.value()(ADatabaseNotification{name, payload, self});
+                                    //                                qDebug(ASQL_PG) << "NOTIFICATION" << self << name << payload;
+                                    it.value()(ADatabaseNotification{ name, payload, self });
                                 }
                             } else {
                                 qWarning(ASQL_PG, "received notification for '%s' which isn't subscribed to.", qPrintable(name));
@@ -255,7 +256,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                         }
                     } else {
                         const QString error = m_conn->errorMessage();
-                        qDebug(ASQL_PG) << "CONSUME ERROR" <<  error << m_conn->status() << connectionStatus(m_conn->status());
+                        qDebug(ASQL_PG) << "CONSUME ERROR" << error << m_conn->status() << connectionStatus(m_conn->status());
                         if (m_conn->status() == CONNECTION_BAD) {
                             finishConnection(error);
                         }
@@ -269,7 +270,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                 }
             });
         }
-//        qDebug(ASQL_PG) << "PG Socket" << m_conn << socket;
+        //        qDebug(ASQL_PG) << "PG Socket" << m_conn << socket;
     } else {
         if (cb) {
             cb(false, QStringLiteral("PQconnectStart failed"));
@@ -295,7 +296,7 @@ ADatabase::State ADriverPg::state() const
     return m_state;
 }
 
-void ADriverPg::onStateChanged(QObject *receiver, std::function<void (ADatabase::State, const QString &)> cb)
+void ADriverPg::onStateChanged(QObject *receiver, std::function<void(ADatabase::State, const QString &)> cb)
 {
     m_stateChangedCb = cb;
     m_stateChangedReceiver = receiver;
@@ -322,7 +323,7 @@ void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
     if (receiver) {
         pgQuery.receiver = receiver;
         pgQuery.checkReceiver = receiver;
-        connect(receiver, &QObject::destroyed, this, [=, this] (QObject *obj) {
+        connect(receiver, &QObject::destroyed, this, [=, this](QObject *obj) {
             if (m_queryRunning && !m_queuedQueries.empty() && m_queuedQueries.front().checkReceiver == obj && m_conn) {
                 PGcancel *cancel = PQgetCancel(m_conn->conn());
                 char errbuf[256];
@@ -334,7 +335,7 @@ void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
                 }
                 PQfreeCancel(cancel);
             }
-//            qDebug(ASQL_PG) << "destroyed" << m_queryRunning << m_queuedQueries.empty() ;
+            //            qDebug(ASQL_PG) << "destroyed" << m_queryRunning << m_queuedQueries.empty() ;
         });
     }
 }
@@ -367,7 +368,7 @@ bool ADriverPg::runQuery(APGQuery &pgQuery)
 bool ADriverPg::queryShouldBeQueued() const
 {
     return pipelineStatus() != ADatabase::PipelineStatus::On &&
-            (m_queryRunning || !isConnected() || m_queuedQueries.size() > 1);
+           (m_queryRunning || !isConnected() || m_queuedQueries.size() > 1);
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -487,7 +488,7 @@ void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db, cons
     }
 
     m_subscribedNotifications.insert(name, cb);
-    exec(db, QString{QLatin1String("LISTEN ") + name}, {}, this, [this, name] (AResult &result) {
+    exec(db, QString{ QLatin1String("LISTEN ") + name }, {}, this, [this, name](AResult &result) {
         qDebug(ASQL_PG) << "subscribed" << !result.error() << result.errorString();
         if (result.error()) {
             m_subscribedNotifications.remove(name);
@@ -507,7 +508,7 @@ QStringList ADriverPg::subscribedToNotifications() const
 void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name)
 {
     if (m_subscribedNotifications.remove(name)) {
-        exec(db, QString{QStringLiteral("UNLISTEN ") + name}, {}, this, [=] (AResult &result) {
+        exec(db, QString{ QStringLiteral("UNLISTEN ") + name }, {}, this, [=](AResult &result) {
             qDebug(ASQL_PG) << "unsubscribed" << !result.error() << result.errorString();
         });
     }
@@ -556,10 +557,10 @@ int ADriverPg::doExec(APGQuery &pgQuery)
         bool isPrepared = m_preparedQueries.contains(pgQuery.preparedQuery->identification());
         if (!isPrepared) {
             ret = PQsendPrepare(m_conn->conn(),
-                                pgQuery.preparedQuery->identification().constData(),
-                                pgQuery.preparedQuery->query().constData(),
-                                0,
-                                nullptr); // perhaps later use binary results
+                pgQuery.preparedQuery->identification().constData(),
+                pgQuery.preparedQuery->query().constData(),
+                0,
+                nullptr); // perhaps later use binary results
 
             if (ret == 1 && pipelineStatus() == ADatabase::PipelineStatus::On) {
                 // pretend that it was prepared otherwise it can't be used in in the pipeline
@@ -571,12 +572,12 @@ int ADriverPg::doExec(APGQuery &pgQuery)
 
         if (isPrepared) {
             ret = PQsendQueryPrepared(m_conn->conn(),
-                                      pgQuery.preparedQuery->identification().constData(),
-                                      0,
-                                      nullptr,
-                                      nullptr,
-                                      nullptr,
-                                      0); // perhaps later use binary results
+                pgQuery.preparedQuery->identification().constData(),
+                0,
+                nullptr,
+                nullptr,
+                nullptr,
+                0); // perhaps later use binary results
         }
     } else {
         ret = PQsendQuery(m_conn->conn(), pgQuery.query.constData());
@@ -597,7 +598,7 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
     for (int i = 0; i < params.size(); ++i) {
         QVariant v = params[i];
         QByteArray data;
-//        qDebug(ASQL_PG) << v << v.type() << v.isNull() << "---" << QString::number(v.toInt()).toLatin1().constData() << v.toString().isNull();
+        //        qDebug(ASQL_PG) << v << v.type() << v.isNull() << "---" << QString::number(v.toInt()).toLatin1().constData() << v.toString().isNull();
         if (!v.isNull()) {
             switch (v.userType()) {
             case QMetaType::QString:
@@ -606,8 +607,7 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
                 paramTypes[i] = !text.isNull() ? QTEXTOID : QUNKNOWNOID;
                 paramFormats[i] = 0;
                 data = text.toUtf8();
-            }
-                break;
+            } break;
             case QMetaType::QByteArray:
                 paramTypes[i] = QBYTEAOID;
                 paramFormats[i] = 1;
@@ -616,20 +616,20 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
             case QMetaType::Int:
                 paramTypes[i] = QINT4OID;
                 paramFormats[i] = 1;
-            {
-                const qint32 number = v.toInt();
-                data.resize(4);
-                qToBigEndian<qint32>(number, data.data());
-            }
+                {
+                    const qint32 number = v.toInt();
+                    data.resize(4);
+                    qToBigEndian<qint32>(number, data.data());
+                }
                 break;
             case QMetaType::LongLong:
                 paramTypes[i] = QINT8OID;
                 paramFormats[i] = 1;
-            {
-                const qint64 number = v.toLongLong();
-                data.resize(8);
-                qToBigEndian<qint64>(number, data.data());
-            }
+                {
+                    const qint64 number = v.toLongLong();
+                    data.resize(8);
+                    qToBigEndian<qint64>(number, data.data());
+                }
                 break;
             case QMetaType::QUuid:
                 paramTypes[i] = QUUIDOID;
@@ -663,7 +663,8 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
                     paramTypes[i] = QBOOLOID;
                     paramFormats[i] = 1;
                     data.append(jValue.toBool() ? 0x01 : 0x00);
-                    break;;
+                    break;
+                    ;
                 case QJsonValue::Double:
                     paramTypes[i] = QUNKNOWNOID; // This allows PG to try to deduce the type
                     paramFormats[i] = 0;
@@ -675,8 +676,7 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
                     paramTypes[i] = !text.isNull() ? QTEXTOID : QUNKNOWNOID;
                     paramFormats[i] = 0;
                     data = jValue.toString().toUtf8();
-                }
-                    break;
+                } break;
                 case QJsonValue::Array:
                     paramTypes[i] = QJSONBOID;
                     paramFormats[i] = 0;
@@ -693,8 +693,7 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
                     paramValues[i] = nullptr;
                     paramLengths[i] = 0;
                 }
-            }
-                break;
+            } break;
             case QMetaType::QJsonDocument:
                 paramTypes[i] = QJSONBOID;
                 paramFormats[i] = 0;
@@ -727,10 +726,10 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
         bool isPrepared = m_preparedQueries.contains(pgQuery.preparedQuery->identification());
         if (!isPrepared) {
             ret = PQsendPrepare(m_conn->conn(),
-                                pgQuery.preparedQuery->identification().constData(),
-                                pgQuery.preparedQuery->query().constData(),
-                                params.size(),
-                                paramTypes.get());
+                pgQuery.preparedQuery->identification().constData(),
+                pgQuery.preparedQuery->query().constData(),
+                params.size(),
+                paramTypes.get());
 
             if (ret == 1 && pipelineStatus() == ADatabase::PipelineStatus::On) {
                 // pretend that it was prepared otherwise it can't be used in in the pipeline
@@ -742,22 +741,22 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
 
         if (isPrepared) {
             ret = PQsendQueryPrepared(m_conn->conn(),
-                                      pgQuery.preparedQuery->identification().constData(),
-                                      params.size(),
-                                      paramValues.get(),
-                                      paramLengths.get(),
-                                      paramFormats.get(),
-                                      0); // perhaps later use binary results
+                pgQuery.preparedQuery->identification().constData(),
+                params.size(),
+                paramValues.get(),
+                paramLengths.get(),
+                paramFormats.get(),
+                0); // perhaps later use binary results
         }
     } else {
         ret = PQsendQueryParams(m_conn->conn(),
-                                pgQuery.query.constData(),
-                                params.size(),
-                                paramTypes.get(),
-                                paramValues.get(),
-                                paramLengths.get(),
-                                paramFormats.get(),
-                                0); // perhaps later use binary results
+            pgQuery.query.constData(),
+            params.size(),
+            paramTypes.get(),
+            paramValues.get(),
+            paramLengths.get(),
+            paramFormats.get(),
+            0); // perhaps later use binary results
     }
 
     return ret;
@@ -787,7 +786,8 @@ bool ADriverPg::isConnected() const
     return m_state == ADatabase::State::Connected;
 }
 
-AResultPg::AResultPg(PGresult *result) : m_result{result}
+AResultPg::AResultPg(PGresult *result)
+    : m_result{ result }
 {
 }
 
@@ -894,7 +894,7 @@ static QMetaType qDecodePSQLType(int t)
         type = QMetaType::QString;
         break;
     }
-//    qDebug(ASQL_PG) << "decode pg type" << t << type;
+    //    qDebug(ASQL_PG) << "decode pg type" << t << type;
     return QMetaType(type);
 }
 
@@ -918,7 +918,7 @@ QVariant AResultPg::value(int row, int column) const
     const char *val = PQgetvalue(m_result, row, column);
     switch (type.id()) {
     case QMetaType::Bool:
-        return QVariant((bool)(val[0] == 't'));
+        return QVariant((bool) (val[0] == 't'));
     case QMetaType::QString:
         return QString::fromUtf8(val);
     case QMetaType::LongLong:
@@ -928,24 +928,25 @@ QVariant AResultPg::value(int row, int column) const
             return QString::fromLatin1(val).toULongLong();
     case QMetaType::Int:
         return atoi(val);
-    case QMetaType::Double: {
-//        if (ptype == QNUMERICOID) {
-//            if (numericalPrecisionPolicy() != QSql::HighPrecision) {
-//                QVariant retval;
-//                bool convert;
-//                double dbl=QString::fromLatin1(val).toDouble(&convert);
-//                if (numericalPrecisionPolicy() == QSql::LowPrecisionInt64)
-//                    retval = (qlonglong)dbl;
-//                else if (numericalPrecisionPolicy() == QSql::LowPrecisionInt32)
-//                    retval = (int)dbl;
-//                else if (numericalPrecisionPolicy() == QSql::LowPrecisionDouble)
-//                    retval = dbl;
-//                if (!convert)
-//                    return QVariant();
-//                return retval;
-//            }
-//            return QString::fromLatin1(val);
-//        }
+    case QMetaType::Double:
+    {
+        //        if (ptype == QNUMERICOID) {
+        //            if (numericalPrecisionPolicy() != QSql::HighPrecision) {
+        //                QVariant retval;
+        //                bool convert;
+        //                double dbl=QString::fromLatin1(val).toDouble(&convert);
+        //                if (numericalPrecisionPolicy() == QSql::LowPrecisionInt64)
+        //                    retval = (qlonglong)dbl;
+        //                else if (numericalPrecisionPolicy() == QSql::LowPrecisionInt32)
+        //                    retval = (int)dbl;
+        //                else if (numericalPrecisionPolicy() == QSql::LowPrecisionDouble)
+        //                    retval = dbl;
+        //                if (!convert)
+        //                    return QVariant();
+        //                return retval;
+        //            }
+        //            return QString::fromLatin1(val);
+        //        }
         if (qstricmp(val, "Infinity") == 0)
             return qInf();
         if (qstricmp(val, "-Infinity") == 0)
@@ -962,7 +963,8 @@ QVariant AResultPg::value(int row, int column) const
             return QString::fromLatin1(val);
 #endif
         }
-    case QMetaType::QTime: {
+    case QMetaType::QTime:
+    {
         const QString str = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
         if (str.isEmpty())
@@ -973,23 +975,26 @@ QVariant AResultPg::value(int row, int column) const
         return QVariant(str);
 #endif
     }
-    case QMetaType::QDateTime: {
+    case QMetaType::QDateTime:
+    {
         QString dtval = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
         if (dtval.length() < 10) {
             return QDateTime();
         } else {
             QChar sign = dtval[dtval.size() - 3];
-            if (sign == QLatin1Char('-') || sign == QLatin1Char('+')) dtval += QLatin1String(":00");
+            if (sign == QLatin1Char('-') || sign == QLatin1Char('+'))
+                dtval += QLatin1String(":00");
             return QDateTime::fromString(dtval, Qt::ISODate);
         }
 #else
         return dtval;
 #endif
     }
-    case QMetaType::QByteArray: {
+    case QMetaType::QByteArray:
+    {
         size_t len;
-        unsigned char *data = PQunescapeBytea((const unsigned char*)val, &len);
+        unsigned char *data = PQunescapeBytea((const unsigned char *) val, &len);
         QByteArray ba(reinterpret_cast<const char *>(data), int(len));
         PQfreemem(data);
         return QVariant(ba);
@@ -1108,7 +1113,8 @@ QDateTime AResultPg::toDateTime(int row, int column) const
         return {};
     } else {
         QChar sign = dtval[dtval.size() - 3];
-        if (sign == QLatin1Char('-') || sign == QLatin1Char('+')) dtval += QLatin1String(":00");
+        if (sign == QLatin1Char('-') || sign == QLatin1Char('+'))
+            dtval += QLatin1String(":00");
         return QDateTime::fromString(dtval, Qt::ISODate);
     }
 #else
@@ -1139,7 +1145,7 @@ QByteArray AResultPg::toByteArray(int row, int column) const
     Q_ASSERT_X(column < PQnfields(m_result), "toByteArray", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
     size_t len;
-    unsigned char *data = PQunescapeBytea((const unsigned char*)val, &len);
+    unsigned char *data = PQunescapeBytea((const unsigned char *) val, &len);
     QByteArray ba(reinterpret_cast<const char *>(data), int(len));
     PQfreemem(data);
     return ba;

@@ -3,24 +3,23 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <QCoreApplication>
-#include <QLoggingCategory>
-
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QDateTime>
-#include <QTimer>
-#include <QUuid>
-#include <QUrl>
-#include <QElapsedTimer>
-
-#include "../../src/apool.h"
-#include "../../src/adatabase.h"
-#include "../../src/aresult.h"
-#include "../../src/amigrations.h"
 #include "../../src/acache.h"
-#include "../../src/apreparedquery.h"
+#include "../../src/adatabase.h"
+#include "../../src/amigrations.h"
 #include "../../src/apg.h"
+#include "../../src/apool.h"
+#include "../../src/apreparedquery.h"
+#include "../../src/aresult.h"
+
+#include <QCoreApplication>
+#include <QDateTime>
+#include <QElapsedTimer>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QLoggingCategory>
+#include <QTimer>
+#include <QUrl>
+#include <QUuid>
 
 using namespace ASql;
 
@@ -28,13 +27,13 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-//    APool::addDatabase(QStringLiteral("postgres://server.com,server2.com/mydb?target_session_attrs=read-write"));
+    //    APool::addDatabase(QStringLiteral("postgres://server.com,server2.com/mydb?target_session_attrs=read-write"));
     APool::create(APg::factory(QStringLiteral("postgres:///")));
 
     auto mig = new AMigrations();
-    mig->connect(mig, &AMigrations::ready, [=] (bool error, const QString &erroString) {
+    mig->connect(mig, &AMigrations::ready, [=](bool error, const QString &erroString) {
         qDebug() << "Read to migrate" << error << erroString;
-        mig->migrate(0, [=] (bool error, const QString &errorString) {
+        mig->migrate(0, [=](bool error, const QString &errorString) {
             qDebug() << "Migration Error" << error << errorString;
         });
     });
@@ -55,7 +54,7 @@ int main(int argc, char *argv[])
                                    create tabsle log (message text);
                                    )V0G0N"));
     qDebug() << "MIG" << mig->latest() << mig->active();
-//    qDebug() << "sqlFor" << mig->sqlFor(0, 2);
+    //    qDebug() << "sqlFor" << mig->sqlFor(0, 2);
 
     app.exec();
 }

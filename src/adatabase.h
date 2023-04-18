@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -6,13 +6,12 @@
 #ifndef ADATABASE_H
 #define ADATABASE_H
 
-#include <QObject>
-#include <QVariantList>
-
+#include <asqlexports.h>
 #include <functional>
 #include <memory>
 
-#include <asqlexports.h>
+#include <QObject>
+#include <QVariantList>
 
 namespace ASql {
 
@@ -36,7 +35,8 @@ class ASQL_EXPORT ADatabase
 {
     Q_GADGET
 public:
-    enum class State {
+    enum class State
+    {
         Disconnected,
         Connecting,
         Connected
@@ -70,7 +70,7 @@ public:
 
     virtual ~ADatabase();
 
-    ADatabase &operator =(ADatabase &&other) noexcept
+    ADatabase &operator=(ADatabase &&other) noexcept
     {
         std::swap(d, other.d);
         return *this;
@@ -251,7 +251,8 @@ public:
      */
     bool exitPipelineMode();
 
-    enum class PipelineStatus {
+    enum class PipelineStatus
+    {
         Off,
         On,
         Aborted,
@@ -300,13 +301,13 @@ public:
      */
     void unsubscribeFromNotification(const QString &channel);
 
-    ADatabase &operator =(const ADatabase &copy);
+    ADatabase &operator=(const ADatabase &copy);
 
 protected:
     friend class APool;
     std::shared_ptr<ADriver> d;
 };
 
-}
+} // namespace ASql
 
 #endif // ADATABASE_H

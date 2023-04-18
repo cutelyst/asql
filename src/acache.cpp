@@ -1,17 +1,17 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
 #include "acache.h"
+
 #include "adatabase.h"
 #include "apool.h"
 #include "aresult.h"
 
 #include <QDateTime>
-#include <QPointer>
-
 #include <QLoggingCategory>
+#include <QPointer>
 
 Q_LOGGING_CATEGORY(ASQL_CACHE, "asql.cache", QtWarningMsg)
 
@@ -34,7 +34,8 @@ struct ACacheValue {
 class ACachePrivate
 {
 public:
-    enum class DbSource {
+    enum class DbSource
+    {
         Unset,
         Database,
         Pool,
@@ -77,11 +78,10 @@ bool ACachePrivate::searchOrQueue(QStringView query, qint64 maxAgeMs, const QVar
             } else {
                 qDebug(ASQL_CACHE) << "queuing request" << query;
                 // queue another request
-                value.receivers.emplace_back(ACacheReceiverCb {
-                                                 cb,
-                                                 receiver,
-                                                 receiver
-                                             });
+                value.receivers.emplace_back(ACacheReceiverCb{
+                    cb,
+                    receiver,
+                    receiver });
             }
 
             return true;
@@ -99,11 +99,10 @@ void ACachePrivate::requestData(const QString &query, const QVariantList &args, 
     ACacheValue cacheValue;
     cacheValue.query = query;
     cacheValue.args = args;
-    cacheValue.receivers.emplace_back(ACacheReceiverCb {
-                                          cb,
-                                          receiver,
-                                          receiver
-                                      });
+    cacheValue.receivers.emplace_back(ACacheReceiverCb{
+        cb,
+        receiver,
+        receiver });
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     cache.emplace(query, std::move(cacheValue));
@@ -111,8 +110,8 @@ void ACachePrivate::requestData(const QString &query, const QVariantList &args, 
     cache.insert(query, cacheValue);
 #endif
 
-    auto performQuery = [this, query, args] (ADatabase &db) {
-        db.exec(query, args, q_ptr, [query, args, this] (AResult &result) {
+    auto performQuery = [this, query, args](ADatabase &db) {
+        db.exec(query, args, q_ptr, [query, args, this](AResult &result) {
             auto it = cache.find(query);
             while (it != cache.end() && it.key() == query) {
                 ACacheValue &value = it.value();
@@ -147,12 +146,13 @@ void ACachePrivate::requestData(const QString &query, const QVariantList &args, 
     }
 }
 
-}
+} // namespace ASql
 
 using namespace ASql;
 
-ACache::ACache(QObject *parent) : QObject(parent)
-  , d_ptr(new ACachePrivate)
+ACache::ACache(QObject *parent)
+    : QObject(parent)
+    , d_ptr(new ACachePrivate)
 {
     d_ptr->q_ptr = this;
 }
@@ -191,7 +191,7 @@ bool ACache::clear(QStringView query, const QVariantList &params)
         }
         ++it;
     }
-//    qDebug(ASQL_CACHE) << "cleared" << ret << "cache entries" << query << params;
+    //    qDebug(ASQL_CACHE) << "cleared" << ret << "cache entries" << query << params;
     return false;
 }
 

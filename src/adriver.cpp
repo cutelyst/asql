@@ -1,9 +1,10 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
 #include "adriver.h"
+
 #include "aresult.h"
 
 #include <QDate>
@@ -44,9 +45,9 @@ public:
 
 ADriver::ADriver() = default;
 
-ADriver::ADriver(const QString &connectionInfo) : m_info(connectionInfo)
+ADriver::ADriver(const QString &connectionInfo)
+    : m_info(connectionInfo)
 {
-
 }
 
 QString ADriver::connectionInfo() const
@@ -59,7 +60,7 @@ bool ADriver::isValid() const
     return false;
 }
 
-void ADriver::open(QObject *receiver, std::function<void (bool, const QString &)> cb)
+void ADriver::open(QObject *receiver, std::function<void(bool, const QString &)> cb)
 {
     Q_UNUSED(receiver);
     if (cb) {
@@ -72,7 +73,7 @@ ADatabase::State ADriver::state() const
     return ADatabase::State::Disconnected;
 }
 
-void ADriver::onStateChanged(QObject *receiver, std::function<void (ADatabase::State, const QString &)> cb)
+void ADriver::onStateChanged(QObject *receiver, std::function<void(ADatabase::State, const QString &)> cb)
 {
     Q_UNUSED(receiver);
     Q_UNUSED(cb);
@@ -153,7 +154,6 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &que
 
 void ADriver::setLastQuerySingleRowMode()
 {
-
 }
 
 bool ADriver::enterPipelineMode(qint64 autoSyncMS)

@@ -6,7 +6,6 @@
 #define ADRIVERFACTORY_H
 
 #include <asqlexports.h>
-
 #include <memory>
 
 namespace ASql {
@@ -24,6 +23,6 @@ public:
     virtual ADatabase createDatabase() const;
 };
 
-}
+} // namespace ASql
 
 #endif // ADRIVERFACTORY_H

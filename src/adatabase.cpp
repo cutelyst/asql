@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -14,24 +14,24 @@ using namespace ASql;
 
 ADatabase::ADatabase() = default;
 
-ADatabase::ADatabase(const std::shared_ptr<ADriver> &driver) : d(driver)
+ADatabase::ADatabase(const std::shared_ptr<ADriver> &driver)
+    : d(driver)
 {
-
 }
 
-ADatabase::ADatabase(const std::shared_ptr<ADriverFactory> &factory) : d(factory->createDriver())
+ADatabase::ADatabase(const std::shared_ptr<ADriverFactory> &factory)
+    : d(factory->createDriver())
 {
-
 }
 
-ADatabase::ADatabase(const ADatabase &other) : d(other.d)
+ADatabase::ADatabase(const ADatabase &other)
+    : d(other.d)
 {
-
 }
 
-ADatabase::ADatabase(ADatabase &&other) noexcept : d(std::move(other.d))
+ADatabase::ADatabase(ADatabase &&other) noexcept
+    : d(std::move(other.d))
 {
-
 }
 
 ADatabase::~ADatabase() = default;
@@ -60,7 +60,7 @@ ADatabase::State ADatabase::state() const
     return ADatabase::State::Disconnected;
 }
 
-void ADatabase::onStateChanged(QObject *receiver, std::function<void (ADatabase::State, const QString &)> cb)
+void ADatabase::onStateChanged(QObject *receiver, std::function<void(ADatabase::State, const QString &)> cb)
 {
     Q_ASSERT(d);
     d->onStateChanged(receiver, cb);
@@ -178,7 +178,7 @@ void ADatabase::unsubscribeFromNotification(const QString &channel)
     d->unsubscribeFromNotification(d, channel);
 }
 
-ADatabase &ADatabase::operator =(const ADatabase &copy)
+ADatabase &ADatabase::operator=(const ADatabase &copy)
 {
     d = copy.d;
     return *this;

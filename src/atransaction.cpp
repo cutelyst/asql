@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -14,8 +14,12 @@ namespace ASql {
 class ATransactionPrivate
 {
 public:
-    ATransactionPrivate(ADatabase _db) : db(_db) {}
-    ~ATransactionPrivate() {
+    ATransactionPrivate(ADatabase _db)
+        : db(_db)
+    {
+    }
+    ~ATransactionPrivate()
+    {
         if (running && db.isValid()) {
             qInfo(ASQL_TRANSACTION, "Rolling back transaction");
             db.rollback();
@@ -26,7 +30,7 @@ public:
     bool running = false;
 };
 
-}
+} // namespace ASql
 
 using namespace ASql;
 
@@ -54,7 +58,7 @@ ADatabase ATransaction::database() const
     return d->db;
 }
 
-ATransaction &ATransaction::operator =(const ATransaction &copy)
+ATransaction &ATransaction::operator=(const ATransaction &copy)
 {
     d = copy.d;
     return *this;

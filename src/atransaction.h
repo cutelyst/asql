@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -26,9 +26,9 @@ public:
 
     ADatabase database() const;
 
-    ATransaction &operator =(const ATransaction &copy);
+    ATransaction &operator=(const ATransaction &copy);
 
-    ATransaction &operator =(ATransaction &&other) noexcept
+    ATransaction &operator=(ATransaction &&other) noexcept
     {
         std::swap(d, other.d);
         return *this;
@@ -64,6 +64,6 @@ private:
     std::shared_ptr<ATransactionPrivate> d;
 };
 
-}
+} // namespace ASql
 
 #endif // ATRANSACTION_H

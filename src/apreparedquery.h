@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -6,9 +6,9 @@
 #ifndef APREPAREDQUERY_H
 #define APREPAREDQUERY_H
 
-#include <QString>
-
 #include <asqlexports.h>
+
+#include <QString>
 
 namespace ASql {
 
@@ -16,8 +16,7 @@ namespace ASql {
     ([]() Q_DECL_NOEXCEPT -> APreparedQuery { \
         static const APreparedQuery aprepared_literal_temp(str); \
         return aprepared_literal_temp; \
-    }()) \
-    /**/
+    }()) /**/
 
 /*!
  * \brief The APreparedQuery class
@@ -81,6 +80,6 @@ private:
     QByteArray m_identification;
 };
 
-}
+} // namespace ASql
 
 #endif // APREPAREDQUERY_H

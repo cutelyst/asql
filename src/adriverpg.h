@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -6,17 +6,16 @@
 #ifndef ADRIVERPG_H
 #define ADRIVERPG_H
 
+#include "apreparedquery.h"
+#include "aresult.h"
+
 #include <adriver.h>
 #include <libpq-fe.h>
-
-#include "aresult.h"
-#include "apreparedquery.h"
-
-#include <queue>
 #include <optional>
 
-#include <QPointer>
 #include <QHash>
+#include <QPointer>
+#include <queue>
 
 class QTimer;
 
@@ -81,7 +80,8 @@ public:
     bool preparing = false;
     bool setSingleRow = false;
 
-    inline void done() {
+    inline void done()
+    {
         if (cb && (!checkReceiver || !receiver.isNull())) {
             result->m_query = query;
             AResult r(std::move(result));
@@ -89,7 +89,8 @@ public:
         }
     }
 
-    inline void doneError(const QString &error) {
+    inline void doneError(const QString &error)
+    {
         if (cb && (!checkReceiver || !receiver.isNull())) {
             result = std::make_shared<AResultPg>(nullptr);
             result->m_query = query;
@@ -199,7 +200,7 @@ private:
     inline bool isConnected() const;
 
     QPointer<QObject> m_stateChangedReceiver;
-    std::function<void (ADatabase::State, const QString &)> m_stateChangedCb;
+    std::function<void(ADatabase::State, const QString &)> m_stateChangedCb;
     QHash<QString, ANotificationFn> m_subscribedNotifications;
     std::queue<APGQuery> m_queuedQueries;
     std::shared_ptr<ADriver> selfDriver;
@@ -216,6 +217,6 @@ private:
     bool m_notificationPtrSet = false;
 };
 
-}
+} // namespace ASql
 
 #endif // ADRIVERPG_H

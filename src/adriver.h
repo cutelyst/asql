@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -6,14 +6,12 @@
 #ifndef ADRIVER_H
 #define ADRIVER_H
 
-#include <QString>
-#include <QSocketNotifier>
-
 #include <adatabase.h>
-
+#include <asqlexports.h>
 #include <functional>
 
-#include <asqlexports.h>
+#include <QSocketNotifier>
+#include <QString>
 
 namespace ASql {
 
@@ -66,6 +64,6 @@ private:
     QString m_info;
 };
 
-}
+} // namespace ASql
 
 #endif // ADRIVER_H

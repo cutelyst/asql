@@ -3,24 +3,23 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include <QCoreApplication>
-#include <QLoggingCategory>
+#include "../../src/adatabase.h"
+#include "../../src/apg.h"
+#include "../../src/apool.h"
+#include "../../src/apreparedquery.h"
+#include "../../src/aresult.h"
+#include "../../src/atransaction.h"
 
 #include <thread>
 
-#include <QJsonObject>
-#include <QJsonArray>
+#include <QCoreApplication>
 #include <QDateTime>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QLoggingCategory>
 #include <QTimer>
-#include <QUuid>
 #include <QUrl>
-
-#include "../../src/apool.h"
-#include "../../src/adatabase.h"
-#include "../../src/atransaction.h"
-#include "../../src/aresult.h"
-#include "../../src/apreparedquery.h"
-#include "../../src/apg.h"
+#include <QUuid>
 
 using namespace ASql;
 
@@ -33,14 +32,13 @@ int main(int argc, char *argv[])
 
     {
         auto db = APool::database();
-        db.onStateChanged(nullptr, [db] (ADatabase::State state, const QString &msg) mutable {
+        db.onStateChanged(nullptr, [db](ADatabase::State state, const QString &msg) mutable {
             // Must be called with an empty db query queue and after it is connected (state)
             qDebug() << "PIPELINE ENTER" << state << db.enterPipelineMode();
 
             qDebug() << "PIPELINE STATUS" << int(db.pipelineStatus());
             auto callDb = [db](int id) mutable {
-                db.exec(u"SELECT now(), $1", {id},
-                        nullptr, [=] (AResult &result) {
+                db.exec(u"SELECT now(), $1", { id }, nullptr, [=](AResult &result) {
                     if (result.error()) {
                         qDebug() << "PIPELINE SELECT error" << id << result.errorString();
                         return;
@@ -63,14 +61,13 @@ int main(int argc, char *argv[])
 
     {
         auto db = APool::database();
-        db.onStateChanged(nullptr, [db] (ADatabase::State state, const QString &msg) mutable {
+        db.onStateChanged(nullptr, [db](ADatabase::State state, const QString &msg) mutable {
             // Must be called with an empty db query queue and after it is connected (state)
             qDebug() << "2 PIPELINE ENTER" << state << db.enterPipelineMode(2000);
 
             qDebug() << "2 PIPELINE STATUS" << int(db.pipelineStatus());
             auto callDb = [db](int id) mutable {
-                db.exec(APreparedQuery(u"SELECT now(), $1"), {id},
-                        nullptr, [=] (AResult &result) {
+                db.exec(APreparedQuery(u"SELECT now(), $1"), { id }, nullptr, [=](AResult &result) {
                     if (result.error()) {
                         qDebug() << "2 PIPELINE SELECT error" << id << result.errorString();
                         return;
@@ -83,8 +80,7 @@ int main(int argc, char *argv[])
             };
 
             auto callStaticDb = [db](int id) mutable {
-                db.exec(APreparedQueryLiteral(u"SELECT now(), $1"), {id},
-                        nullptr, [=] (AResult &result) {
+                db.exec(APreparedQueryLiteral(u"SELECT now(), $1"), { id }, nullptr, [=](AResult &result) {
                     if (result.error()) {
                         qDebug() << "2 PIPELINE SELECT error" << id << result.errorString();
                         return;

@@ -43,6 +43,6 @@ private:
     std::unique_ptr<APgPrivate> d;
 };
 
-}
+} // namespace ASql
 
 #endif // APG_H

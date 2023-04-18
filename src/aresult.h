@@ -6,10 +6,10 @@
 #ifndef ARESULT_H
 #define ARESULT_H
 
-#include <QVariant>
+#include <asqlexports.h>
 #include <memory>
 
-#include <asqlexports.h>
+#include <QVariant>
 
 namespace ASql {
 
@@ -121,13 +121,19 @@ public:
     AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;
 
-    class ASQL_EXPORT AColumn {
+    class ASQL_EXPORT AColumn
+    {
     public:
         std::shared_ptr<AResultPrivate> d;
         int row;
         int column;
 
-        explicit inline AColumn(std::shared_ptr<AResultPrivate> data, int _row, int _column) : d(data), row(_row), column(_column) { }
+        explicit inline AColumn(std::shared_ptr<AResultPrivate> data, int _row, int _column)
+            : d(data)
+            , row(_row)
+            , column(_column)
+        {
+        }
 
         inline QString fieldName() const { return d->fieldName(column); }
 
@@ -138,21 +144,26 @@ public:
         inline qint64 toLongLong() const { return d->toLongLong(row, column); }
         inline quint64 toULongLong() const { return d->toULongLong(row, column); }
         inline double toDouble() const { return d->toDouble(row, column); }
-        inline QString toString() const  { return d->toString(row, column); }
-        inline std::string toStdString() const  { return d->toStdString(row, column); }
+        inline QString toString() const { return d->toString(row, column); }
+        inline std::string toStdString() const { return d->toStdString(row, column); }
         QDate toDate() const;
         QTime toTime() const;
         QDateTime toDateTime() const;
         QJsonValue toJsonValue() const;
-        inline QByteArray toByteArray() const  { return d->toByteArray(row, column); }
+        inline QByteArray toByteArray() const { return d->toByteArray(row, column); }
     };
 
-    class ASQL_EXPORT ARow {
+    class ASQL_EXPORT ARow
+    {
     public:
         std::shared_ptr<AResultPrivate> d;
         int row;
 
-        explicit inline ARow(std::shared_ptr<AResultPrivate> data, int index) : d(data), row(index) { }
+        explicit inline ARow(std::shared_ptr<AResultPrivate> data, int index)
+            : d(data)
+            , row(index)
+        {
+        }
 
         /*!
          * \brief toHash returns the row as a QVariantHash object
@@ -183,7 +194,8 @@ public:
         inline AColumn operator[](QStringView name) const { return AColumn(d, row, d->indexOfField(name)); }
     };
 
-    class ASQL_EXPORT const_iterator {
+    class ASQL_EXPORT const_iterator
+    {
     public:
         std::shared_ptr<AResultPrivate> d;
         int i;
@@ -191,9 +203,20 @@ public:
         using value_type = ARow;
         using reference = ARow;
 
-        inline const_iterator() : i(0) { }
-        explicit inline const_iterator(std::shared_ptr<AResultPrivate> data, int index) : d(data), i(index) { }
-        inline const_iterator(const const_iterator &o) : d(o.d), i(o.i) {}
+        inline const_iterator()
+            : i(0)
+        {
+        }
+        explicit inline const_iterator(std::shared_ptr<AResultPrivate> data, int index)
+            : d(data)
+            , i(index)
+        {
+        }
+        inline const_iterator(const const_iterator &o)
+            : d(o.d)
+            , i(o.i)
+        {
+        }
 
         inline ARow operator*() const { return ARow(d, i); }
 
@@ -228,18 +251,44 @@ public:
 
         inline bool operator==(const const_iterator &o) const { return i == o.i; }
         inline bool operator!=(const const_iterator &o) const { return i != o.i; }
-        inline bool operator<(const const_iterator& other) const { return i < other.i; }
-        inline bool operator<=(const const_iterator& other) const { return i <= other.i; }
-        inline bool operator>(const const_iterator& other) const { return i > other.i; }
-        inline bool operator>=(const const_iterator& other) const { return i >= other.i; }
-        inline const_iterator &operator++() { ++i; return *this; }
-        inline const_iterator operator++(int) { const_iterator n = *this; ++i; return n; }
-        inline const_iterator &operator--() { i--; return *this; }
-        inline const_iterator operator--(int) { const_iterator n = *this; i--; return n; }
-        inline const_iterator &operator+=(int j) { i+=j; return *this; }
-        inline const_iterator &operator-=(int j) { i-=j; return *this; }
-        inline const_iterator operator+(int j) const { return const_iterator(d, i+j); }
-        inline const_iterator operator-(int j) const { return const_iterator(d, i-j); }
+        inline bool operator<(const const_iterator &other) const { return i < other.i; }
+        inline bool operator<=(const const_iterator &other) const { return i <= other.i; }
+        inline bool operator>(const const_iterator &other) const { return i > other.i; }
+        inline bool operator>=(const const_iterator &other) const { return i >= other.i; }
+        inline const_iterator &operator++()
+        {
+            ++i;
+            return *this;
+        }
+        inline const_iterator operator++(int)
+        {
+            const_iterator n = *this;
+            ++i;
+            return n;
+        }
+        inline const_iterator &operator--()
+        {
+            i--;
+            return *this;
+        }
+        inline const_iterator operator--(int)
+        {
+            const_iterator n = *this;
+            i--;
+            return n;
+        }
+        inline const_iterator &operator+=(int j)
+        {
+            i += j;
+            return *this;
+        }
+        inline const_iterator &operator-=(int j)
+        {
+            i -= j;
+            return *this;
+        }
+        inline const_iterator operator+(int j) const { return const_iterator(d, i + j); }
+        inline const_iterator operator-(int j) const { return const_iterator(d, i - j); }
         inline int operator-(const_iterator j) const { return i - j.i; }
     };
     friend class const_iterator;
@@ -256,7 +305,7 @@ protected:
     std::shared_ptr<AResultPrivate> d;
 };
 
-}
+} // namespace ASql
 
 Q_DECLARE_METATYPE(ASql::AResult)
 

@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -6,13 +6,12 @@
 #ifndef APOOL_H
 #define APOOL_H
 
-#include <QObject>
-#include <QUrl>
-
 #include <adatabase.h>
 #include <adriverfactory.h>
-
 #include <asqlexports.h>
+
+#include <QObject>
+#include <QUrl>
 
 namespace ASql {
 
@@ -148,6 +147,6 @@ private:
     inline static void pushDatabaseBack(QStringView connectionName, ADriver *driver);
 };
 
-}
+} // namespace ASql
 
 #endif // APOOL_H

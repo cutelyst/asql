@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -13,7 +13,8 @@ using namespace ASql;
 
 APreparedQuery::APreparedQuery() = default;
 
-static QByteArray identificationCounter() {
+static QByteArray identificationCounter()
+{
     QByteArray ret;
     static QBasicAtomicInt qPreparedStmtCount = Q_BASIC_ATOMIC_INITIALIZER(0);
     ret = "asql_" + QByteArray::number(qPreparedStmtCount.fetchAndAddRelaxed(1) + 1, 16);

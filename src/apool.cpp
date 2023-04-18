@@ -1,16 +1,16 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020-2021 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
 #include "apool.h"
+
 #include "adriver.h"
 #include "adriverfactory.h"
 
-#include <QPointer>
-#include <QObject>
 #include <QLoggingCategory>
-
+#include <QObject>
+#include <QPointer>
 #include <queue>
 
 Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
@@ -18,7 +18,7 @@ Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
 using namespace ASql;
 
 struct APoolQueuedClient {
-    std::function<void (ADatabase &)> cb;
+    std::function<void(ADatabase &)> cb;
     QPointer<QObject> receiver;
     bool checkReceiver;
 };
@@ -28,8 +28,8 @@ struct APoolInternal {
     std::shared_ptr<ADriverFactory> driverFactory;
     QVector<ADriver *> pool;
     std::queue<APoolQueuedClient> connectionQueue;
-    std::function<void (ADatabase &)> setupCb;
-    std::function<void (ADatabase &)> reuseCb;
+    std::function<void(ADatabase &)> setupCb;
+    std::function<void(ADatabase &)> reuseCb;
     int maxIdleConnections = 1;
     int maximuConnections = 0;
     int connectionCount = 0;
@@ -86,8 +86,8 @@ void APool::pushDatabaseBack(QStringView connectionName, ADriver *driver)
             }
 
             ADatabase db;
-            db.d = std::shared_ptr<ADriver>(driver, [connectionName] (ADriver *driver) {
-                    pushDatabaseBack(connectionName, driver);
+            db.d = std::shared_ptr<ADriver>(driver, [connectionName](ADriver *driver) {
+                pushDatabaseBack(connectionName, driver);
             });
             client.cb(db);
             return;
@@ -119,7 +119,7 @@ ADatabase APool::database(QStringView poolName)
                 ++iPool.connectionCount;
                 auto driver = iPool.driverFactory->createRawDriver();
                 qDebug(ASQL_POOL) << "Creating a database connection for pool" << poolName << driver;
-                db.d = std::shared_ptr<ADriver>(driver, [poolName] (ADriver *driver) {
+                db.d = std::shared_ptr<ADriver>(driver, [poolName](ADriver *driver) {
                     pushDatabaseBack(poolName, driver);
                 });
 
@@ -130,7 +130,7 @@ ADatabase APool::database(QStringView poolName)
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << poolName;
             ADriver *driver = iPool.pool.takeLast();
-            db.d = std::shared_ptr<ADriver>(driver, [poolName] (ADriver *driver) {
+            db.d = std::shared_ptr<ADriver>(driver, [poolName](ADriver *driver) {
                 pushDatabaseBack(poolName, driver);
             });
 
@@ -154,7 +154,7 @@ int APool::currentConnections(QStringView poolName)
     return 0;
 }
 
-void APool::database(QObject *receiver, std::function<void (ADatabase &)> cb, QStringView poolName)
+void APool::database(QObject *receiver, std::function<void(ADatabase &)> cb, QStringView poolName)
 {
     ADatabase db;
     auto it = m_connectionPool.find(poolName);
@@ -172,8 +172,8 @@ void APool::database(QObject *receiver, std::function<void (ADatabase &)> cb, QS
             }
             ++iPool.connectionCount;
             qDebug(ASQL_POOL) << "Creating a database connection for pool" << poolName;
-            db.d = std::shared_ptr<ADriver>(iPool.driverFactory->createRawDriver(), [poolName] (ADriver *driver) {
-                    pushDatabaseBack(poolName, driver);
+            db.d = std::shared_ptr<ADriver>(iPool.driverFactory->createRawDriver(), [poolName](ADriver *driver) {
+                pushDatabaseBack(poolName, driver);
             });
 
             if (iPool.setupCb) {
@@ -182,8 +182,8 @@ void APool::database(QObject *receiver, std::function<void (ADatabase &)> cb, QS
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << poolName;
             ADriver *priv = iPool.pool.takeLast();
-            db.d = std::shared_ptr<ADriver>(priv, [poolName] (ADriver *driver) {
-                    pushDatabaseBack(poolName, driver);
+            db.d = std::shared_ptr<ADriver>(priv, [poolName](ADriver *driver) {
+                pushDatabaseBack(poolName, driver);
             });
 
             if (iPool.reuseCb) {
@@ -220,7 +220,7 @@ void APool::setMaxConnections(int max, QStringView poolName)
     }
 }
 
-void APool::setSetupCallback(std::function<void (ADatabase &)> cb, QStringView poolName)
+void APool::setSetupCallback(std::function<void(ADatabase &)> cb, QStringView poolName)
 {
     auto it = m_connectionPool.find(poolName);
     if (it != m_connectionPool.end()) {
@@ -230,7 +230,7 @@ void APool::setSetupCallback(std::function<void (ADatabase &)> cb, QStringView p
     }
 }
 
-void APool::setReuseCallback(std::function<void (ADatabase &)> cb, QStringView poolName)
+void APool::setReuseCallback(std::function<void(ADatabase &)> cb, QStringView poolName)
 {
     auto it = m_connectionPool.find(poolName);
     if (it != m_connectionPool.end()) {

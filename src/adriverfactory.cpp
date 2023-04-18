@@ -10,7 +10,6 @@ using namespace ASql;
 
 ADriverFactory::ADriverFactory()
 {
-
 }
 
 ADriver *ADriverFactory::createRawDriver() const

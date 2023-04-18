@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -6,8 +6,9 @@
 #ifndef AMIGRATIONS_H
 #define AMIGRATIONS_H
 
-#include <QObject>
 #include <adatabase.h>
+
+#include <QObject>
 
 namespace ASql {
 
@@ -102,6 +103,6 @@ private:
     AMigrationsPrivate *d_ptr;
 };
 
-}
+} // namespace ASql
 
 #endif // AMIGRATIONS_H

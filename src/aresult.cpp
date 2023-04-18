@@ -1,17 +1,15 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
 #include "aresult.h"
 
-#include <QJsonArray>
-#include <QJsonObject>
-
 #include <QCborArray>
 #include <QCborMap>
-
 #include <QDateTime>
+#include <QJsonArray>
+#include <QJsonObject>
 
 using namespace ASql;
 
@@ -191,11 +189,13 @@ bool AResult::operator==(const AResult &other) const
     return d == other.d;
 }
 
-AResult::AResult(const std::shared_ptr<AResultPrivate> &priv) : d(priv)
+AResult::AResult(const std::shared_ptr<AResultPrivate> &priv)
+    : d(priv)
 {
 }
 
-AResult::AResult(std::shared_ptr<AResultPrivate> &&priv) : d(std::move(priv))
+AResult::AResult(std::shared_ptr<AResultPrivate> &&priv)
+    : d(std::move(priv))
 {
 }
 
@@ -231,11 +231,20 @@ int AResultPrivate::indexOfField(QLatin1String name) const
     return -1;
 }
 
-QDate AResult::AColumn::toDate() const  { return d->toDate(row, column); }
+QDate AResult::AColumn::toDate() const
+{
+    return d->toDate(row, column);
+}
 
-QTime AResult::AColumn::toTime() const  { return d->toTime(row, column); }
+QTime AResult::AColumn::toTime() const
+{
+    return d->toTime(row, column);
+}
 
-QDateTime AResult::AColumn::toDateTime() const  { return d->toDateTime(row, column); }
+QDateTime AResult::AColumn::toDateTime() const
+{
+    return d->toDateTime(row, column);
+}
 
 QJsonValue AResult::AColumn::toJsonValue() const
 {

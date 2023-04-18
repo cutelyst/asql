@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "apg.h"
+
 #include "adriverpg.h"
 
 using namespace ASql;
@@ -15,7 +16,7 @@ public:
     QString connection;
 };
 
-}
+} // namespace ASql
 
 APg::APg(const QString &connectionInfo)
     : d(std::make_unique<APgPrivate>())

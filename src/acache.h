@@ -1,4 +1,4 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
@@ -6,11 +6,10 @@
 #ifndef ACACHE_H
 #define ACACHE_H
 
-#include <QObject>
-
 #include <adatabase.h>
-
 #include <asqlexports.h>
+
+#include <QObject>
 
 namespace ASql {
 
@@ -51,6 +50,6 @@ private:
     ACachePrivate *d_ptr;
 };
 
-}
+} // namespace ASql
 
 #endif // ACACHE_H

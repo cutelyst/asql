@@ -1,27 +1,26 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
-#include <QCoreApplication>
-#include <QLoggingCategory>
+#include "../../src/acache.h"
+#include "../../src/adatabase.h"
+#include "../../src/amigrations.h"
+#include "../../src/apg.h"
+#include "../../src/apool.h"
+#include "../../src/aresult.h"
+#include "../../src/atransaction.h"
 
 #include <thread>
 
-#include <QJsonObject>
-#include <QJsonArray>
+#include <QCoreApplication>
 #include <QDateTime>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QLoggingCategory>
 #include <QTimer>
-#include <QUuid>
 #include <QUrl>
-
-#include "../../src/apool.h"
-#include "../../src/adatabase.h"
-#include "../../src/atransaction.h"
-#include "../../src/aresult.h"
-#include "../../src/amigrations.h"
-#include "../../src/acache.h"
-#include "../../src/apg.h"
+#include <QUuid>
 
 using namespace ASql;
 
@@ -36,7 +35,7 @@ int main(int argc, char *argv[])
         auto db = APool::database();
         ATransaction t(db);
         t.begin();
-        db.exec(QStringLiteral("SELECT now()"), nullptr, [=] (AResult &result) {
+        db.exec(QStringLiteral("SELECT now()"), nullptr, [=](AResult &result) {
             if (result.error()) {
                 qDebug() << "SELECT error" << result.errorString();
                 return;
@@ -51,14 +50,13 @@ int main(int argc, char *argv[])
 
     {
         ATransaction t(APool::database());
-        t.begin(nullptr, [t] (AResult &result){
+        t.begin(nullptr, [t](AResult &result) {
             if (result.error()) {
                 qDebug() << "BEGIN error" << result.errorString();
                 return;
             }
 
-            ADatabase(t.database()).exec(QStringLiteral("SELECT now()"),
-                                         nullptr, [=] (AResult &result) {
+            ADatabase(t.database()).exec(QStringLiteral("SELECT now()"), nullptr, [=](AResult &result) {
                 if (result.error()) {
                     qDebug() << "SELECT error" << result.errorString();
                     return;

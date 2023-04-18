@@ -1,16 +1,17 @@
-/* 
+/*
  * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
 #include "amigrations.h"
+
 #include "aresult.h"
 #include "atransaction.h"
 
 #include <QFile>
-#include <QTextStream>
 #include <QLoggingCategory>
 #include <QRegularExpression>
+#include <QTextStream>
 
 Q_LOGGING_CATEGORY(ASQL_MIG, "asql.migrations", QtInfoMsg)
 
@@ -39,7 +40,7 @@ public:
     int latest = -1;
 };
 
-}
+} // namespace ASql
 
 using namespace ASql;
 
@@ -47,7 +48,6 @@ AMigrations::AMigrations(QObject *parent)
     : QObject(parent)
     , d_ptr(new AMigrationsPrivate)
 {
-
 }
 
 AMigrations::~AMigrations()
@@ -66,13 +66,16 @@ name text primary key,
 version bigint not null check (version >= 0)
 )
 )V0G0N",
-                   this, [=, this] (AResult &result) {
+        this,
+        [=, this](AResult &result) {
         if (result.error()) {
             qDebug(ASQL_MIG) << "Create migrations table" << result.errorString();
         }
 
         d_ptr->db.exec(u"SELECT version FROM public.asql_migrations WHERE name=$1",
-                       {name}, this, [=, this] (AResult &result2) {
+            { name },
+            this,
+            [=, this](AResult &result2) {
             if (result2.error()) {
                 Q_EMIT ready(true, result2.errorString());
                 return;
@@ -239,14 +242,16 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
     }
 
     ATransaction t(d->db);
-    t.begin(this, [=, this] (AResult &result) mutable {
+    t.begin(this, [=, this](AResult &result) mutable {
         if (result.error()) {
             cb(true, result.errorString());
             return;
         }
 
         d->db.exec(u"SELECT version FROM public.asql_migrations WHERE name=$1 FOR UPDATE",
-        {d->name}, this, [=, this] (AResult &result) mutable {
+            { d->name },
+            this,
+            [=, this](AResult &result) mutable {
             if (result.error()) {
                 cb(true, result.errorString());
                 return;
@@ -282,7 +287,7 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
                     return;
                 }
 
-                d->db.exec(migration.versionQuery, this, [=] (AResult &result) mutable {
+                d->db.exec(migration.versionQuery, this, [=](AResult &result) mutable {
                     if (result.error()) {
                         qCritical(ASQL_MIG) << "Failed to update version" << result.errorString();
                     }
@@ -291,14 +296,15 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
 
             ADatabase db = migration.noTransaction ? d->noTransactionDB : d->db;
             db.exec(migration.noTransaction ? migration.query : migration.versionQuery + migration.query,
-                       this, [=, this] (AResult &result) mutable {
+                this,
+                [=, this](AResult &result) mutable {
                 if (result.error()) {
                     if (cb) {
                         cb(true, result.errorString());
                     }
                 } else if (result.lastResulSet()) {
                     if (migration.noTransaction || !dryRun) {
-                        t.commit(this, [=, this] (AResult &result) {
+                        t.commit(this, [=, this](AResult &result) {
                             if (result.error()) {
                                 if (cb) {
                                     cb(true, result.errorString());
@@ -315,7 +321,7 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
                             }
                         });
                     } else {
-                        t.rollback(this, [=] (AResult &result) {
+                        t.rollback(this, [=](AResult &result) {
                             if (cb) {
                                 cb(true, result.errorString());
                             }
