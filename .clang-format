@@ -5,11 +5,12 @@
 AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
 AlignConsecutiveMacros: 'false'
-AlignConsecutiveAssignments: 'false'
+AlignConsecutiveAssignments: 'true'
 AlignConsecutiveDeclarations: 'false'
+AllowShortEnumsOnASingleLine: 'true'
 AlignEscapedNewlines: DontAlign
 AlignOperands: 'true'
-AlignTrailingComments: 'false'
+AlignTrailingComments: 'true'
 AllowAllArgumentsOnNextLine: 'true'
 AllowAllParametersOfDeclarationOnNextLine: 'false'
 AllowShortBlocksOnASingleLine: 'false'

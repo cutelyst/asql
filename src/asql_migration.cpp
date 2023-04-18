@@ -69,8 +69,8 @@ int main(int argc, char *argv[])
 
     const bool confirm = parser.isSet(confirmOption);
     const bool showSql = parser.isSet(showSqlOption);
-    const bool dryRun = parser.isSet(dryRunOption);
-    int targetVersion = -1;
+    const bool dryRun  = parser.isSet(dryRunOption);
+    int targetVersion  = -1;
     if (parser.isSet(targetVersionOption)) {
         bool ok;
         targetVersion = parser.value(targetVersionOption).toInt(&ok);
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     ADatabase db;
     ADatabase noTransactionDB;
     if (conn.startsWith(u"postgres://") || conn.startsWith(u"postgresql://")) {
-        db = APg::database(conn);
+        db              = APg::database(conn);
         noTransactionDB = APg::database(conn);
         noTransactionDB.open();
     } else {

@@ -18,35 +18,35 @@ class ASQL_EXPORT AResultPrivate
 public:
     virtual ~AResultPrivate();
 
-    virtual bool lastResulSet() const = 0;
-    virtual bool error() const = 0;
+    virtual bool lastResulSet() const   = 0;
+    virtual bool error() const          = 0;
     virtual QString errorString() const = 0;
 
     virtual QByteArray query() const = 0;
 
-    virtual int size() const = 0;
-    virtual int fields() const = 0;
+    virtual int size() const            = 0;
+    virtual int fields() const          = 0;
     virtual int numRowsAffected() const = 0;
 
     virtual int indexOfField(const QString &name) const;
     virtual int indexOfField(QStringView name) const;
     virtual int indexOfField(QLatin1String name) const;
-    virtual QString fieldName(int column) const = 0;
+    virtual QString fieldName(int column) const       = 0;
     virtual QVariant value(int row, int column) const = 0;
 
-    virtual bool isNull(int row, int column) const = 0;
-    virtual bool toBool(int row, int column) const = 0;
-    virtual int toInt(int row, int column) const = 0;
-    virtual qint64 toLongLong(int row, int column) const = 0;
-    virtual quint64 toULongLong(int row, int column) const = 0;
-    virtual double toDouble(int row, int column) const = 0;
-    virtual QString toString(int row, int column) const = 0;
+    virtual bool isNull(int row, int column) const             = 0;
+    virtual bool toBool(int row, int column) const             = 0;
+    virtual int toInt(int row, int column) const               = 0;
+    virtual qint64 toLongLong(int row, int column) const       = 0;
+    virtual quint64 toULongLong(int row, int column) const     = 0;
+    virtual double toDouble(int row, int column) const         = 0;
+    virtual QString toString(int row, int column) const        = 0;
     virtual std::string toStdString(int row, int column) const = 0;
-    virtual QDate toDate(int row, int column) const = 0;
-    virtual QTime toTime(int row, int column) const = 0;
-    virtual QDateTime toDateTime(int row, int column) const = 0;
-    virtual QJsonValue toJsonValue(int row, int column) const = 0;
-    virtual QByteArray toByteArray(int row, int column) const = 0;
+    virtual QDate toDate(int row, int column) const            = 0;
+    virtual QTime toTime(int row, int column) const            = 0;
+    virtual QDateTime toDateTime(int row, int column) const    = 0;
+    virtual QJsonValue toJsonValue(int row, int column) const  = 0;
+    virtual QByteArray toByteArray(int row, int column) const  = 0;
 };
 
 class ASQL_EXPORT AResult
@@ -200,8 +200,8 @@ public:
         std::shared_ptr<AResultPrivate> d;
         int i;
         using iterator_category = std::random_access_iterator_tag;
-        using value_type = ARow;
-        using reference = ARow;
+        using value_type        = ARow;
+        using reference         = ARow;
 
         inline const_iterator()
             : i(0)

@@ -61,8 +61,8 @@ public:
 
     QByteArray m_query;
     QString m_errorString;
-    PGresult *m_result = nullptr;
-    bool m_error = false;
+    PGresult *m_result   = nullptr;
+    bool m_error         = false;
     bool m_lastResultSet = true;
 };
 
@@ -77,8 +77,8 @@ public:
     AResultFn cb;
     QPointer<QObject> receiver;
     QObject *checkReceiver = nullptr;
-    bool preparing = false;
-    bool setSingleRow = false;
+    bool preparing         = false;
+    bool setSingleRow      = false;
 
     inline void done()
     {
@@ -92,10 +92,10 @@ public:
     inline void doneError(const QString &error)
     {
         if (cb && (!checkReceiver || !receiver.isNull())) {
-            result = std::make_shared<AResultPg>(nullptr);
-            result->m_query = query;
+            result                = std::make_shared<AResultPg>(nullptr);
+            result->m_query       = query;
             result->m_errorString = error;
-            result->m_error = true;
+            result->m_error       = true;
             AResult r(std::move(result));
             cb(r);
         }
@@ -209,12 +209,12 @@ private:
     std::unique_ptr<QSocketNotifier> m_readNotify;
     std::unique_ptr<QTimer> m_autoSyncTimer;
     std::unique_ptr<APgConn> m_conn;
-    ADatabase::State m_state = ADatabase::State::Disconnected;
-    int m_pipelineSync = 0;
+    ADatabase::State m_state       = ADatabase::State::Disconnected;
+    int m_pipelineSync             = 0;
     bool m_stateChangedReceiverSet = false;
-    bool m_flush = false;
-    bool m_queryRunning = false;
-    bool m_notificationPtrSet = false;
+    bool m_flush                   = false;
+    bool m_queryRunning            = false;
+    bool m_notificationPtrSet      = false;
 };
 
 } // namespace ASql

@@ -23,7 +23,7 @@ public:
     struct MigQuery {
         QString versionQuery;
         QString query;
-        int version = 0;
+        int version        = 0;
         bool noTransaction = false;
     };
 
@@ -57,8 +57,8 @@ AMigrations::~AMigrations()
 
 void AMigrations::load(const ADatabase &db, const QString &name, const ADatabase &noTransactionDB)
 {
-    d_ptr->name = name;
-    d_ptr->db = db;
+    d_ptr->name            = name;
+    d_ptr->db              = db;
     d_ptr->noTransactionDB = noTransactionDB;
     d_ptr->db.exec(uR"V0G0N(
 CREATE TABLE IF NOT EXISTS public.asql_migrations (
@@ -121,11 +121,11 @@ void AMigrations::fromString(const QString &text)
     QMap<int, AMigrationsPrivate::MigQuery> up;
     QMap<int, AMigrationsPrivate::MigQuery> down;
 
-    int version = 0;
-    int latest = -1;
-    bool upWay = true;
+    int version        = 0;
+    int latest         = -1;
+    bool upWay         = true;
     bool noTransaction = false;
-    d_ptr->data = text;
+    d_ptr->data        = text;
 
     QTextStream stream(&d_ptr->data);
     QRegularExpression re(QStringLiteral("^\\s*--\\s*(\\d+)\\s*(up|down)\\s*(no-transaction)?"), QRegularExpression::CaseInsensitiveOption);
@@ -137,26 +137,26 @@ void AMigrations::fromString(const QString &text)
         if (match.hasMatch()) {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 2))
             const QStringView way = match.capturedView(2);
-            noTransaction = !match.capturedView(3).isNull();
+            noTransaction         = !match.capturedView(3).isNull();
             qDebug(ASQL_MIG) << "CAPTURE" << way << match.capturedView(1).toInt() << noTransaction;
             if (way.compare(u"up", Qt::CaseInsensitive) == 0) {
-                upWay = true;
+                upWay   = true;
                 version = match.capturedView(1).toInt();
             } else if (way.compare(u"down", Qt::CaseInsensitive) == 0) {
-                upWay = false;
+                upWay   = false;
                 version = match.capturedView(1).toInt();
             } else {
                 version = 0;
             }
 #else
             const QStringRef way = match.capturedRef(2);
-            noTransaction = !match.capturedRef(3).isNull();
+            noTransaction        = !match.capturedRef(3).isNull();
             qDebug(ASQL_MIG) << "CAPTURE" << way << match.capturedRef(1).toInt() << noTransaction;
             if (way.compare(QLatin1String("up"), Qt::CaseInsensitive) == 0) {
-                upWay = true;
+                upWay   = true;
                 version = match.capturedRef(1).toInt();
             } else if (way.compare(QLatin1String("down"), Qt::CaseInsensitive) == 0) {
-                upWay = false;
+                upWay   = false;
                 version = match.capturedRef(1).toInt();
             } else {
                 version = 0;
@@ -172,13 +172,13 @@ void AMigrations::fromString(const QString &text)
         } else if (version) {
             if (upWay) {
                 qDebug(ASQL_MIG) << "UP" << version << line;
-                auto &mig = up[version];
+                auto &mig   = up[version];
                 mig.version = version;
                 mig.query.append(line + QLatin1Char('\n'));
                 mig.noTransaction = noTransaction;
             } else {
                 qDebug(ASQL_MIG) << "DOWN" << version << line;
-                auto &mig = down[version];
+                auto &mig   = down[version];
                 mig.version = version;
                 mig.query.append(line + QLatin1Char('\n'));
                 mig.noTransaction = noTransaction;
@@ -187,8 +187,8 @@ void AMigrations::fromString(const QString &text)
     }
 
     d->latest = latest;
-    d->up = up;
-    d->down = down;
+    d->up     = up;
+    d->down   = down;
 }
 
 QString AMigrations::sqlFor(int versionFrom, int versionTo) const

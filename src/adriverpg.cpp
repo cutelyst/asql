@@ -93,7 +93,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
         const auto socket = m_conn->socket();
         if (socket > 0) {
             m_writeNotify = std::make_unique<QSocketNotifier>(socket, QSocketNotifier::Write);
-            m_readNotify = std::make_unique<QSocketNotifier>(socket, QSocketNotifier::Read);
+            m_readNotify  = std::make_unique<QSocketNotifier>(socket, QSocketNotifier::Read);
 
             const QString error = m_conn->errorMessage();
             setState(ADatabase::State::Connecting, error);
@@ -176,7 +176,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                                 case PGRES_COMMAND_OK:
                                     break;
                                 default:
-                                    safeResult->m_error = true;
+                                    safeResult->m_error       = true;
                                     safeResult->m_errorString = QString::fromLocal8Bit(PQresultErrorMessage(result));
                                     break;
                                 }
@@ -194,7 +194,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                                 continue;
                             } else if (m_queuedQueries.size()) {
                                 APGQuery &pgQuery = m_queuedQueries.front();
-                                m_queryRunning = false;
+                                m_queryRunning    = false;
 
                                 if (Q_UNLIKELY(pgQuery.preparedQuery && pgQuery.preparing)) {
                                     if (Q_UNLIKELY(pgQuery.result && pgQuery.result->error())) {
@@ -298,8 +298,8 @@ ADatabase::State ADriverPg::state() const
 
 void ADriverPg::onStateChanged(QObject *receiver, std::function<void(ADatabase::State, const QString &)> cb)
 {
-    m_stateChangedCb = cb;
-    m_stateChangedReceiver = receiver;
+    m_stateChangedCb          = cb;
+    m_stateChangedReceiver    = receiver;
     m_stateChangedReceiverSet = receiver;
 }
 
@@ -321,7 +321,7 @@ void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, 
 void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
 {
     if (receiver) {
-        pgQuery.receiver = receiver;
+        pgQuery.receiver      = receiver;
         pgQuery.checkReceiver = receiver;
         connect(receiver, &QObject::destroyed, this, [=, this](QObject *obj) {
             if (m_queryRunning && !m_queuedQueries.empty() && m_queuedQueries.front().checkReceiver == obj && m_conn) {
@@ -377,7 +377,7 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, 
     APGQuery pgQuery;
     pgQuery.query.setRawData(query.data(), query.size());
     pgQuery.params = params;
-    pgQuery.cb = cb;
+    pgQuery.cb     = cb;
 
     setupCheckReceiver(pgQuery, receiver);
 
@@ -391,9 +391,9 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, 
 void ADriverPg::exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, QObject *receiver, AResultFn cb)
 {
     APGQuery pgQuery;
-    pgQuery.query = query.toUtf8();
+    pgQuery.query  = query.toUtf8();
     pgQuery.params = params;
-    pgQuery.cb = cb;
+    pgQuery.cb     = cb;
 
     setupCheckReceiver(pgQuery, receiver);
 
@@ -407,8 +407,8 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &q
 {
     APGQuery pgQuery;
     pgQuery.preparedQuery = query;
-    pgQuery.params = params;
-    pgQuery.cb = cb;
+    pgQuery.params        = params;
+    pgQuery.cb            = cb;
 
     setupCheckReceiver(pgQuery, receiver);
 
@@ -421,13 +421,13 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &q
 void ADriverPg::setLastQuerySingleRowMode()
 {
     if (m_queuedQueries.size() == 1) {
-        APGQuery &pgQuery = m_queuedQueries.front();
+        APGQuery &pgQuery    = m_queuedQueries.front();
         pgQuery.setSingleRow = true;
         if (!pgQuery.preparing && m_state == ADatabase::State::Connected) {
             setSingleRowMode();
         }
     } else if (m_queuedQueries.size() > 1) {
-        APGQuery &pgQuery = m_queuedQueries.back();
+        APGQuery &pgQuery    = m_queuedQueries.back();
         pgQuery.setSingleRow = true;
     }
 }
@@ -543,8 +543,8 @@ void ADriverPg::finishConnection(const QString &error)
     while (!m_queuedQueries.empty()) {
         APGQuery pgQuery = m_queuedQueries.front();
         m_queuedQueries.pop();
-        pgQuery.result = std::make_shared<AResultPg>(nullptr);
-        pgQuery.result->m_error = true;
+        pgQuery.result                = std::make_shared<AResultPg>(nullptr);
+        pgQuery.result->m_error       = true;
         pgQuery.result->m_errorString = error;
         pgQuery.done();
     }
@@ -589,10 +589,10 @@ int ADriverPg::doExec(APGQuery &pgQuery)
 int ADriverPg::doExecParams(APGQuery &pgQuery)
 {
     const QVariantList &params = pgQuery.params;
-    auto paramTypes = std::make_unique<Oid[]>(params.size());
-    auto paramValues = std::make_unique<const char *[]>(params.size());
-    auto paramLengths = std::make_unique<int[]>(params.size());
-    auto paramFormats = std::make_unique<int[]>(params.size());
+    auto paramTypes            = std::make_unique<Oid[]>(params.size());
+    auto paramValues           = std::make_unique<const char *[]>(params.size());
+    auto paramLengths          = std::make_unique<int[]>(params.size());
+    auto paramFormats          = std::make_unique<int[]>(params.size());
 
     QByteArrayList deleteLater;
     for (int i = 0; i < params.size(); ++i) {
@@ -604,17 +604,17 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
             case QMetaType::QString:
             {
                 const QString text = v.toString();
-                paramTypes[i] = !text.isNull() ? QTEXTOID : QUNKNOWNOID;
-                paramFormats[i] = 0;
-                data = text.toUtf8();
+                paramTypes[i]      = !text.isNull() ? QTEXTOID : QUNKNOWNOID;
+                paramFormats[i]    = 0;
+                data               = text.toUtf8();
             } break;
             case QMetaType::QByteArray:
-                paramTypes[i] = QBYTEAOID;
+                paramTypes[i]   = QBYTEAOID;
                 paramFormats[i] = 1;
-                data = v.toByteArray();
+                data            = v.toByteArray();
                 break;
             case QMetaType::Int:
-                paramTypes[i] = QINT4OID;
+                paramTypes[i]   = QINT4OID;
                 paramFormats[i] = 1;
                 {
                     const qint32 number = v.toInt();
@@ -623,7 +623,7 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
                 }
                 break;
             case QMetaType::LongLong:
-                paramTypes[i] = QINT8OID;
+                paramTypes[i]   = QINT8OID;
                 paramFormats[i] = 1;
                 {
                     const qint64 number = v.toLongLong();
@@ -632,91 +632,91 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
                 }
                 break;
             case QMetaType::QUuid:
-                paramTypes[i] = QUUIDOID;
+                paramTypes[i]   = QUUIDOID;
                 paramFormats[i] = 1;
-                data = v.toUuid().toRfc4122();
+                data            = v.toUuid().toRfc4122();
                 break;
             case QMetaType::Bool:
-                paramTypes[i] = QBOOLOID;
+                paramTypes[i]   = QBOOLOID;
                 paramFormats[i] = 1;
                 data.append(v.toBool() ? 0x01 : 0x00);
                 break;
             case QMetaType::UnknownType:
-                paramTypes[i] = QUNKNOWNOID;
+                paramTypes[i]   = QUNKNOWNOID;
                 paramFormats[i] = 0;
                 break;
             case QMetaType::QJsonObject:
-                paramTypes[i] = QJSONBOID;
+                paramTypes[i]   = QJSONBOID;
                 paramFormats[i] = 0;
-                data = QJsonDocument(v.toJsonObject()).toJson(QJsonDocument::Compact);
+                data            = QJsonDocument(v.toJsonObject()).toJson(QJsonDocument::Compact);
                 break;
             case QMetaType::QJsonArray:
-                paramTypes[i] = QJSONBOID;
+                paramTypes[i]   = QJSONBOID;
                 paramFormats[i] = 0;
-                data = QJsonDocument(v.toJsonArray()).toJson(QJsonDocument::Compact);
+                data            = QJsonDocument(v.toJsonArray()).toJson(QJsonDocument::Compact);
                 break;
             case QMetaType::QJsonValue:
             {
                 const QJsonValue jValue = v.toJsonValue();
                 switch (jValue.type()) {
                 case QJsonValue::Bool:
-                    paramTypes[i] = QBOOLOID;
+                    paramTypes[i]   = QBOOLOID;
                     paramFormats[i] = 1;
                     data.append(jValue.toBool() ? 0x01 : 0x00);
                     break;
                     ;
                 case QJsonValue::Double:
-                    paramTypes[i] = QUNKNOWNOID; // This allows PG to try to deduce the type
+                    paramTypes[i]   = QUNKNOWNOID; // This allows PG to try to deduce the type
                     paramFormats[i] = 0;
-                    data = jValue.toVariant().toString().toLatin1();
+                    data            = jValue.toVariant().toString().toLatin1();
                     break;
                 case QJsonValue::String:
                 {
                     const QString text = v.toString();
-                    paramTypes[i] = !text.isNull() ? QTEXTOID : QUNKNOWNOID;
-                    paramFormats[i] = 0;
-                    data = jValue.toString().toUtf8();
+                    paramTypes[i]      = !text.isNull() ? QTEXTOID : QUNKNOWNOID;
+                    paramFormats[i]    = 0;
+                    data               = jValue.toString().toUtf8();
                 } break;
                 case QJsonValue::Array:
-                    paramTypes[i] = QJSONBOID;
+                    paramTypes[i]   = QJSONBOID;
                     paramFormats[i] = 0;
-                    data = QJsonDocument(jValue.toArray()).toJson(QJsonDocument::Compact);
+                    data            = QJsonDocument(jValue.toArray()).toJson(QJsonDocument::Compact);
                     break;
                 case QJsonValue::Object:
-                    paramTypes[i] = QJSONBOID;
+                    paramTypes[i]   = QJSONBOID;
                     paramFormats[i] = 0;
-                    data = QJsonDocument(jValue.toObject()).toJson(QJsonDocument::Compact);
+                    data            = QJsonDocument(jValue.toObject()).toJson(QJsonDocument::Compact);
                     break;
                 default:
-                    paramTypes[i] = QUNKNOWNOID;
+                    paramTypes[i]   = QUNKNOWNOID;
                     paramFormats[i] = 0;
-                    paramValues[i] = nullptr;
+                    paramValues[i]  = nullptr;
                     paramLengths[i] = 0;
                 }
             } break;
             case QMetaType::QJsonDocument:
-                paramTypes[i] = QJSONBOID;
+                paramTypes[i]   = QJSONBOID;
                 paramFormats[i] = 0;
-                data = v.toJsonDocument().toJson(QJsonDocument::Compact);
+                data            = v.toJsonDocument().toJson(QJsonDocument::Compact);
                 break;
             default:
-                paramTypes[i] = QUNKNOWNOID; // This allows PG to try to deduce the type
+                paramTypes[i]   = QUNKNOWNOID; // This allows PG to try to deduce the type
                 paramFormats[i] = 0;
-                data = v.toString().toUtf8();
+                data            = v.toString().toUtf8();
             }
 
             if (data.size() || paramTypes[i] != QUNKNOWNOID) {
                 deleteLater.append(data); // Otherwise our temporary data will be deleted
-                paramValues[i] = data.constData();
+                paramValues[i]  = data.constData();
                 paramLengths[i] = data.size();
             } else {
-                paramValues[i] = nullptr;
+                paramValues[i]  = nullptr;
                 paramLengths[i] = 0;
             }
         } else {
-            paramTypes[i] = QUNKNOWNOID;
+            paramTypes[i]   = QUNKNOWNOID;
             paramFormats[i] = 0;
-            paramValues[i] = nullptr;
+            paramValues[i]  = nullptr;
             paramLengths[i] = 0;
         }
     }
@@ -905,7 +905,7 @@ QVariant AResultPg::value(int row, int column) const
         return {};
     }
 
-    int ptype = PQftype(m_result, column);
+    int ptype      = PQftype(m_result, column);
     QMetaType type = qDecodePSQLType(ptype);
     if (PQgetisnull(m_result, row, column)) {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -1091,7 +1091,7 @@ QDate AResultPg::toDate(int row, int column) const
 QTime AResultPg::toTime(int row, int column) const
 {
     Q_ASSERT_X(column < PQnfields(m_result), "toTime", "column out of range");
-    const char *val = PQgetvalue(m_result, row, column);
+    const char *val   = PQgetvalue(m_result, row, column);
     const QString str = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
     if (str.isEmpty())
@@ -1107,7 +1107,7 @@ QDateTime AResultPg::toDateTime(int row, int column) const
 {
     Q_ASSERT_X(column < PQnfields(m_result), "toDateTime", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
-    QString dtval = QString::fromLatin1(val);
+    QString dtval   = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
     if (dtval.length() < 10) {
         return {};
@@ -1131,7 +1131,7 @@ QJsonValue AResultPg::toJsonValue(int row, int column) const
     }
 
     const char *val = PQgetvalue(m_result, row, column);
-    auto doc = QJsonDocument::fromJson(val);
+    auto doc        = QJsonDocument::fromJson(val);
     if (doc.isObject()) {
         ret = doc.object();
     } else if (doc.isArray()) {

@@ -97,7 +97,7 @@ void ACachePrivate::requestData(const QString &query, const QVariantList &args, 
 
     ACacheValue cacheValue;
     cacheValue.query = query;
-    cacheValue.args = args;
+    cacheValue.args  = args;
     cacheValue.receivers.emplace_back(ACacheReceiverCb{
         cb,
         receiver,
@@ -115,7 +115,7 @@ void ACachePrivate::requestData(const QString &query, const QVariantList &args, 
             while (it != cache.end() && it.key() == query) {
                 ACacheValue &value = it.value();
                 if (value.args == args) {
-                    value.result = result;
+                    value.result      = result;
                     value.hasResultTs = QDateTime::currentMSecsSinceEpoch();
                     qInfo(ASQL_CACHE) << "got request data, dispatching to" << value.receivers.size() << "receivers" << query;
                     for (const ACacheReceiverCb &receiverObj : value.receivers) {
@@ -162,7 +162,7 @@ void ACache::setDatabasePool(const QString &poolName)
 {
     Q_D(ACache);
     d->poolName = poolName;
-    d->db = ADatabase();
+    d->db       = ADatabase();
     d->dbSource = ACachePrivate::DbSource::Pool;
 }
 
@@ -175,7 +175,7 @@ void ACache::setDatabase(const ADatabase &db)
 {
     Q_D(ACache);
     d->poolName.clear();
-    d->db = db;
+    d->db       = db;
     d->dbSource = ACachePrivate::DbSource::Database;
 }
 
@@ -197,9 +197,9 @@ bool ACache::clear(QStringView query, const QVariantList &params)
 bool ACache::expire(qint64 maxAgeMs, QStringView query, const QVariantList &params)
 {
     Q_D(ACache);
-    int ret = false;
+    int ret             = false;
     const qint64 cutAge = QDateTime::currentMSecsSinceEpoch() - maxAgeMs;
-    auto it = d->cache.constFind(query);
+    auto it             = d->cache.constFind(query);
     while (it != d->cache.constEnd() && it.key() == query) {
         const ACacheValue &value = *it;
         if (value.args == params) {
@@ -218,9 +218,9 @@ bool ACache::expire(qint64 maxAgeMs, QStringView query, const QVariantList &para
 int ACache::expireAll(qint64 maxAgeMs)
 {
     Q_D(ACache);
-    int ret = 0;
+    int ret             = 0;
     const qint64 cutAge = QDateTime::currentMSecsSinceEpoch() - maxAgeMs;
-    auto it = d->cache.begin();
+    auto it             = d->cache.begin();
     while (it != d->cache.end()) {
         const ACacheValue &value = *it;
         if (value.hasResultTs && value.hasResultTs < cutAge) {

@@ -31,8 +31,8 @@ struct APoolInternal {
     std::function<void(ADatabase &)> setupCb;
     std::function<void(ADatabase &)> reuseCb;
     int maxIdleConnections = 1;
-    int maximuConnections = 0;
-    int connectionCount = 0;
+    int maximuConnections  = 0;
+    int connectionCount    = 0;
 };
 
 static thread_local QHash<QStringView, APoolInternal> m_connectionPool;
@@ -48,7 +48,7 @@ void APool::create(const std::shared_ptr<ADriverFactory> &factory, const QString
 {
     if (!m_connectionPool.contains(poolName)) {
         APoolInternal pool;
-        pool.name = poolName;
+        pool.name          = poolName;
         pool.driverFactory = factory;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         m_connectionPool.emplace(pool.name, std::move(pool));
@@ -130,7 +130,7 @@ ADatabase APool::database(QStringView poolName)
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << poolName;
             ADriver *driver = iPool.pool.takeLast();
-            db.d = std::shared_ptr<ADriver>(driver, [poolName](ADriver *driver) {
+            db.d            = std::shared_ptr<ADriver>(driver, [poolName](ADriver *driver) {
                 pushDatabaseBack(poolName, driver);
             });
 
@@ -164,8 +164,8 @@ void APool::database(QObject *receiver, std::function<void(ADatabase &)> cb, QSt
             if (iPool.maximuConnections && iPool.connectionCount >= iPool.maximuConnections) {
                 qInfo(ASQL_POOL) << "Maximum number of connections reached, queuing" << poolName << iPool.connectionCount << iPool.maximuConnections;
                 APoolQueuedClient queued;
-                queued.cb = cb;
-                queued.receiver = receiver;
+                queued.cb            = cb;
+                queued.receiver      = receiver;
                 queued.checkReceiver = receiver;
                 iPool.connectionQueue.emplace(std::move(queued));
                 return;
@@ -182,7 +182,7 @@ void APool::database(QObject *receiver, std::function<void(ADatabase &)> cb, QSt
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << poolName;
             ADriver *priv = iPool.pool.takeLast();
-            db.d = std::shared_ptr<ADriver>(priv, [poolName](ADriver *driver) {
+            db.d          = std::shared_ptr<ADriver>(priv, [poolName](ADriver *driver) {
                 pushDatabaseBack(poolName, driver);
             });
 

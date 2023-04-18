@@ -17,7 +17,7 @@ static QByteArray identificationCounter()
 {
     QByteArray ret;
     static QBasicAtomicInt qPreparedStmtCount = Q_BASIC_ATOMIC_INITIALIZER(0);
-    ret = "asql_" + QByteArray::number(qPreparedStmtCount.fetchAndAddRelaxed(1) + 1, 16);
+    ret                                       = "asql_" + QByteArray::number(qPreparedStmtCount.fetchAndAddRelaxed(1) + 1, 16);
     qDebug(ASQL_PQ) << "Created prepared query identifier" << ret;
     return ret;
 }
