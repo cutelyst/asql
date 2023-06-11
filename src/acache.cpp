@@ -12,6 +12,8 @@
 #include <QLoggingCategory>
 #include <QPointer>
 
+#include <optional>
+
 Q_LOGGING_CATEGORY(ASQL_CACHE, "asql.cache", QtWarningMsg)
 
 using namespace std::chrono;
