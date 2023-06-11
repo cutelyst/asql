@@ -9,11 +9,12 @@
 #include "apool.h"
 #include "aresult.h"
 
-#include <QDateTime>
 #include <QLoggingCategory>
 #include <QPointer>
 
 Q_LOGGING_CATEGORY(ASQL_CACHE, "asql.cache", QtWarningMsg)
+
+using namespace std::chrono;
 
 namespace ASql {
 
@@ -28,7 +29,7 @@ struct ACacheValue {
     QVariantList args;
     std::vector<ACacheReceiverCb> receivers;
     AResult result;
-    qint64 hasResultTs = 0;
+    std::optional<time_point<steady_clock>> hasResultTP;
 };
 
 class ACachePrivate
@@ -40,7 +41,7 @@ public:
         Pool,
     };
 
-    bool searchOrQueue(QStringView query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb);
+    bool searchOrQueue(QStringView query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb);
     void requestData(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb);
 
     QObject *q_ptr;
@@ -50,16 +51,16 @@ public:
     DbSource dbSource = DbSource::Unset;
 };
 
-bool ACachePrivate::searchOrQueue(QStringView query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb)
+bool ACachePrivate::searchOrQueue(QStringView query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb)
 {
     auto it = cache.find(query);
     while (it != cache.end() && it.key() == query) {
         auto &value = *it;
         if (value.args == args) {
-            if (value.hasResultTs) {
-                if (maxAgeMs != -1) {
-                    const qint64 cutAge = QDateTime::currentMSecsSinceEpoch() - maxAgeMs;
-                    if (value.hasResultTs < cutAge) {
+            if (value.hasResultTP) {
+                if (maxAge != -1ms) {
+                    const auto cutAge = steady_clock::now() - maxAge;
+                    if (value.hasResultTP < cutAge) {
                         cache.erase(it);
                         break;
                     } else {
@@ -109,14 +110,14 @@ void ACachePrivate::requestData(const QString &query, const QVariantList &args, 
     cache.insert(query, cacheValue);
 #endif
 
-    auto performQuery = [this, query, args](ADatabase &db) {
+    auto performQuery = [this, query, args](ADatabase db) {
         db.exec(query, args, q_ptr, [query, args, this](AResult &result) {
             auto it = cache.find(query);
             while (it != cache.end() && it.key() == query) {
                 ACacheValue &value = it.value();
                 if (value.args == args) {
                     value.result      = result;
-                    value.hasResultTs = QDateTime::currentMSecsSinceEpoch();
+                    value.hasResultTP = steady_clock::now();
                     qInfo(ASQL_CACHE) << "got request data, dispatching to" << value.receivers.size() << "receivers" << query;
                     for (const ACacheReceiverCb &receiverObj : value.receivers) {
                         if (receiverObj.checkReceiver == nullptr || !receiverObj.receiver.isNull()) {
@@ -194,16 +195,16 @@ bool ACache::clear(QStringView query, const QVariantList &params)
     return false;
 }
 
-bool ACache::expire(qint64 maxAgeMs, QStringView query, const QVariantList &params)
+bool ACache::expire(std::chrono::milliseconds maxAge, QStringView query, const QVariantList &params)
 {
     Q_D(ACache);
-    int ret             = false;
-    const qint64 cutAge = QDateTime::currentMSecsSinceEpoch() - maxAgeMs;
-    auto it             = d->cache.constFind(query);
+    int ret           = false;
+    const auto cutAge = steady_clock::now() - maxAge;
+    auto it           = d->cache.constFind(query);
     while (it != d->cache.constEnd() && it.key() == query) {
         const ACacheValue &value = *it;
         if (value.args == params) {
-            if (value.hasResultTs && value.hasResultTs < cutAge) {
+            if (value.hasResultTP && value.hasResultTP < cutAge) {
                 ret = true;
                 qDebug(ASQL_CACHE) << "clearing cache" << query << params;
                 d->cache.erase(it);
@@ -215,15 +216,15 @@ bool ACache::expire(qint64 maxAgeMs, QStringView query, const QVariantList &para
     return ret;
 }
 
-int ACache::expireAll(qint64 maxAgeMs)
+int ACache::expireAll(std::chrono::milliseconds maxAge)
 {
     Q_D(ACache);
-    int ret             = 0;
-    const qint64 cutAge = QDateTime::currentMSecsSinceEpoch() - maxAgeMs;
-    auto it             = d->cache.begin();
+    int ret           = 0;
+    const auto cutAge = steady_clock::now() - maxAge;
+    auto it           = d->cache.begin();
     while (it != d->cache.end()) {
         const ACacheValue &value = *it;
-        if (value.hasResultTs && value.hasResultTs < cutAge) {
+        if (value.hasResultTP && value.hasResultTP < cutAge) {
             it = d->cache.erase(it);
             ++ret;
         } else {
@@ -235,46 +236,46 @@ int ACache::expireAll(qint64 maxAgeMs)
 
 void ACache::exec(QStringView query, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, -1, {}, receiver, cb);
+    execExpiring(query, -1ms, {}, receiver, cb);
 }
 
 void ACache::exec(QStringView query, const QVariantList &args, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, -1, args, receiver, cb);
+    execExpiring(query, -1ms, args, receiver, cb);
 }
 
-void ACache::execExpiring(QStringView query, qint64 maxAgeMs, QObject *receiver, AResultFn cb)
+void ACache::execExpiring(QStringView query, std::chrono::milliseconds maxAge, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, maxAgeMs, {}, receiver, cb);
+    execExpiring(query, maxAge, {}, receiver, cb);
 }
 
-void ACache::execExpiring(QStringView query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb)
+void ACache::execExpiring(QStringView query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb)
 {
     Q_D(ACache);
-    if (!d->searchOrQueue(query, maxAgeMs, args, receiver, cb)) {
+    if (!d->searchOrQueue(query, maxAge, args, receiver, cb)) {
         d->requestData(query.toString(), args, receiver, cb);
     }
 }
 
 void ACache::exec(const QString &query, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, -1, {}, receiver, cb);
+    execExpiring(query, -1ms, {}, receiver, cb);
 }
 
 void ACache::exec(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, -1, args, receiver, cb);
+    execExpiring(query, -1ms, args, receiver, cb);
 }
 
-void ACache::execExpiring(const QString &query, qint64 maxAgeMs, QObject *receiver, AResultFn cb)
+void ACache::execExpiring(const QString &query, std::chrono::milliseconds maxAge, QObject *receiver, AResultFn cb)
 {
-    execExpiring(query, maxAgeMs, {}, receiver, cb);
+    execExpiring(query, maxAge, {}, receiver, cb);
 }
 
-void ACache::execExpiring(const QString &query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb)
+void ACache::execExpiring(const QString &query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb)
 {
     Q_D(ACache);
-    if (!d->searchOrQueue(query, maxAgeMs, args, receiver, cb)) {
+    if (!d->searchOrQueue(query, maxAge, args, receiver, cb)) {
         d->requestData(query, args, receiver, cb);
     }
 }

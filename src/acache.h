@@ -11,6 +11,8 @@
 
 #include <QObject>
 
+#include <chrono>
+
 namespace ASql {
 
 class ACachePrivate;
@@ -33,18 +35,18 @@ public:
      * \return
      */
     bool clear(QStringView query, const QVariantList &params = {});
-    bool expire(qint64 maxAgeMs, QStringView query, const QVariantList &params = {});
-    int expireAll(qint64 maxAgeMs);
+    bool expire(std::chrono::milliseconds maxAge, QStringView query, const QVariantList &params = {});
+    int expireAll(std::chrono::milliseconds maxAge);
 
     void exec(QStringView query, QObject *receiver, AResultFn cb);
     void exec(QStringView query, const QVariantList &args, QObject *receiver, AResultFn cb);
-    void execExpiring(QStringView query, qint64 maxAgeMs, QObject *receiver, AResultFn cb);
-    void execExpiring(QStringView query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb);
+    void execExpiring(QStringView query, std::chrono::milliseconds maxAge, QObject *receiver, AResultFn cb);
+    void execExpiring(QStringView query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb);
 
     void exec(const QString &query, QObject *receiver, AResultFn cb);
     void exec(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb);
-    void execExpiring(const QString &query, qint64 maxAgeMs, QObject *receiver, AResultFn cb);
-    void execExpiring(const QString &query, qint64 maxAgeMs, const QVariantList &args, QObject *receiver, AResultFn cb);
+    void execExpiring(const QString &query, std::chrono::milliseconds maxAge, QObject *receiver, AResultFn cb);
+    void execExpiring(const QString &query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb);
 
 private:
     ACachePrivate *d_ptr;
