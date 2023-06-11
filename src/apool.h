@@ -15,6 +15,8 @@
 
 namespace ASql {
 
+using ADatabaseFn = std::function<void(ADatabase db)>;
+
 class ASQL_EXPORT APool
 {
 public:
@@ -80,7 +82,7 @@ public:
      * \param receiver
      * \param connectionName
      */
-    static void database(QObject *receiver, std::function<void(ADatabase &database)> cb, QStringView poolName = defaultPool);
+    static void database(QObject *receiver, ADatabaseFn cb, QStringView poolName = defaultPool);
 
     /*!
      * \brief setMaxIdleConnections maximum number of idle connections of the pool
@@ -123,7 +125,7 @@ public:
      * \param max
      * \param poolName
      */
-    static void setSetupCallback(std::function<void(ADatabase &database)> cb, QStringView poolName = defaultPool);
+    static void setSetupCallback(ADatabaseFn cb, QStringView poolName = defaultPool);
 
     /*!
      * \brief setReuseCallback setup a connection before being reused
@@ -141,7 +143,7 @@ public:
      * \param max
      * \param poolName
      */
-    static void setReuseCallback(std::function<void(ADatabase &database)> cb, QStringView poolName = defaultPool);
+    static void setReuseCallback(ADatabaseFn cb, QStringView poolName = defaultPool);
 
 private:
     inline static void pushDatabaseBack(QStringView connectionName, ADriver *driver);

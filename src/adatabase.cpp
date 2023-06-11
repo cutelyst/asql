@@ -19,6 +19,11 @@ ADatabase::ADatabase(const std::shared_ptr<ADriver> &driver)
 {
 }
 
+ADatabase::ADatabase(std::shared_ptr<ADriver> &&driver)
+    : d(driver)
+{
+}
+
 ADatabase::ADatabase(const std::shared_ptr<ADriverFactory> &factory)
     : d(factory->createDriver())
 {

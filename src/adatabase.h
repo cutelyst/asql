@@ -53,6 +53,11 @@ public:
     ADatabase(const std::shared_ptr<ADriver> &driver);
 
     /*!
+     * \brief ADatabase contructs an database object with the supplied driver
+     */
+    ADatabase(std::shared_ptr<ADriver> &&driver);
+
+    /*!
      * \brief ADatabase contructs an database object with the supplied driver factory
      */
     ADatabase(const std::shared_ptr<ADriverFactory> &factory);

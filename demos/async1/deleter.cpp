@@ -27,14 +27,14 @@ int main(int argc, char *argv[])
     QCoreApplication app(argc, argv);
 
     APool::create(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
-    APool::setSetupCallback([](ADatabase &db) {
+    APool::setSetupCallback([](ADatabase db) {
         qDebug() << "setup db";
         db.exec(u"SET TIME ZONE 'Europe/Rome';", nullptr, [](AResult &result) {
             qDebug() << "SETUP" << result.error() << result.errorString() << result.toJsonObject();
         });
     });
 
-    APool::setReuseCallback([](ADatabase &db) {
+    APool::setReuseCallback([](ADatabase db) {
         qDebug() << "reuse db";
         db.exec(u"DISCARD ALL", nullptr, [](AResult &result) {
             qDebug() << "REUSE" << result.error() << result.errorString() << result.toJsonObject();

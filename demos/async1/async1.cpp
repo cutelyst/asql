@@ -23,9 +23,46 @@
 
 using namespace ASql;
 
+void recursiveLoop()
+{
+    auto db = APool::database(u"memory_loop");
+    db.exec(u"SELECT now()", {QJsonObject{{QStringLiteral("foo"), true}}}, nullptr, [](AResult &result) {
+        if (result.error()) {
+            qDebug() << "Error memory_loop" << result.errorString();
+        } else {
+            recursiveLoop();
+        }
+    });
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
+
+    {
+        APool::create(APg::factory(QStringLiteral("postgres:///")), u"move_db_pool");
+        APool::setMaxConnections(1, u"move_db_pool");
+        APool::database(
+            nullptr, [](ADatabase db) {
+                db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
+                    qDebug() << "=====iterator single row" << result.toHash();
+                    if (result.error()) {
+                        qDebug() << "Error" << result.errorString();
+                    }
+                });
+            },
+            u"move_db_pool");
+        APool::database(
+            nullptr, [](ADatabase db) {
+                db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
+                    qDebug() << "=====iterator single row" << result.toHash();
+                    if (result.error()) {
+                        qDebug() << "Error" << result.errorString();
+                    }
+                });
+            },
+            u"move_db_pool");
+    }
 
     {
         // regresion test crash - where selfDriver gets released
@@ -39,6 +76,19 @@ int main(int argc, char *argv[])
                     qDebug() << "Error" << result.errorString();
                 }
             });
+        }
+    }
+
+    {
+        // memory loop
+        APool::create(APg::factory(QStringLiteral("postgres:///")), u"memory_loop");
+        APool::setMaxIdleConnections(5, u"memory_loop");
+        //        APool::setMaxConnections(0, u"memory_loop");
+
+        {
+            for (int i = 0; i < 20; ++i) {
+                recursiveLoop();
+            }
         }
     }
 
