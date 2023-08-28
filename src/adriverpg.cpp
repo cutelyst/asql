@@ -98,7 +98,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
             const QString error = m_conn->errorMessage();
             setState(ADatabase::State::Connecting, error);
 
-            auto connFn = [=, this] {
+            auto connFn = [=] {
                 PostgresPollingStatusType type = m_conn->connectPoll();
                 //                qDebug(ASQL_PG) << "poll" << type << "status" << connectionStatus(PQstatus(m_conn));
                 switch (type) {
@@ -138,7 +138,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                 }
             };
 
-            connect(m_writeNotify.get(), &QSocketNotifier::activated, this, [=, this] {
+            connect(m_writeNotify.get(), &QSocketNotifier::activated, this, [=] {
                 //                qDebug(ASQL_PG) << "PG write" << connectionStatus(PQstatus(m_conn)) << PQisBusy(m_conn);
                 m_writeNotify->setEnabled(false);
                 if (!isConnected()) {
@@ -149,7 +149,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                 }
             });
 
-            connect(m_readNotify.get(), &QSocketNotifier::activated, this, [=, this] {
+            connect(m_readNotify.get(), &QSocketNotifier::activated, this, [=] {
                 if (!isConnected()) {
                     connFn();
                 } else {
@@ -323,7 +323,7 @@ void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
     if (receiver) {
         pgQuery.receiver      = receiver;
         pgQuery.checkReceiver = receiver;
-        connect(receiver, &QObject::destroyed, this, [=, this](QObject *obj) {
+        connect(receiver, &QObject::destroyed, this, [=](QObject *obj) {
             if (m_queryRunning && !m_queuedQueries.empty() && m_queuedQueries.front().checkReceiver == obj && m_conn) {
                 PGcancel *cancel = PQgetCancel(m_conn->conn());
                 char errbuf[256];
@@ -495,7 +495,7 @@ void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db, cons
         }
     });
 
-    connect(receiver, &QObject::destroyed, this, [=, this] {
+    connect(receiver, &QObject::destroyed, this, [=] {
         m_subscribedNotifications.remove(name);
     });
 }
