@@ -121,16 +121,31 @@ public:
     [[nodiscard]] QJsonObject toJsonObjectArray() const;
 
     /*!
-     * \brief toCborArray returns all rows as an array of Cbor maps.
+     * \brief toJsonObjectArray returns all rows as JSON object with columns as keys and rows as arrays
+     *
+     * This is a more compact representation than \sa toJsonArrayObject.
+     *
+     * \return { "columns": ["col1", "col2"], "rows": [ [1, "foo"], [2, "bar"] ] }
+     */
+    [[nodiscard]] QJsonObject toJsonObjectIndexed(QStringView columnKey = u"columns", QStringView rowsKey = u"rows") const;
+
+    /*!
+     * \brief toCborArrayMap returns all rows as an array of Cbor maps.
      * \return
      */
     [[nodiscard]] QCborArray toCborArrayMap() const;
 
     /*!
-     * \brief toCborArray returns returns all rows as Cbor map with columns as keys and rows as arrays
+     * \brief toCborMapArray returns returns all rows as Cbor map with columns as keys and rows as arrays
      * \return
      */
     [[nodiscard]] QCborMap toCborMapArray() const;
+
+    /*!
+     * \brief toCborMapIndexed returns returns all rows as Cbor map with columns as keys and rows as arrays, indexed by params
+     * \return
+     */
+    [[nodiscard]] QCborMap toCborMapIndexed(QStringView columnKey = u"columns", QStringView rowsKey = u"rows") const;
 
     AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;

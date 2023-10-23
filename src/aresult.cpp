@@ -178,6 +178,29 @@ QJsonObject AResult::toJsonObjectArray() const
     return ret;
 }
 
+QJsonObject AResult::toJsonObjectIndexed(QStringView columnKey, QStringView rowsKey) const
+{
+    QJsonObject ret;
+
+    QJsonArray columns;
+    for (int i = 0; i < fields(); ++i) {
+        columns.append(fieldName(i));
+    }
+    ret.insert(columnKey, columns);
+
+    QJsonArray rows;
+    for (const auto &row : *this) {
+        QJsonArray rowArray;
+        for (int i = 0; i < fields(); ++i) {
+            rowArray.append(QJsonValue::fromVariant(row.value(i)));
+        }
+        rows.append(rowArray);
+    }
+    ret.insert(rowsKey, rows);
+
+    return ret;
+}
+
 QCborArray AResult::toCborArrayMap() const
 {
     QCborArray ret;
@@ -212,6 +235,29 @@ QCborMap AResult::toCborMapArray() const
     for (int i = 0; i < fields(); ++i) {
         ret.insert(fieldName(i), columnsData[i]);
     }
+
+    return ret;
+}
+
+QCborMap AResult::toCborMapIndexed(QStringView columnKey, QStringView rowsKey) const
+{
+    QCborMap ret;
+
+    QCborArray columns;
+    for (int i = 0; i < fields(); ++i) {
+        columns.append(fieldName(i));
+    }
+    ret.insert(columnKey, columns);
+
+    QCborArray rows;
+    for (const auto &row : *this) {
+        QCborArray rowArray;
+        for (int i = 0; i < fields(); ++i) {
+            rowArray.append(QCborValue::fromVariant(row.value(i)));
+        }
+        rows.append(rowArray);
+    }
+    ret.insert(rowsKey, rows);
 
     return ret;
 }
