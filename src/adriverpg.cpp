@@ -1140,6 +1140,19 @@ QJsonValue AResultPg::toJsonValue(int row, int column) const
     return ret;
 }
 
+QCborValue AResultPg::toCborValue(int row, int column) const
+{
+    QCborValue ret;
+    Q_ASSERT_X(column < PQnfields(m_result), "toCborValue", "column out of range");
+    if (PQgetisnull(m_result, row, column) == 1) {
+        return ret;
+    }
+
+    const char *val = PQgetvalue(m_result, row, column);
+    ret = QCborValue::fromCbor(val);
+    return ret;
+}
+
 QByteArray AResultPg::toByteArray(int row, int column) const
 {
     Q_ASSERT_X(column < PQnfields(m_result), "toByteArray", "column out of range");

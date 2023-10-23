@@ -30,6 +30,7 @@ add_library(ASqlQt${QT_VERSION_MAJOR}
     ${asql_SRC}
     ${asql_HEADERS}
     ${asql_HEADERS_PRIVATE}
+
 )
 
 configure_file(asqlexports.h.in asqlexports.h @ONLY)

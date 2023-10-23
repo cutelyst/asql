@@ -55,6 +55,7 @@ public:
     QTime toTime(int row, int column) const override;
     QDateTime toDateTime(int row, int column) const override;
     QJsonValue toJsonValue(int row, int column) const final;
+    QCborValue toCborValue(int row, int column) const final;
     QByteArray toByteArray(int row, int column) const override;
 
     inline void processResult();

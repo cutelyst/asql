@@ -95,7 +95,7 @@ QVariantHash AResult::toHash() const
     return ret;
 }
 
-QVariantList AResult::toHashList() const
+QVariantList AResult::toListHash() const
 {
     QVariantList ret;
     auto it = constBegin();
@@ -140,7 +140,7 @@ QCborMap AResult::toCborMap() const
     return ret;
 }
 
-QJsonArray AResult::toJsonArray() const
+QJsonArray AResult::toJsonArrayObject() const
 {
     QJsonArray ret;
     auto it = constBegin();
@@ -159,7 +159,26 @@ QJsonArray AResult::toJsonArray() const
     return ret;
 }
 
-QCborArray AResult::toCborArray() const
+QJsonObject AResult::toJsonObjectArray() const
+{
+    QJsonObject ret;
+    std::vector<QJsonArray> columnsData;
+    columnsData.resize(size());
+
+    for (const auto &row : *this) {
+        for (int i = 0; i < size(); ++i) {
+            columnsData[i].append(QJsonValue::fromVariant(row.value(i)));
+        }
+    }
+
+    for (int i = 0; i < size(); ++i) {
+        ret.insert(fieldName(i), columnsData[i]);
+    }
+
+    return ret;
+}
+
+QCborArray AResult::toCborArrayMap() const
 {
     QCborArray ret;
     auto it = constBegin();
@@ -175,6 +194,25 @@ QCborArray AResult::toCborArray() const
             ++it;
         } while (it != constEnd());
     }
+    return ret;
+}
+
+QCborMap AResult::toCborMapArray() const
+{
+    QCborMap ret;
+    std::vector<QCborArray> columnsData;
+    columnsData.resize(size());
+
+    for (const auto &row : *this) {
+        for (int i = 0; i < size(); ++i) {
+            columnsData[i].append(QCborValue::fromVariant(row.value(i)));
+        }
+    }
+
+    for (int i = 0; i < size(); ++i) {
+        ret.insert(fieldName(i), columnsData[i]);
+    }
+
     return ret;
 }
 
@@ -251,6 +289,11 @@ QJsonValue AResult::AColumn::toJsonValue() const
     return d->toJsonValue(row, column);
 }
 
+QCborValue AResult::AColumn::toCborValue() const
+{
+    return d->toCborValue(row, column);
+}
+
 QVariantHash AResult::ARow::toHash() const
 {
     QVariantHash ret;
@@ -276,6 +319,15 @@ QJsonObject AResult::ARow::toJsonObject() const
     QJsonObject ret;
     for (int i = 0; i < d->fields(); ++i) {
         ret.insert(d->fieldName(i), QJsonValue::fromVariant(value(i)));
+    }
+    return ret;
+}
+
+QCborMap AResult::ARow::toCborMap() const
+{
+    QCborMap ret;
+    for (int i = 0; i < d->fields(); ++i) {
+        ret.insert(d->fieldName(i), QCborValue::fromVariant(value(i)));
     }
     return ret;
 }

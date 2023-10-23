@@ -1,10 +1,9 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2023 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
-#ifndef ARESULT_H
-#define ARESULT_H
+#pragma once
 
 #include <asqlexports.h>
 #include <memory>
@@ -46,6 +45,7 @@ public:
     virtual QTime toTime(int row, int column) const            = 0;
     virtual QDateTime toDateTime(int row, int column) const    = 0;
     virtual QJsonValue toJsonValue(int row, int column) const  = 0;
+    virtual QCborValue toCborValue(int row, int column) const  = 0;
     virtual QByteArray toByteArray(int row, int column) const  = 0;
 };
 
@@ -58,65 +58,80 @@ public:
     AResult(const AResult &other);
     virtual ~AResult();
 
-    bool lastResulSet() const;
-    bool error() const;
-    QString errorString() const;
+    [[nodiscard]] bool lastResulSet() const;
+    [[nodiscard]] bool error() const;
+    [[nodiscard]] QString errorString() const;
 
     /*!
      * \brief returns the query data sent to the database
      * \return
      */
-    QByteArray query() const;
+    [[nodiscard]] QByteArray query() const;
 
-    int size() const;
-    int fields() const;
-    int numRowsAffected() const;
+    [[nodiscard]] int size() const;
+    [[nodiscard]] int fields() const;
+    [[nodiscard]] int numRowsAffected() const;
 
-    int indexOfField(const QString &name) const;
-    int indexOfField(QStringView name) const;
-    QString fieldName(int column) const;
+    [[nodiscard]] int indexOfField(const QString &name) const;
+    [[nodiscard]] int indexOfField(QStringView name) const;
+    [[nodiscard]] QString fieldName(int column) const;
 
     /*!
      * \brief columnNames returns the column names
      * \return
      */
-    QStringList columnNames() const;
+    [[nodiscard]] QStringList columnNames() const;
 
     /*!
      * \brief hash returns the first row as a QHash object
      * \return
      */
-    QVariantHash toHash() const;
+    [[nodiscard]] QVariantHash toHash() const;
 
     /*!
      * \brief toHashList returns all rows as a list of QVariantHash objects
      * \return
      */
-    QVariantList toHashList() const;
+    [[nodiscard]] QVariantList toListHash() const;
 
     /*!
      * \brief toJsonObject returns the first row as a JSON object
      * \return
      */
-    QJsonObject toJsonObject() const;
+    [[nodiscard]] QJsonObject toJsonObject() const;
 
     /*!
      * \brief toCborMap returns the first row as a Cbor map
      * \return
      */
-    QCborMap toCborMap() const;
+    [[nodiscard]] QCborMap toCborMap() const;
 
     /*!
      * \brief toJsonArray returns all rows as an array of JSON objects.
-     * \return
+     * \return [ {"col1": 1,  "col2": "foo"}, {"col1": 2,  "col2": "bar"} ]
      */
-    QJsonArray toJsonArray() const;
+    [[nodiscard]] QJsonArray toJsonArrayObject() const;
+
+    /*!
+     * \brief toJsonObjectArray returns all rows as JSON object with columns as keys and rows as arrays
+     *
+     * This is a more compact representation than \sa toJsonArrayObject.
+     *
+     * \return { "col1": [1, 2], "col2": ["foo", "bar"] }
+     */
+    [[nodiscard]] QJsonObject toJsonObjectArray() const;
 
     /*!
      * \brief toCborArray returns all rows as an array of Cbor maps.
      * \return
      */
-    QCborArray toCborArray() const;
+    [[nodiscard]] QCborArray toCborArrayMap() const;
+
+    /*!
+     * \brief toCborArray returns returns all rows as Cbor map with columns as keys and rows as arrays
+     * \return
+     */
+    [[nodiscard]] QCborMap toCborMapArray() const;
 
     AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;
@@ -135,22 +150,23 @@ public:
         {
         }
 
-        inline QString fieldName() const { return d->fieldName(column); }
+        [[nodiscard]] inline QString fieldName() const { return d->fieldName(column); }
 
-        inline QVariant value() const { return d->value(row, column); }
-        inline bool isNull() const { return d->isNull(row, column); }
-        inline bool toBool() const { return d->toBool(row, column); }
-        inline int toInt() const { return d->toInt(row, column); }
-        inline qint64 toLongLong() const { return d->toLongLong(row, column); }
-        inline quint64 toULongLong() const { return d->toULongLong(row, column); }
-        inline double toDouble() const { return d->toDouble(row, column); }
-        inline QString toString() const { return d->toString(row, column); }
-        inline std::string toStdString() const { return d->toStdString(row, column); }
-        QDate toDate() const;
-        QTime toTime() const;
-        QDateTime toDateTime() const;
-        QJsonValue toJsonValue() const;
-        inline QByteArray toByteArray() const { return d->toByteArray(row, column); }
+        [[nodiscard]] inline QVariant value() const { return d->value(row, column); }
+        [[nodiscard]] inline bool isNull() const { return d->isNull(row, column); }
+        [[nodiscard]] inline bool toBool() const { return d->toBool(row, column); }
+        [[nodiscard]] inline int toInt() const { return d->toInt(row, column); }
+        [[nodiscard]] inline qint64 toLongLong() const { return d->toLongLong(row, column); }
+        [[nodiscard]] inline quint64 toULongLong() const { return d->toULongLong(row, column); }
+        [[nodiscard]] inline double toDouble() const { return d->toDouble(row, column); }
+        [[nodiscard]] inline QString toString() const { return d->toString(row, column); }
+        [[nodiscard]] inline std::string toStdString() const { return d->toStdString(row, column); }
+        [[nodiscard]] QDate toDate() const;
+        [[nodiscard]] QTime toTime() const;
+        [[nodiscard]] QDateTime toDateTime() const;
+        [[nodiscard]] QJsonValue toJsonValue() const;
+        [[nodiscard]] QCborValue toCborValue() const;
+        [[nodiscard]] inline QByteArray toByteArray() const { return d->toByteArray(row, column); }
     };
 
     class ASQL_EXPORT ARow
@@ -169,29 +185,35 @@ public:
          * \brief toHash returns the row as a QVariantHash object
          * \return
          */
-        QVariantHash toHash() const;
+        [[nodiscard]] QVariantHash toHash() const;
 
         /*!
          * \brief toHash returns the row as a QVariantList object
          * \return
          */
-        QVariantList toList() const;
+        [[nodiscard]] QVariantList toList() const;
 
         /*!
          * \brief toJsonObject returns the row as a JSON object
          * \return
          */
-        QJsonObject toJsonObject() const;
+        [[nodiscard]] QJsonObject toJsonObject() const;
 
-        inline int at() const { return row; }
-        inline QVariant value(int column) const { return d->value(row, column); }
-        inline QVariant value(const QString &name) const { return d->value(row, d->indexOfField(name)); }
-        inline QVariant value(QLatin1String name) const { return d->value(row, d->indexOfField(name)); }
-        inline QVariant value(QStringView name) const { return d->value(row, d->indexOfField(name)); }
-        inline AColumn operator[](int column) const { return AColumn(d, row, column); }
-        inline AColumn operator[](const QString &name) const { return AColumn(d, row, d->indexOfField(name)); }
-        inline AColumn operator[](QLatin1String name) const { return AColumn(d, row, d->indexOfField(name)); }
-        inline AColumn operator[](QStringView name) const { return AColumn(d, row, d->indexOfField(name)); }
+        /*!
+         * \brief toJsonObject returns the row as a Cbor map
+         * \return
+         */
+        [[nodiscard]] QCborMap toCborMap() const;
+
+        [[nodiscard]] inline int at() const { return row; }
+        [[nodiscard]] inline QVariant value(int column) const { return d->value(row, column); }
+        [[nodiscard]] inline QVariant value(const QString &name) const { return d->value(row, d->indexOfField(name)); }
+        [[nodiscard]] inline QVariant value(QLatin1String name) const { return d->value(row, d->indexOfField(name)); }
+        [[nodiscard]] inline QVariant value(QStringView name) const { return d->value(row, d->indexOfField(name)); }
+        [[nodiscard]] inline AColumn operator[](int column) const { return AColumn(d, row, column); }
+        [[nodiscard]] inline AColumn operator[](const QString &name) const { return AColumn(d, row, d->indexOfField(name)); }
+        [[nodiscard]] inline AColumn operator[](QLatin1String name) const { return AColumn(d, row, d->indexOfField(name)); }
+        [[nodiscard]] inline AColumn operator[](QStringView name) const { return AColumn(d, row, d->indexOfField(name)); }
     };
 
     class ASQL_EXPORT const_iterator
@@ -218,36 +240,36 @@ public:
         {
         }
 
-        inline ARow operator*() const { return ARow(d, i); }
+        [[nodiscard]] inline ARow operator*() const { return ARow(d, i); }
 
-        inline int at() const { return i; }
+        [[nodiscard]] inline int at() const { return i; }
 
         /*!
          * \brief hash returns the row as a QHash object
          * \return
          */
-        QVariantHash toHash() const;
+        [[nodiscard]] QVariantHash toHash() const;
 
         /*!
          * \brief toJsonObject returns the row as a JSON object
          * \return
          */
-        QJsonObject toJsonObject() const;
+        [[nodiscard]] QJsonObject toJsonObject() const;
 
         /*!
          * \brief toCborMap returns the row as a Cbor map
          * \return
          */
-        QCborMap toCborMap() const;
+        [[nodiscard]] QCborMap toCborMap() const;
 
-        inline QVariant value(int column) const { return d->value(i, column); }
-        inline QVariant value(const QString &name) const { return d->value(i, d->indexOfField(name)); }
-        inline QVariant value(QLatin1String name) const { return d->value(i, d->indexOfField(name)); }
-        inline QVariant value(QStringView name) const { return d->value(i, d->indexOfField(name)); }
-        inline AColumn operator[](int column) const { return AColumn(d, i, column); }
-        inline AColumn operator[](const QString &name) const { return AColumn(d, i, d->indexOfField(name)); }
-        inline AColumn operator[](QLatin1String name) const { return AColumn(d, i, d->indexOfField(name)); }
-        inline AColumn operator[](QStringView name) const { return AColumn(d, i, d->indexOfField(name)); }
+        [[nodiscard]] inline QVariant value(int column) const { return d->value(i, column); }
+        [[nodiscard]] inline QVariant value(const QString &name) const { return d->value(i, d->indexOfField(name)); }
+        [[nodiscard]] inline QVariant value(QLatin1String name) const { return d->value(i, d->indexOfField(name)); }
+        [[nodiscard]] inline QVariant value(QStringView name) const { return d->value(i, d->indexOfField(name)); }
+        [[nodiscard]] inline AColumn operator[](int column) const { return AColumn(d, i, column); }
+        [[nodiscard]] inline AColumn operator[](const QString &name) const { return AColumn(d, i, d->indexOfField(name)); }
+        [[nodiscard]] inline AColumn operator[](QLatin1String name) const { return AColumn(d, i, d->indexOfField(name)); }
+        [[nodiscard]] inline AColumn operator[](QStringView name) const { return AColumn(d, i, d->indexOfField(name)); }
 
         inline bool operator==(const const_iterator &o) const { return i == o.i; }
         inline bool operator!=(const const_iterator &o) const { return i != o.i; }
@@ -299,7 +321,7 @@ public:
     inline const_iterator end() const { return const_iterator(d, size()); }
     inline const_iterator constEnd() const { return const_iterator(d, size()); }
 
-    inline ARow operator[](int row) const { return ARow(d, row); }
+    [[nodiscard]] inline ARow operator[](int row) const { return ARow(d, row); }
 
 protected:
     std::shared_ptr<AResultPrivate> d;
@@ -308,5 +330,3 @@ protected:
 } // namespace ASql
 
 Q_DECLARE_METATYPE(ASql::AResult)
-
-#endif // ARESULT_H

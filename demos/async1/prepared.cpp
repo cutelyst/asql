@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
                 return;
             }
 
-            qDebug() << "PREPARED operator size" << result.toHashList();
+            qDebug() << "PREPARED operator size" << result.toListHash();
         });
     };
 

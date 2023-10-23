@@ -40,6 +40,7 @@ public:
     QTime toTime(int row, int column) const final { return {}; }
     QDateTime toDateTime(int row, int column) const final { return {}; }
     QJsonValue toJsonValue(int row, int column) const final { return {}; }
+    QCborValue toCborValue(int row, int column) const final { return {}; }
     QByteArray toByteArray(int row, int column) const final { return {}; }
 };
 
