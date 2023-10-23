@@ -2,9 +2,7 @@
  * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
-
-#ifndef ADRIVERPG_H
-#define ADRIVERPG_H
+#pragma once
 
 #include "apreparedquery.h"
 #include "aresult.h"
@@ -221,5 +219,3 @@ private:
 };
 
 } // namespace ASql
-
-#endif // ADRIVERPG_H

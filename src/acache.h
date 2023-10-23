@@ -1,10 +1,8 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2023 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
-
-#ifndef ACACHE_H
-#define ACACHE_H
+#pragma once
 
 #include <adatabase.h>
 #include <asqlexports.h>
@@ -38,6 +36,12 @@ public:
     bool expire(std::chrono::milliseconds maxAge, QStringView query, const QVariantList &params = {});
     int expireAll(std::chrono::milliseconds maxAge);
 
+    /*!
+     * \brief size of the cache
+     * \return the number of entries in the cache
+     */
+    [[nodiscard]] int size() const;
+
     void exec(QStringView query, QObject *receiver, AResultFn cb);
     void exec(QStringView query, const QVariantList &args, QObject *receiver, AResultFn cb);
     void execExpiring(QStringView query, std::chrono::milliseconds maxAge, QObject *receiver, AResultFn cb);
@@ -53,5 +57,3 @@ private:
 };
 
 } // namespace ASql
-
-#endif // ACACHE_H

@@ -1,10 +1,8 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2023 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
-
-#ifndef APREPAREDQUERY_H
-#define APREPAREDQUERY_H
+#pragma once
 
 #include <asqlexports.h>
 
@@ -81,5 +79,3 @@ private:
 };
 
 } // namespace ASql
-
-#endif // APREPAREDQUERY_H

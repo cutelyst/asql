@@ -1,10 +1,8 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2023 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
-
-#ifndef ATRANSACTION_H
-#define ATRANSACTION_H
+#pragma once
 
 #include <adatabase.h>
 #include <asqlexports.h>
@@ -65,5 +63,3 @@ private:
 };
 
 } // namespace ASql
-
-#endif // ATRANSACTION_H

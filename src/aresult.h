@@ -2,7 +2,6 @@
  * SPDX-FileCopyrightText: (C) 2020-2023 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
-
 #pragma once
 
 #include <asqlexports.h>

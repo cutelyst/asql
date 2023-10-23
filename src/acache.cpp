@@ -236,6 +236,12 @@ int ACache::expireAll(std::chrono::milliseconds maxAge)
     return ret;
 }
 
+int ACache::size() const
+{
+    Q_D(const ACache);
+    return d->cache.size();
+}
+
 void ACache::exec(QStringView query, QObject *receiver, AResultFn cb)
 {
     execExpiring(query, -1ms, {}, receiver, cb);

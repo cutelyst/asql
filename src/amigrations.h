@@ -1,10 +1,8 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2023 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
-
-#ifndef AMIGRATIONS_H
-#define AMIGRATIONS_H
+#pragma once
 
 #include <adatabase.h>
 
@@ -104,5 +102,3 @@ private:
 };
 
 } // namespace ASql
-
-#endif // AMIGRATIONS_H

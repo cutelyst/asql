@@ -1,10 +1,8 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2023 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
-
-#ifndef ADATABASE_H
-#define ADATABASE_H
+#pragma once
 
 #include <asqlexports.h>
 #include <functional>
@@ -322,5 +320,3 @@ protected:
 };
 
 } // namespace ASql
-
-#endif // ADATABASE_H

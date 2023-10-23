@@ -1,9 +1,8 @@
 /*
- * SPDX-FileCopyrightText: (C) 2021-2022 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2021-2023 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
-#ifndef ADRIVERFACTORY_H
-#define ADRIVERFACTORY_H
+#pragma once
 
 #include <asqlexports.h>
 #include <memory>
@@ -24,5 +23,3 @@ public:
 };
 
 } // namespace ASql
-
-#endif // ADRIVERFACTORY_H
