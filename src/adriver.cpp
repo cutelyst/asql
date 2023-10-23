@@ -20,6 +20,7 @@ public:
     QString errorString() const { return {}; }
 
     QByteArray query() const { return {}; }
+    QVariantList queryArgs() const { return {}; }
 
     int size() const final { return 0; }
     int fields() const final { return 0; }

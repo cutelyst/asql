@@ -21,6 +21,7 @@ public:
     virtual QString errorString() const = 0;
 
     virtual QByteArray query() const = 0;
+    virtual QVariantList queryArgs() const = 0;
 
     virtual int size() const            = 0;
     virtual int fields() const          = 0;
@@ -66,6 +67,12 @@ public:
      * \return
      */
     [[nodiscard]] QByteArray query() const;
+
+    /*!
+     * \brief returns the query arguments sent to the database
+     * \return
+     */
+    [[nodiscard]] QVariantList queryArgs() const;
 
     [[nodiscard]] int size() const;
     [[nodiscard]] int fields() const;

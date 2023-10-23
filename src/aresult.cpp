@@ -42,6 +42,11 @@ QByteArray AResult::query() const
     return d->query();
 }
 
+QVariantList AResult::queryArgs() const
+{
+    return d->queryArgs();
+}
+
 int AResult::size() const
 {
     return d->size();

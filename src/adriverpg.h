@@ -32,6 +32,7 @@ public:
     QString errorString() const override;
 
     QByteArray query() const override;
+    QVariantList queryArgs() const override;
 
     int size() const override;
     int fields() const override;
@@ -59,6 +60,7 @@ public:
     inline void processResult();
 
     QByteArray m_query;
+    QVariantList m_queryArgs;
     QString m_errorString;
     PGresult *m_result   = nullptr;
     bool m_error         = false;
@@ -82,7 +84,8 @@ public:
     inline void done()
     {
         if (cb && (!checkReceiver || !receiver.isNull())) {
-            result->m_query = query;
+            result->m_query     = query;
+            result->m_queryArgs = params;
             AResult r(std::move(result));
             cb(r);
         }
@@ -93,6 +96,7 @@ public:
         if (cb && (!checkReceiver || !receiver.isNull())) {
             result                = std::make_shared<AResultPg>(nullptr);
             result->m_query       = query;
+            result->m_queryArgs   = params;
             result->m_errorString = error;
             result->m_error       = true;
             AResult r(std::move(result));

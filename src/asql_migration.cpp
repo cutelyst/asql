@@ -13,6 +13,7 @@
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QFile>
+#include <QFileInfo>
 #include <QLoggingCategory>
 
 using namespace ASql;
@@ -85,10 +86,14 @@ int main(int argc, char *argv[])
         return 3;
     }
 
-    const QString name = parser.value(nameOption);
+    QString name = parser.value(nameOption);
     if (name.isEmpty()) {
-        std::cerr << qPrintable(QCoreApplication::translate("main", "Migration name not set.")) << std::endl;
-        return 4;
+        // Use the first filename as the migration name
+        name = QFileInfo(args.value(0)).baseName();
+        if (name.isEmpty()) {
+            std::cerr << qPrintable(QCoreApplication::translate("main", "Migration name not set.")) << std::endl;
+            return 4;
+        }
     }
 
     const QString conn = parser.value(connOption);
@@ -124,7 +129,7 @@ int main(int argc, char *argv[])
 
         auto mig = new AMigrations;
         mig->fromString(sql);
-        mig->connect(mig, &AMigrations::ready, [targetVersion, mig, confirm, dryRun, showSql](bool error, const QString &errorString) {
+        mig->connect(mig, &AMigrations::ready, [=](bool error, const QString &errorString) {
             if (error) {
                 std::cerr << qPrintable(QCoreApplication::translate("main", "Failed to initialize migrations: %1.").arg(errorString)) << std::endl;
                 qApp->exit(7);
@@ -146,11 +151,11 @@ int main(int argc, char *argv[])
 
             if (!confirm || newVersion < mig->active()) {
                 if (newVersion < mig->active()) {
-                    std::cout << qPrintable(QCoreApplication::translate("main", "Do you wanto to migrate the database from %1 to %2? [yes/no] ")
-                                                .arg(QString::number(mig->active()), QString::number(newVersion)));
+                    std::cout << qPrintable(QCoreApplication::translate("main", "Do you want to migrate '%1' from %2 to %3? [yes/no] ")
+                                                .arg(name).arg(QString::number(mig->active())).arg(QString::number(newVersion)));
                 } else {
-                    std::cout << qPrintable(QCoreApplication::translate("main", "Do you wanto to migrate the database from %1 to %2? [y/n] ")
-                                                .arg(QString::number(mig->active()), QString::number(newVersion)));
+                    std::cout << qPrintable(QCoreApplication::translate("main", "Do you wanto to migrate '%1' from %2 to %3? [y/n] ")
+                                                .arg(name).arg(QString::number(mig->active())).arg(QString::number(newVersion)));
                 }
 
                 std::string value;

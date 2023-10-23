@@ -826,6 +826,11 @@ QByteArray AResultPg::query() const
     return m_query;
 }
 
+QVariantList AResultPg::queryArgs() const
+{
+    return m_queryArgs;
+}
+
 int AResultPg::size() const
 {
     return PQntuples(m_result);
