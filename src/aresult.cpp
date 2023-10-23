@@ -163,15 +163,15 @@ QJsonObject AResult::toJsonObjectArray() const
 {
     QJsonObject ret;
     std::vector<QJsonArray> columnsData;
-    columnsData.resize(size());
+    columnsData.resize(fields());
 
     for (const auto &row : *this) {
-        for (int i = 0; i < size(); ++i) {
+        for (int i = 0; i < fields(); ++i) {
             columnsData[i].append(QJsonValue::fromVariant(row.value(i)));
         }
     }
 
-    for (int i = 0; i < size(); ++i) {
+    for (int i = 0; i < fields(); ++i) {
         ret.insert(fieldName(i), columnsData[i]);
     }
 
@@ -201,15 +201,15 @@ QCborMap AResult::toCborMapArray() const
 {
     QCborMap ret;
     std::vector<QCborArray> columnsData;
-    columnsData.resize(size());
+    columnsData.resize(fields());
 
     for (const auto &row : *this) {
-        for (int i = 0; i < size(); ++i) {
+        for (int i = 0; i < fields(); ++i) {
             columnsData[i].append(QCborValue::fromVariant(row.value(i)));
         }
     }
 
-    for (int i = 0; i < size(); ++i) {
+    for (int i = 0; i < fields(); ++i) {
         ret.insert(fieldName(i), columnsData[i]);
     }
 
