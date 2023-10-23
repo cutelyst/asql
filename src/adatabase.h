@@ -85,7 +85,7 @@ public:
      * are the ones created with invalid drivers, or using the empty constructor.
      * \return true if valid
      */
-    bool isValid();
+    [[nodiscard]] bool isValid();
 
     /*!
      * \brief open the database, the callback is called once the operation is done
@@ -101,7 +101,7 @@ public:
      * \brief state
      * \return database connection state
      */
-    State state() const;
+    [[nodiscard]] State state() const;
 
     /*!
      * \brief onStateChanged the callback is called once connection state changes
@@ -116,7 +116,7 @@ public:
      * \brief isOpen returns if the database connection is open.
      * \return true if open
      */
-    bool isOpen() const;
+    [[nodiscard]] bool isOpen() const;
 
     /*!
      * \brief begin a transaction, this operation usually succeeds,
@@ -264,7 +264,7 @@ public:
      * @brief pipelineStatus
      * @return the current pipeline mode status
      */
-    PipelineStatus pipelineStatus() const;
+    [[nodiscard]] PipelineStatus pipelineStatus() const;
 
     /**
      * @brief pipelineSync sends a pipeline sync to delimiter the end of the current query set
@@ -291,7 +291,7 @@ public:
      * @brief subscribedToNotifications
      * @return a list of all notifications we subscribed to
      */
-    QStringList subscribedToNotifications() const;
+    [[nodiscard]] QStringList subscribedToNotifications() const;
 
     /*!
      * \brief unsubscribeFromNotification tell the database we are no longer
@@ -303,6 +303,16 @@ public:
      * \param channel name of the channel
      */
     void unsubscribeFromNotification(const QString &channel);
+
+    /*!
+     * \brief queueSize returns the driver's queue size
+     * All calls to exec() methods are queued internally
+     * and sent to the database.
+     *
+     * In pipeline mode they are also queued but sent to the database immediately.
+     * \return
+     */
+    [[nodiscard]] int queueSize() const;
 
     ADatabase &operator=(const ADatabase &copy);
 

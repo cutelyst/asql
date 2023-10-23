@@ -183,6 +183,12 @@ void ADatabase::unsubscribeFromNotification(const QString &channel)
     d->unsubscribeFromNotification(d, channel);
 }
 
+int ADatabase::queueSize() const
+{
+    Q_ASSERT(d);
+    return d->queueSize();
+}
+
 ADatabase &ADatabase::operator=(const ADatabase &copy)
 {
     d = copy.d;

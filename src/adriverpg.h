@@ -184,6 +184,8 @@ public:
 
     bool pipelineSync() override;
 
+    int queueSize() const override;
+
     void subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, QObject *receiver, ANotificationFn cb) override;
     QStringList subscribedToNotifications() const override;
     void unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name) override;

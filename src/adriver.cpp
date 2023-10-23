@@ -178,6 +178,11 @@ bool ADriver::pipelineSync()
     return false;
 }
 
+int ADriver::queueSize() const
+{
+    return -1;
+}
+
 void ADriver::subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, QObject *receiver, ANotificationFn cb)
 {
     Q_UNUSED(db);

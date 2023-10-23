@@ -480,6 +480,11 @@ bool ADriverPg::pipelineSync()
     return false;
 }
 
+int ADriverPg::queueSize() const
+{
+    return m_queuedQueries.size();
+}
+
 void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, QObject *receiver, ANotificationFn cb)
 {
     if (m_subscribedNotifications.contains(name)) {
