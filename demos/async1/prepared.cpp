@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
+    APool::create(APg::factory(QStringLiteral("postgres:///")), QStringLiteral("static"));
     APool::create(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
     APool::setMaxIdleConnections(2);
     APool::setMaxConnections(4);
@@ -71,7 +72,6 @@ int main(int argc, char *argv[])
 
         qDebug() << "PREPARED broken size" << result.size();
     });
-    return app.exec();
 
     {
         auto db2 = APool::database();
@@ -162,25 +162,28 @@ int main(int argc, char *argv[])
         }
     });
 
-    auto loopFn = [=] {
-        auto queryStatic = APreparedQueryLiteral(u"SELECT $1, now()");
-        ADatabase(db).exec(queryStatic,
-                           {qint64(12345)},
+    auto dbStatic = APool::database(QStringLiteral("static"));
+    auto loopFn = [=](double sleep) {
+        auto queryStatic = APreparedQueryLiteral(u"SELECT $1::text AS first, now() AS ts, pg_sleep($1::integer)");
+        ADatabase(dbStatic).exec(queryStatic,
+                           {sleep,},
                            nullptr,
                            [=](AResult &result) {
             if (result.error()) {
-                qDebug() << "SELECT error" << result.errorString();
+                qDebug() << "SELECT error END" << result.errorString();
                 return;
             }
 
             if (result.size()) {
-                qDebug() << "SELECT value 3" << result.begin().value(0) << result.begin().value(1) << queryStatic.identification();
+                const auto firstRow = result.begin();
+                qDebug() << "SELECT value AColumnIndex" << firstRow.value(AColumnIndex(result, u"first")) << firstRow.value(AColumnIndex(result, u"ts")) << queryStatic.identification();
+                qDebug() << "SELECT value AColumn" << AColumn(firstRow, u"first").value() << AColumn(firstRow, u"ts").value() << queryStatic.identification();
             }
         });
     };
 
-    loopFn();
-    loopFn();
+    loopFn(1);
+    loopFn(2);
 
     app.exec();
 }

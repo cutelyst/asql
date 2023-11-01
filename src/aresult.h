@@ -348,6 +348,18 @@ protected:
     std::shared_ptr<AResultPrivate> d;
 };
 
+#define AColumnIndex(result, columnName) \
+([result]() Q_DECL_NOEXCEPT -> int { \
+    static const int ix = result.indexOfField(columnName); \
+    return ix; \
+}()) /**/
+
+#define AColumn(row, columnName) \
+([row]() Q_DECL_NOEXCEPT -> AResult::AColumn { \
+    static const int ix = row.d->indexOfField(columnName); \
+    return row[ix]; \
+}()) /**/
+
 } // namespace ASql
 
 Q_DECLARE_METATYPE(ASql::AResult)

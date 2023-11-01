@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
                 return;
             }
 
-            ADatabase(t.database()).exec(QStringLiteral("SELECT now()"), nullptr, [=](AResult &result) {
+            t.database().exec(QStringLiteral("SELECT now()"), nullptr, [=](AResult &result) {
                 if (result.error()) {
                     qDebug() << "SELECT error" << result.errorString();
                     return;
