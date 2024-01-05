@@ -368,7 +368,7 @@ bool ADriverPg::runQuery(APGQuery &pgQuery)
 bool ADriverPg::queryShouldBeQueued() const
 {
     return pipelineStatus() != ADatabase::PipelineStatus::On &&
-           (m_queryRunning || !isConnected() || m_queuedQueries.size() > 1);
+           (m_queryRunning || !isConnected() || m_queuedQueries.size() > 0);
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
