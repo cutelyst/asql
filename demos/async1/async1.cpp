@@ -113,6 +113,15 @@ int main(int argc, char *argv[])
                 qDebug() << "Error" << result.errorString();
             }
         });
+
+        db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8, $1",
+            {"I ♥ Cutelyst!"_qba},
+                nullptr, [](AResult &result) {
+            qDebug() << "=====iterator qba row" << result.toHash();
+            if (result.error()) {
+                qDebug() << "Error" << result.errorString();
+            }
+        });
     }
 
     QVariantList series;
