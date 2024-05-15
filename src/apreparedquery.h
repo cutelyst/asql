@@ -48,13 +48,11 @@ public:
      */
     APreparedQuery(QStringView query);
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     /*!
      * \brief APreparedQuery constructs a prepared \p query with an automatic unique identification
      * from UTF-8 \param query
      */
     APreparedQuery(QUtf8StringView query);
-#endif
 
     /*!
      * \brief APreparedQuery constructs a prepared \p query with a manual \p identification
@@ -62,13 +60,11 @@ public:
      */
     APreparedQuery(QStringView query, QStringView identification);
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     /*!
      * \brief APreparedQuery constructs a prepared \p query with a manual \p identification from
      * UTF-8 \param query
      */
     APreparedQuery(QUtf8StringView query, QUtf8StringView identification);
-#endif
 
     QByteArray query() const;
     QByteArray identification() const;

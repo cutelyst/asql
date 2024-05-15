@@ -39,13 +39,12 @@ public:
     virtual void commit(const std::shared_ptr<ADriver> &driver, QObject *receiver, AResultFn cb);
     virtual void rollback(const std::shared_ptr<ADriver> &driver, QObject *receiver, AResultFn cb);
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     virtual void exec(const std::shared_ptr<ADriver> &driver,
                       QUtf8StringView query,
                       const QVariantList &params,
                       QObject *receiver,
                       AResultFn cb);
-#endif
+
     virtual void exec(const std::shared_ptr<ADriver> &driver,
                       QStringView query,
                       const QVariantList &params,

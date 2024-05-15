@@ -15,6 +15,8 @@
 
 Q_LOGGING_CATEGORY(ASQL_MIG, "asql.migrations", QtInfoMsg)
 
+using namespace Qt::StringLiterals;
+
 namespace ASql {
 
 class AMigrationsPrivate
@@ -128,15 +130,14 @@ void AMigrations::fromString(const QString &text)
     d_ptr->data        = text;
 
     QTextStream stream(&d_ptr->data);
-    QRegularExpression re(QStringLiteral("^\\s*--\\s*(\\d+)\\s*(up|down)\\s*(no-transaction)?"),
-                          QRegularExpression::CaseInsensitiveOption);
+    static QRegularExpression re(u"^\\s*--\\s*(\\d+)\\s*(up|down)\\s*(no-transaction)?"_s,
+                                 QRegularExpression::CaseInsensitiveOption);
     QString line;
     while (!stream.atEnd()) {
         stream.readLineInto(&line);
         qDebug(ASQL_MIG) << "MIG LINE" << line << upWay << version;
-        QRegularExpressionMatch match = re.match(line);
+        static QRegularExpressionMatch match = re.match(line);
         if (match.hasMatch()) {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 2))
             const QStringView way = match.capturedView(2);
             noTransaction         = !match.capturedView(3).isNull();
             qDebug(ASQL_MIG) << "CAPTURE" << way << match.capturedView(1).toInt() << noTransaction;
@@ -149,20 +150,7 @@ void AMigrations::fromString(const QString &text)
             } else {
                 version = 0;
             }
-#else
-            const QStringRef way = match.capturedRef(2);
-            noTransaction        = !match.capturedRef(3).isNull();
-            qDebug(ASQL_MIG) << "CAPTURE" << way << match.capturedRef(1).toInt() << noTransaction;
-            if (way.compare(QLatin1String("up"), Qt::CaseInsensitive) == 0) {
-                upWay   = true;
-                version = match.capturedRef(1).toInt();
-            } else if (way.compare(QLatin1String("down"), Qt::CaseInsensitive) == 0) {
-                upWay   = false;
-                version = match.capturedRef(1).toInt();
-            } else {
-                version = 0;
-            }
-#endif
+
             if (upWay && up.contains(version)) {
                 qFatal("Duplicated UP version %d", version);
             }

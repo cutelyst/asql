@@ -152,13 +152,11 @@ public:
     void commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
     void rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     void exec(const std::shared_ptr<ADriver> &db,
               QUtf8StringView query,
               const QVariantList &params,
               QObject *receiver,
               AResultFn cb) override;
-#endif
     void exec(const std::shared_ptr<ADriver> &db,
               QStringView query,
               const QVariantList &params,

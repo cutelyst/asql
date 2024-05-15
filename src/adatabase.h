@@ -154,7 +154,6 @@ public:
      */
     void exec(QStringView query, QObject *receiver = nullptr, AResultFn cb = {});
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     /*!
      * \brief exec excutes a \param query against this database connection,
      * once done AResult object will have the retrieved data if any, always
@@ -173,7 +172,6 @@ public:
      * \param cb
      */
     void exec(QUtf8StringView query, QObject *receiver = nullptr, AResultFn cb = {});
-#endif
 
     /*!
      * \brief exec executes a prepared \param query against this database connection,
@@ -202,7 +200,6 @@ public:
               QObject *receiver = nullptr,
               AResultFn cb      = {});
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     /*!
      * \brief exec executes a \param query against this database connection,
      * once done AResult object will have the retrieved data if any, always
@@ -219,7 +216,6 @@ public:
               const QVariantList &params,
               QObject *receiver = nullptr,
               AResultFn cb      = {});
-#endif
 
     /*!
      * \brief exec executes a prepared \param query against this database connection

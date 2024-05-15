@@ -97,7 +97,6 @@ int main(int argc, char *argv[])
 
     {
         auto db = APool::database();
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         // Zero-copy and zero allocation
         db.exec(u8"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
             qDebug() << "=====iterator single row" << result.toHash();
@@ -105,7 +104,7 @@ int main(int argc, char *argv[])
                 qDebug() << "Error" << result.errorString();
             }
         });
-#endif
+
         // Zero-copy but allocates due toUtf8()
         db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
             qDebug() << "=====iterator single row" << result.toHash();

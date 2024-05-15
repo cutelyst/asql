@@ -395,7 +395,6 @@ bool ADriverPg::queryShouldBeQueued() const
            (m_queryRunning || !isConnected() || m_queuedQueries.size() > 0);
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 void ADriverPg::exec(const std::shared_ptr<ADriver> &db,
                      QUtf8StringView query,
                      const QVariantList &params,
@@ -414,7 +413,6 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db,
         m_queuedQueries.emplace(std::move(pgQuery));
     }
 }
-#endif
 
 void ADriverPg::exec(const std::shared_ptr<ADriver> &db,
                      QStringView query,
@@ -957,11 +955,7 @@ QVariant AResultPg::value(int row, int column) const
     int ptype      = PQftype(m_result, column);
     QMetaType type = qDecodePSQLType(ptype);
     if (PQgetisnull(m_result, row, column)) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
         return QVariant(type, nullptr);
-#else
-        return QVariant(type.id(), nullptr);
-#endif
     }
 
     const char *val = PQgetvalue(m_result, row, column);

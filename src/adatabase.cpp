@@ -102,13 +102,11 @@ void ADatabase::exec(QStringView query, QObject *receiver, AResultFn cb)
     d->exec(d, query, QVariantList(), receiver, cb);
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 void ADatabase::exec(QUtf8StringView query, QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
     d->exec(d, query, QVariantList(), receiver, cb);
 }
-#endif
 
 void ADatabase::exec(const APreparedQuery &query, QObject *receiver, AResultFn cb)
 {
@@ -122,7 +120,6 @@ void ADatabase::exec(QStringView query, const QVariantList &params, QObject *rec
     d->exec(d, query, params, receiver, cb);
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 void ADatabase::exec(QUtf8StringView query,
                      const QVariantList &params,
                      QObject *receiver,
@@ -131,7 +128,6 @@ void ADatabase::exec(QUtf8StringView query,
     Q_ASSERT(d);
     d->exec(d, query, params, receiver, cb);
 }
-#endif
 
 void ADatabase::exec(const APreparedQuery &query,
                      const QVariantList &params,

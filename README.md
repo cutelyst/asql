@@ -19,8 +19,8 @@ Qt Async Sql library
 * Single row mode (useful for very large datasets)
 
 ## Requirements
-* Qt, 5.10 or later (including Qt6)
-* C++11 capable compiler
+* Qt 6.4 or later
+* C++20 capable compiler
 
 Currently, there is only one driver, for PostgreSQL, so PostgreSQL
 libraries are required as well.
@@ -111,7 +111,7 @@ You can also manually create a static APreparedQuery object or have your prepare
 db.exec(APreparedQuery(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id"),
 {
      true,
-     QStringLiteral("foo"),
+     u"foo"_s,
      qint64(1234),
      QDateTime::currentDateTime(),
      123456.78,
@@ -140,7 +140,7 @@ t.begin();
 db.exec(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
 {
      true,
-     QStringLiteral("foo"),
+     u"foo"_s,
      qint64(1234),
      QDateTime::currentDateTime(),
      123456.78,
@@ -183,7 +183,7 @@ Each Database object can have a single function subscribed to one notification, 
 ```c++
 ADatabase db;
 auto subscribe = [=] () mutable {
-   db.subscribeToNotification(QStringLiteral("my_awesome_notification"),
+   db.subscribeToNotification(u"my_awesome_notification"_s,
      [=] (const ADatabaseNotification &notification) {
        qDebug() << "DB notification:" << notification.self << notification.name
                 << notification.payload;

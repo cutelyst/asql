@@ -114,11 +114,7 @@ void ACachePrivate::requestData(const QString &query,
     cacheValue.args  = args;
     cacheValue.receivers.emplace_back(ACacheReceiverCb{cb, receiver, receiver});
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     cache.emplace(query, std::move(cacheValue));
-#else
-    cache.insert(query, cacheValue);
-#endif
 
     auto performQuery = [this, query, args](ADatabase db) {
         db.exec(query, args, q_ptr, [query, args, this](AResult &result) {

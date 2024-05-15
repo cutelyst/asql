@@ -133,7 +133,6 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db,
     }
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 void ADriver::exec(const std::shared_ptr<ADriver> &db,
                    QUtf8StringView query,
                    const QVariantList &params,
@@ -149,7 +148,6 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db,
         cb(result);
     }
 }
-#endif
 
 void ADriver::exec(const std::shared_ptr<ADriver> &db,
                    const APreparedQuery &query,

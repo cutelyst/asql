@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: (C) 2020-2023 Daniel Nicoletti <dantti12@gmail.com>
+# SPDX-FileCopyrightText: (C) 2020-2024 Daniel Nicoletti <dantti12@gmail.com>
 # SPDX-License-Identifier: MIT
 
 cmake_minimum_required(VERSION 3.16)
@@ -7,8 +7,8 @@ project(libasql VERSION 0.85.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 
 find_package(PostgreSQL REQUIRED)
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Core REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} 5.10.0 COMPONENTS Core REQUIRED)
+find_package(QT NAMES Qt6 COMPONENTS Core REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} 6.4.0 COMPONENTS Core REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 
@@ -22,7 +22,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 # to always look for includes there:
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -67,7 +67,7 @@ function(project_target_compile_definitions target)
         QT_USE_QSTRINGBUILDER
         QT_NO_SIGNALS_SLOTS_KEYWORDS
         QT_USE_FAST_OPERATOR_PLUS
-        QT_DISABLE_DEPRECATED_BEFORE=0x060200
+        QT_DISABLE_DEPRECATED_BEFORE=0x060400
     )
 endfunction()
 
