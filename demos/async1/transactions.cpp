@@ -23,19 +23,20 @@
 #include <QUuid>
 
 using namespace ASql;
+using namespace Qt::StringLiterals;
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    APool::create(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
+    APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setMaxIdleConnections(10);
 
     {
         auto db = APool::database();
         ATransaction t(db);
         t.begin();
-        db.exec(QStringLiteral("SELECT now()"), nullptr, [=](AResult &result) {
+        db.exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
             if (result.error()) {
                 qDebug() << "SELECT error" << result.errorString();
                 return;
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
                 return;
             }
 
-            t.database().exec(QStringLiteral("SELECT now()"), nullptr, [=](AResult &result) {
+            t.database().exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
                 if (result.error()) {
                     qDebug() << "SELECT error" << result.errorString();
                     return;

@@ -52,6 +52,7 @@ Q_LOGGING_CATEGORY(ASQL_PG, "asql.pg", QtInfoMsg)
 #define VARHDRSZ 4
 
 using namespace ASql;
+using namespace Qt::StringLiterals;
 
 ADriverPg::ADriverPg(const QString &connInfo)
     : ADriver(connInfo)
@@ -69,18 +70,18 @@ QString connectionStatus(ConnStatusType type)
 {
     switch (type) {
     case CONNECTION_OK:
-        return QStringLiteral("CONNECTION_OK");
+        return u"CONNECTION_OK"_s;
     case CONNECTION_BAD:
-        return QStringLiteral("CONNECTION_BAD");
+        return u"CONNECTION_BAD"_s;
     case CONNECTION_STARTED:
-        return QStringLiteral("CONNECTION_STARTED");
+        return u"CONNECTION_STARTED"_s;
     case CONNECTION_AWAITING_RESPONSE:
-        return QStringLiteral("CONNECTION_AWAITING_RESPONSE");
+        return u"CONNECTION_AWAITING_RESPONSE"_s;
     case CONNECTION_AUTH_OK:
-        return QStringLiteral("CONNECTION_AUTH_OK");
+        return u"CONNECTION_AUTH_OK"_s;
 
     default:
-        return QStringLiteral("STATUS: ").arg(type);
+        return u"STATUS: "_s.arg(type);
     }
 }
 
@@ -293,7 +294,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
         //        qDebug(ASQL_PG) << "PG Socket" << m_conn << socket;
     } else {
         if (cb) {
-            cb(false, QStringLiteral("PQconnectStart failed"));
+            cb(false, u"PQconnectStart failed"_s);
         }
     }
 }
@@ -530,7 +531,7 @@ void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db,
     }
 
     m_subscribedNotifications.insert(name, cb);
-    exec(db, QString{QLatin1String("LISTEN ") + name}, {}, this, [this, name](AResult &result) {
+    exec(db, QString{u"LISTEN " + name}, {}, this, [this, name](AResult &result) {
         qDebug(ASQL_PG) << "subscribed" << !result.error() << result.errorString();
         if (result.error()) {
             m_subscribedNotifications.remove(name);
@@ -549,7 +550,7 @@ QStringList ADriverPg::subscribedToNotifications() const
 void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name)
 {
     if (m_subscribedNotifications.remove(name)) {
-        exec(db, QString{QStringLiteral("UNLISTEN ") + name}, {}, this, [=](AResult &result) {
+        exec(db, QString{u"UNLISTEN "_s + name}, {}, this, [=](AResult &result) {
             qDebug(ASQL_PG) << "unsubscribed" << !result.error() << result.errorString();
         });
     }
@@ -1026,8 +1027,9 @@ QVariant AResultPg::value(int row, int column) const
             return QDateTime();
         } else {
             QChar sign = dtval[dtval.size() - 3];
-            if (sign == QLatin1Char('-') || sign == QLatin1Char('+'))
-                dtval += QLatin1String(":00");
+            if (sign == u'-' || sign == u'+') {
+                dtval += u8":00";
+            }
             return QDateTime::fromString(dtval, Qt::ISODate);
         }
 #else
@@ -1156,8 +1158,9 @@ QDateTime AResultPg::toDateTime(int row, int column) const
         return {};
     } else {
         QChar sign = dtval[dtval.size() - 3];
-        if (sign == QLatin1Char('-') || sign == QLatin1Char('+'))
-            dtval += QLatin1String(":00");
+        if (sign == u'-' || sign == u'+') {
+            dtval += u8":00";
+        }
         return QDateTime::fromString(dtval, Qt::ISODate);
     }
 #else

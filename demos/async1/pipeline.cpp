@@ -22,12 +22,13 @@
 #include <QUuid>
 
 using namespace ASql;
+using namespace Qt::StringLiterals;
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    APool::create(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
+    APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setMaxIdleConnections(10);
 
     {

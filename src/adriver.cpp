@@ -11,6 +11,7 @@
 #include <QJsonValue>
 
 using namespace ASql;
+using namespace Qt::StringLiterals;
 
 class AResultInvalid : public AResultPrivate
 {
@@ -66,7 +67,7 @@ void ADriver::open(QObject *receiver, std::function<void(bool, const QString &)>
 {
     Q_UNUSED(receiver);
     if (cb) {
-        cb(false, QStringLiteral("INVALID DATABASE DRIVER"));
+        cb(false, u"INVALID DATABASE DRIVER"_s);
     }
 }
 

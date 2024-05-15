@@ -25,11 +25,11 @@ int main(int argc, char *argv[])
 
     auto obj = new QObject;
     {
-        ADatabase db(QStringLiteral("postgres:///?target_session_attrs=read-write"));
+        ADatabase db(u"postgres:///?target_session_attrs=read-write"_s);
         db.open([db, obj](bool ok, const QString &status) {
             qDebug() << "OPEN value" << ok << status;
 
-            ADatabase(db).exec(QStringLiteral("SELECT now()"), [db](AResult &result) {
+            ADatabase(db).exec(u"SELECT now()"_s, [db](AResult &result) {
                 if (result.error()) {
                     qDebug() << "SELECT error" << result.errorString();
                     return;

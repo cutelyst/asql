@@ -23,13 +23,14 @@
 #include <QUuid>
 
 using namespace ASql;
+using namespace Qt::StringLiterals;
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    APool::create(APg::factory(QStringLiteral("postgres:///")), QStringLiteral("static"));
-    APool::create(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
+    APool::create(APg::factory(u"postgres:///"_s), u"static"_s);
+    APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setMaxIdleConnections(2);
     APool::setMaxConnections(4);
 
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
         qDebug() << "db7 valid" << db7.isValid();
         ATransaction t(db7);
         t.begin();
-        db7.exec(QStringLiteral("SELECT now()"), nullptr, [=](AResult &result) {
+        db7.exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
             if (result.error()) {
                 qDebug() << "SELECT error db7" << result.errorString();
                 return;
@@ -102,7 +103,7 @@ int main(int argc, char *argv[])
         APool::database(nullptr, [=](ADatabase db) {
             qDebug() << "Got db" << db.isOpen() << db.state();
 
-            db.exec(QStringLiteral("SELECT now()"), nullptr, [=](AResult &result) {
+            db.exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
                 if (result.error()) {
                     qDebug() << "got db, SELECT error" << result.errorString();
                     return;
@@ -118,7 +119,7 @@ int main(int argc, char *argv[])
     }
 
     auto db = APool::database();
-    static APreparedQuery query(QStringLiteral("SELECT now()"));
+    static APreparedQuery query(u"SELECT now()"_s);
     db.exec(query, nullptr, [=](AResult &result) {
         if (result.error()) {
             qDebug() << "SELECT 1 error" << result.errorString();
@@ -141,7 +142,7 @@ int main(int argc, char *argv[])
         }
     });
 
-    static APreparedQuery query2(QStringLiteral("SELECT now(), $1"));
+    static APreparedQuery query2(u"SELECT now(), $1"_s);
     db.exec(query2, {qint64(12345)}, nullptr, [=](AResult &result) {
         if (result.error()) {
             qDebug() << "SELECT error" << result.errorString();
@@ -166,7 +167,7 @@ int main(int argc, char *argv[])
         }
     });
 
-    auto dbStatic = APool::database(QStringLiteral("static"));
+    auto dbStatic = APool::database(u"static"_s);
     auto loopFn   = [=](double sleep) {
         auto queryStatic =
             APreparedQueryLiteral(u"SELECT $1::text AS first, now() AS ts, pg_sleep($1::integer)");

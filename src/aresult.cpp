@@ -12,6 +12,7 @@
 #include <QJsonObject>
 
 using namespace ASql;
+using namespace Qt::StringLiterals;
 
 AResult::AResult() = default;
 
@@ -34,7 +35,7 @@ bool AResult::error() const
 
 QString AResult::errorString() const
 {
-    return !d ? QStringLiteral("INVALID DRIVER") : d->errorString();
+    return !d ? u"INVALID DRIVER"_s : d->errorString();
 }
 
 QByteArray AResult::query() const

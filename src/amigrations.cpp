@@ -163,13 +163,13 @@ void AMigrations::fromString(const QString &text)
                 qDebug(ASQL_MIG) << "UP" << version << line;
                 auto &mig   = up[version];
                 mig.version = version;
-                mig.query.append(line + QLatin1Char('\n'));
+                mig.query.append(line + u'\n');
                 mig.noTransaction = noTransaction;
             } else {
                 qDebug(ASQL_MIG) << "DOWN" << version << line;
                 auto &mig   = down[version];
                 mig.version = version;
-                mig.query.append(line + QLatin1Char('\n'));
+                mig.query.append(line + u'\n');
                 mig.noTransaction = noTransaction;
             }
         }
@@ -182,7 +182,7 @@ void AMigrations::fromString(const QString &text)
 
 QString AMigrations::sqlFor(int versionFrom, int versionTo) const
 {
-    return sqlListFor(versionFrom, versionTo).join(QLatin1Char('\n'));
+    return sqlListFor(versionFrom, versionTo).join(u'\n');
 }
 
 QStringList AMigrations::sqlListFor(int versionFrom, int versionTo) const
@@ -226,7 +226,7 @@ void AMigrations::migrate(int targetVersion,
     Q_D(AMigrations);
     if (targetVersion < 0) {
         if (cb) {
-            cb(true, QStringLiteral("Failed to migrate: invalid target version"));
+            cb(true, u"Failed to migrate: invalid target version"_s);
         }
         qWarning(ASQL_MIG) << "Failed to migrate: invalid target version" << targetVersion;
         return;
@@ -255,16 +255,15 @@ void AMigrations::migrate(int targetVersion,
 
             if (active > latest()) {
                 cb(true,
-                   QStringLiteral("Current version %1 is greater than the latest version %2")
-                       .arg(active)
-                       .arg(latest()));
+                   u"Current version %1 is greater than the latest version %2"_s.arg(active).arg(
+                       latest()));
                 return;
             }
 
             const auto migration = d->nextQuery(active, targetVersion);
             if (migration.query.isEmpty()) {
                 if (cb) {
-                    cb(false, QStringLiteral("Done."));
+                    cb(false, u"Done."_s);
                 }
                 return;
             }
@@ -282,7 +281,7 @@ void AMigrations::migrate(int targetVersion,
                         << "Cannot dry run a migration that requires no transaction: "
                         << migration.version;
                     if (cb) {
-                        cb(true, QStringLiteral("Done."));
+                        cb(true, u"Done."_s);
                     }
                     return;
                 }
@@ -315,7 +314,7 @@ void AMigrations::migrate(int targetVersion,
                                     << "Migrated from" << active << "to" << migration.version;
                                 if (dryRun) {
                                     if (cb) {
-                                        cb(false, QStringLiteral("Done."));
+                                        cb(false, u"Done."_s);
                                     }
                                 } else {
                                     migrate(targetVersion, cb, dryRun);
@@ -339,12 +338,12 @@ AMigrationsPrivate::MigQuery AMigrationsPrivate::nextQuery(int versionFrom, int 
 {
     AMigrationsPrivate::MigQuery ret;
 
-    static QString query = QStringLiteral(R"V0G0N(
+    static QString query = uR"V0G0N(
 INSERT INTO public.asql_migrations VALUES ('%1', %2)
 ON CONFLICT (name) DO UPDATE
 SET version=EXCLUDED.version
 RETURNING version;
-)V0G0N");
+)V0G0N"_s;
 
     if (versionFrom < versionTo) {
         // up

@@ -21,12 +21,13 @@
 #include <QUuid>
 
 using namespace ASql;
+using namespace Qt::StringLiterals;
 
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    APool::create(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
+    APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setSetupCallback([](ADatabase db) {
         qDebug() << "setup db";
         db.exec(u"SET TIME ZONE 'Europe/Rome';", nullptr, [](AResult &result) {
@@ -43,10 +44,10 @@ int main(int argc, char *argv[])
 
     auto obj = new QObject;
     {
-        ADatabase db(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
+        ADatabase db(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
         db.open(nullptr,
                 [](bool ok, const QString &status) { qDebug() << "OPEN value" << ok << status; });
-        db.exec(QStringLiteral("SELECT now()"), obj, [](AResult &result) {
+        db.exec(u"SELECT now()"_s, obj, [](AResult &result) {
             if (result.error()) {
                 qDebug() << "SELECT error" << result.errorString();
                 return;

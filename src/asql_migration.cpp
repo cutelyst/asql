@@ -17,13 +17,14 @@
 #include <QLoggingCategory>
 
 using namespace ASql;
+using namespace Qt::StringLiterals;
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication::setOrganizationName(QStringLiteral("Cutelyst"));
-    QCoreApplication::setOrganizationDomain(QStringLiteral("org.cutelyst"));
-    QCoreApplication::setApplicationName(QStringLiteral("ASqlMigration"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("0.1.0"));
+    QCoreApplication::setOrganizationName(u"Cutelyst"_s);
+    QCoreApplication::setOrganizationDomain(u"org.cutelyst"_s);
+    QCoreApplication::setApplicationName(u"ASqlMigration"_s);
+    QCoreApplication::setApplicationVersion(u"0.2.0"_s);
 
     QCoreApplication app(argc, argv);
 
@@ -32,36 +33,35 @@ int main(int argc, char *argv[])
         QCoreApplication::translate("main", "ASql database migration tool."));
     parser.addHelpOption();
     parser.addVersionOption();
-    parser.addPositionalArgument(QStringLiteral("source"),
+    parser.addPositionalArgument(u"source"_s,
                                  QCoreApplication::translate("main", "Migration file(s)."));
 
     QCommandLineOption confirmOption(
-        QStringLiteral("y"),
-        QCoreApplication::translate("main", "Automatically confirm migration"));
+        u"y"_s, QCoreApplication::translate("main", "Automatically confirm migration"));
     parser.addOption(confirmOption);
 
     QCommandLineOption dryRunOption(
-        {QStringLiteral("d"), QStringLiteral("dry-run")},
+        {u"d"_s, u"dry-run"_s},
         QCoreApplication::translate("main", "Do not actually commit changes to the database."));
     parser.addOption(dryRunOption);
 
-    QCommandLineOption showSqlOption({QStringLiteral("s"), QStringLiteral("show-sql")},
+    QCommandLineOption showSqlOption({u"s"_s, u"show-sql"_s},
                                      QCoreApplication::translate("main", "Show migration SQL."));
     parser.addOption(showSqlOption);
 
     QCommandLineOption connOption(
-        {QStringLiteral("c"), QStringLiteral("connection")},
+        {u"c"_s, u"connection"_s},
         QCoreApplication::translate("main", "Connection URL to the database."),
         QCoreApplication::translate("main", "url"));
     parser.addOption(connOption);
 
-    QCommandLineOption nameOption({QStringLiteral("n"), QStringLiteral("name")},
+    QCommandLineOption nameOption({u"n"_s, u"name"_s},
                                   QCoreApplication::translate("main", "Migration name."),
                                   QCoreApplication::translate("main", "name"));
     parser.addOption(nameOption);
 
     QCommandLineOption targetVersionOption(
-        QStringLiteral("target"),
+        u"target"_s,
         QCoreApplication::translate("main", "Migrate database to target <version>."),
         QCoreApplication::translate("main", "version"));
     parser.addOption(targetVersionOption);

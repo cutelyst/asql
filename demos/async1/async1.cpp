@@ -22,14 +22,12 @@
 #include <QUuid>
 
 using namespace ASql;
+using namespace Qt::StringLiterals;
 
 void recursiveLoop()
 {
     auto db = APool::database(u"memory_loop");
-    db.exec(u"SELECT now()",
-            {QJsonObject{{QStringLiteral("foo"), true}}},
-            nullptr,
-            [](AResult &result) {
+    db.exec(u"SELECT now()", {QJsonObject{{u"foo"_s, true}}}, nullptr, [](AResult &result) {
         if (result.error()) {
             qDebug() << "Error memory_loop" << result.errorString();
         } else {
@@ -43,7 +41,7 @@ int main(int argc, char *argv[])
     QCoreApplication app(argc, argv);
 
     {
-        APool::create(APg::factory(QStringLiteral("postgres:///")), u"move_db_pool");
+        APool::create(APg::factory(u"postgres:///")), u"move_db_pool"_s;
         APool::setMaxConnections(1, u"move_db_pool");
         APool::database(nullptr, [](ADatabase db) {
             db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
@@ -65,7 +63,7 @@ int main(int argc, char *argv[])
 
     {
         // regresion test crash - where selfDriver gets released
-        APool::create(APg::factory(QStringLiteral("postgres:///")), u"delete_db_after_use");
+        APool::create(APg::factory(u"postgres:///")), u"delete_db_after_use"_s;
         APool::setMaxIdleConnections(0, u"delete_db_after_use");
 
         {
@@ -81,7 +79,7 @@ int main(int argc, char *argv[])
 
     {
         // memory loop
-        APool::create(APg::factory(QStringLiteral("postgres:///")), u"memory_loop");
+        APool::create(APg::factory(u"postgres:///")), u"memory_loop"_s;
         APool::setMaxIdleConnections(5, u"memory_loop");
         //        APool::setMaxConnections(0, u"memory_loop");
 
@@ -92,7 +90,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    APool::create(APg::factory(QStringLiteral("postgres:///")));
+    APool::create(APg::factory(u"postgres:///"_s));
     APool::setMaxIdleConnections(10);
 
     {
@@ -139,22 +137,21 @@ int main(int argc, char *argv[])
 
             // For range
             for (const auto &row : result) {
-                qDebug() << "for loop row numbered" << row.value(0)
-                         << row.value(QStringLiteral("number"));
+                qDebug() << "for loop row numbered" << row.value(0) << row.value(u"number"_s);
                 series.append(row[0].value());
             }
 
             // Iterators
             auto it = result.begin();
             while (it != result.end()) {
-                qDebug() << "iterator" << it.at() << it.value(0)
-                         << it[QStringLiteral("number")].value() << it[0].toInt();
+                qDebug() << "iterator" << it.at() << it.value(0) << it[u"number"_s].value()
+                         << it[0].toInt();
                 ++it;
             }
         });
         db.setLastQuerySingleRowMode();
 
-        db.exec(QStringLiteral("SELECT generate_series(1, 10) AS number"),
+        db.exec(u"SELECT generate_series(1, 10) AS number"_s,
                 nullptr,
                 [&series](AResult &result) mutable {
             qDebug() << "=====iterator" << result.errorString() << result.size() << "last"
@@ -165,26 +162,26 @@ int main(int argc, char *argv[])
 
             // For range
             for (const auto &row : result) {
-                qDebug() << "for loop row numbered" << row.value(0)
-                         << row[QStringLiteral("number")].value() << row[0].toInt();
+                qDebug() << "for loop row numbered" << row.value(0) << row[u"number"_s].value()
+                         << row[0].toInt();
                 series.append(row[0].value());
             }
 
             // Iterators
             auto it = result.begin();
             while (it != result.end()) {
-                qDebug() << "iterator" << it.at() << it[0].value()
-                         << it.value(QStringLiteral("number")) << it[0].toInt();
+                qDebug() << "iterator" << it.at() << it[0].value() << it.value(u"number"_s)
+                         << it[0].toInt();
                 ++it;
             }
         });
     }
 
-    APool::database().exec(QStringLiteral("SELECT $1, $2, $3, $4, now()"),
+    APool::database().exec(u"SELECT $1, $2, $3, $4, now()"_s,
                            {
                                QJsonValue(true),
                                QJsonValue(123.4567),
-                               QJsonValue(QStringLiteral("fooo")),
+                               QJsonValue(u"fooo"_s),
                                QJsonValue(QJsonObject{}),
                            },
                            nullptr,
@@ -199,9 +196,8 @@ int main(int argc, char *argv[])
         qDebug() << "JSON result" << result[0].toList();
     });
 
-    APool::database().exec(QStringLiteral("select jsonb_build_object('foo', now());"),
-                           nullptr,
-                           [](AResult &result) mutable {
+    APool::database().exec(
+        u"select jsonb_build_object('foo', now());"_s, nullptr, [](AResult &result) mutable {
         qDebug() << "=====iterator JSON" << result.errorString() << result.size() << "last"
                  << result[0][0].toJsonValue();
         if (result.error()) {
@@ -214,7 +210,7 @@ int main(int argc, char *argv[])
 
     auto cache = new ACache;
     cache->setDatabase(APool::database());
-    cache->exec(QStringLiteral("SELECT now()"), nullptr, [=](AResult &result) {
+    cache->exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
         qDebug() << "CACHED 1" << result.errorString() << result.size();
         if (result.error()) {
             qDebug() << "Error" << result.errorString();
@@ -239,7 +235,7 @@ int main(int argc, char *argv[])
     });
 
     QTimer::singleShot(2000, cache, [=] {
-        cache->exec(QStringLiteral("SELECT now()"), nullptr, [=](AResult &result) {
+        cache->exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
             qDebug() << "CACHED 2" << result.errorString() << result.size();
             if (result.error()) {
                 qDebug() << "Error" << result.errorString();
@@ -252,10 +248,10 @@ int main(int argc, char *argv[])
             }
         });
 
-        bool ret = cache->clear(QStringLiteral("SELECT now()"));
+        bool ret = cache->clear(u"SELECT now()"_s);
         qDebug() << "CACHED - CLEARED" << ret;
 
-        cache->exec(QStringLiteral("SELECT now()"), nullptr, [=](AResult &result) {
+        cache->exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
             qDebug() << "CACHED 3" << result.errorString() << result.size();
             if (result.error()) {
                 qDebug() << "Error 3" << result.errorString();
@@ -271,7 +267,7 @@ int main(int argc, char *argv[])
 
     //    auto obj = new QObject;
 
-    //    APool::database().exec(QStringLiteral("select 100, pg_sleep(1)"), [=] (AResult &result) {
+    //    APool::database().exec(u"select 100, pg_sleep(1)"_s, [=] (AResult &result) {
     //        qDebug() << "data" << result.size() << result.error() << result.errorString() <<
     //        "LAST" << result.lastResulSet(); delete obj; while (result.next()) {
     //            for (int i = 0; i < result.fields(); ++i) {
@@ -280,7 +276,7 @@ int main(int argc, char *argv[])
     //        }
     //    }, obj);
 
-    //    APool::database().exec(QStringLiteral("select 200, pg_sleep(5)"), [=] (AResult &result) {
+    //    APool::database().exec(u"select 200, pg_sleep(5)"_s, [=] (AResult &result) {
     //        qDebug() << "data" << result.size() << result.error() << result.errorString() <<
     //        "LAST" << result.lastResulSet(); delete obj; while (result.next()) {
     //            for (int i = 0; i < result.fields(); ++i) {
@@ -292,18 +288,18 @@ int main(int argc, char *argv[])
     //    db.open([=] (bool isOpen, const QString &error) {
     //        qDebug() << "OPEN" << isOpen << error;
 
-    ////        ADatabase(db).exec(QStringLiteral("select 1; select 2"), [=] (AResult &result) {
+    ////        ADatabase(db).exec(u"select 1; select 2"_s, [=] (AResult &result) {
     ////            qDebug() << "data" << result.size() << result.error() << result.errorString() <<
     ///"LAST" << result.lastResulSet(); /            while (result.next()) { /                for
     ///(int i = 0; i < result.fields(); ++i) { /                    qDebug() << "data" <<
     /// result.at() << i << result.value(i); /                } /            } /        }); /
-    /// QJsonObject obj{ /            {QStringLiteral("foo"), 234} /        };
+    /// QJsonObject obj{ /            {u"foo"_s, 234} /        };
     //        ADatabase db1 = APool::database();
     //        db1.begin();
     //        QUuid uuid = QUuid::createUuid();
     //        qDebug() << "uuid" << uuid.toString();
-    //        db1.exec(QStringLiteral("insert into temp4 values ($1, $2, $3, $4, $5, $6)"),
-    //        {true, QStringLiteral("bla bla"), QVariant::Int, QDateTime::currentDateTime(),
+    //        db1.exec(u"insert into temp4 values ($1, $2, $3, $4, $5, $6)"_s,
+    //        {true, u"bla bla"_s, QVariant::Int, QDateTime::currentDateTime(),
     //        123456.78, uuid},
     //                [=] (AResult &result) {
     //            qDebug() << "data" << result.size() << result.error() << result.errorString();
@@ -315,11 +311,11 @@ int main(int argc, char *argv[])
     //        });
     //        db1.commit();
 
-    ////        db1.subscribeToNotification(QStringLiteral("minha_notifyç_ã3"), [=] (const QString
+    ////        db1.subscribeToNotification(u"minha_notifyç_ã3"_s, [=] (const QString
     ///&payload, bool self){ /            qDebug() << "notificação" << payload << self; /        });
     //    });
 
-    //    APool::database().exec(QStringLiteral("select * from aaa.users limit 3"), [=] (AResult
+    //    APool::database().exec(u"select * from aaa.users limit 3"_s, [=] (AResult
     //    &result) {
     //        qDebug() << "data" << result.size() << result.error() << result.errorString() <<
     //        "LAST" << result.lastResulSet(); qDebug() << "data" << result.hash(); qDebug() <<
@@ -338,9 +334,9 @@ int main(int argc, char *argv[])
     //            qDebug() << "MIGRATED" << error << errorString;
     //        });
     //    });
-    //    mig->load(APool::database(), QStringLiteral("foo"));
+    //    mig->load(APool::database(), u"foo"_s);
 
-    //    mig->fromString(QStringLiteral(R"V0G0N(
+    //    mig->fromString(uR"V0G0N(
     //                                  -- 1 up
     //                                  create table messages (message text);
     //                                  insert into messages values ('I ♥ Cutelyst!');
@@ -353,7 +349,7 @@ int main(int argc, char *argv[])
     //                                   drop table log;
     //                                   -- 3 up
     //                                   create tabsle log (message text);
-    //                                  )V0G0N"));
+    //                                  )V0G0N"_s);
     //    qDebug() << "MIG" << mig.latest() << mig.active();
     //    qDebug() << "sqlFor" << mig.sqlFor(0, 2);
 
