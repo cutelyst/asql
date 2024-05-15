@@ -23,27 +23,33 @@ public:
     /*!
      * \brief create creates a new database pool
      *
-     * Creates a new connection Pool that uses the factory to create new connections when they are required.
+     * Creates a new connection Pool that uses the factory to create new connections when they are
+     * required.
      *
      * \param factory is a driver factory that creates new connections
-     * \param poolName is an identifier for such pools, for example "read-write" or "read-only-replicas"
+     * \param poolName is an identifier for such pools, for example "read-write" or
+     * "read-only-replicas"
      */
-    static void create(const std::shared_ptr<ADriverFactory> &factory, QStringView poolName = defaultPool);
+    static void create(const std::shared_ptr<ADriverFactory> &factory,
+                       QStringView poolName = defaultPool);
 
     /*!
      * \brief create creates a new database pool
      *
-     * Creates a new connection Pool that uses the factory to create new connections when they are required.
+     * Creates a new connection Pool that uses the factory to create new connections when they are
+     * required.
      *
      * \param factory is a driver factory that creates new connections
-     * \param poolName is an identifier for such pools, for example "read-write" or "read-only-replicas"
+     * \param poolName is an identifier for such pools, for example "read-write" or
+     * "read-only-replicas"
      */
     static void create(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName);
 
     /*!
      * \brief remove removes the database pool
      *
-     * Removes the \p poolName from the connection pool, it doesn't remove or close current connections.
+     * Removes the \p poolName from the connection pool, it doesn't remove or close current
+     * connections.
      *
      * \param poolName
      */

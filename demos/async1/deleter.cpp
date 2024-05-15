@@ -44,9 +44,8 @@ int main(int argc, char *argv[])
     auto obj = new QObject;
     {
         ADatabase db(APg::factory(QStringLiteral("postgres:///?target_session_attrs=read-write")));
-        db.open(nullptr, [](bool ok, const QString &status) {
-            qDebug() << "OPEN value" << ok << status;
-        });
+        db.open(nullptr,
+                [](bool ok, const QString &status) { qDebug() << "OPEN value" << ok << status; });
         db.exec(QStringLiteral("SELECT now()"), obj, [](AResult &result) {
             if (result.error()) {
                 qDebug() << "SELECT error" << result.errorString();
@@ -60,11 +59,13 @@ int main(int argc, char *argv[])
     }
 
     APool::database().exec(u"SELECT pg_sleep(5)", obj, [](AResult &result) {
-        qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.size();
+        qDebug() << "SELECT result.size()" << result.error() << result.errorString()
+                 << result.size();
     });
 
     APool::database().exec(u"SELECT now()", obj, [](AResult &result) {
-        qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.toJsonObject();
+        qDebug() << "SELECT result.size()" << result.error() << result.errorString()
+                 << result.toJsonObject();
     });
 
     QTimer::singleShot(2000, obj, [=] {
@@ -75,7 +76,8 @@ int main(int argc, char *argv[])
     QTimer::singleShot(2500, [=] {
         qDebug() << "Reuse Timer Obj";
         APool::database().exec(u"SELECT now()", nullptr, [](AResult &result) {
-            qDebug() << "SELECT result.size()" << result.error() << result.errorString() << result.toJsonObject();
+            qDebug() << "SELECT result.size()" << result.error() << result.errorString()
+                     << result.toJsonObject();
         });
     });
 

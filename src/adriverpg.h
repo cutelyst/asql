@@ -112,40 +112,19 @@ public:
         : m_conn(PQconnectStart(connInfo.toUtf8().constData()))
     {
     }
-    ~APgConn()
-    {
-        PQfinish(m_conn);
-    }
+    ~APgConn() { PQfinish(m_conn); }
 
-    PGconn *conn() const
-    {
-        return m_conn;
-    }
+    PGconn *conn() const { return m_conn; }
 
-    PGnotify *notifies() const
-    {
-        return PQnotifies(m_conn);
-    }
+    PGnotify *notifies() const { return PQnotifies(m_conn); }
 
-    int socket() const
-    {
-        return PQsocket(m_conn);
-    }
+    int socket() const { return PQsocket(m_conn); }
 
-    ConnStatusType status() const
-    {
-        return PQstatus(m_conn);
-    }
+    ConnStatusType status() const { return PQstatus(m_conn); }
 
-    QString errorMessage() const
-    {
-        return QString::fromUtf8(PQerrorMessage(m_conn));
-    }
+    QString errorMessage() const { return QString::fromUtf8(PQerrorMessage(m_conn)); }
 
-    PostgresPollingStatusType connectPoll() const
-    {
-        return PQconnectPoll(m_conn);
-    }
+    PostgresPollingStatusType connectPoll() const { return PQconnectPoll(m_conn); }
 
 private:
     PGconn *m_conn;
@@ -159,22 +138,37 @@ public:
     virtual ~ADriverPg();
 
     bool isValid() const override;
-    void open(QObject *receiver, std::function<void(bool isOpen, const QString &error)> cb) override;
+    void open(QObject *receiver,
+              std::function<void(bool isOpen, const QString &error)> cb) override;
     bool isOpen() const override;
 
     void setState(ADatabase::State state, const QString &status);
     ADatabase::State state() const override;
-    void onStateChanged(QObject *receiver, std::function<void(ADatabase::State state, const QString &status)> cb) override;
+    void onStateChanged(
+        QObject *receiver,
+        std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
     void begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
     void commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
     void rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    void exec(const std::shared_ptr<ADriver> &db, QUtf8StringView query, const QVariantList &params, QObject *receiver, AResultFn cb) override;
+    void exec(const std::shared_ptr<ADriver> &db,
+              QUtf8StringView query,
+              const QVariantList &params,
+              QObject *receiver,
+              AResultFn cb) override;
 #endif
-    void exec(const std::shared_ptr<ADriver> &db, QStringView query, const QVariantList &params, QObject *receiver, AResultFn cb) override;
-    void exec(const std::shared_ptr<ADriver> &db, const APreparedQuery &query, const QVariantList &params, QObject *receiver, AResultFn cb) override;
+    void exec(const std::shared_ptr<ADriver> &db,
+              QStringView query,
+              const QVariantList &params,
+              QObject *receiver,
+              AResultFn cb) override;
+    void exec(const std::shared_ptr<ADriver> &db,
+              const APreparedQuery &query,
+              const QVariantList &params,
+              QObject *receiver,
+              AResultFn cb) override;
 
     void setLastQuerySingleRowMode() override;
 
@@ -188,9 +182,13 @@ public:
 
     int queueSize() const override;
 
-    void subscribeToNotification(const std::shared_ptr<ADriver> &db, const QString &name, QObject *receiver, ANotificationFn cb) override;
+    void subscribeToNotification(const std::shared_ptr<ADriver> &db,
+                                 const QString &name,
+                                 QObject *receiver,
+                                 ANotificationFn cb) override;
     QStringList subscribedToNotifications() const override;
-    void unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name) override;
+    void unsubscribeFromNotification(const std::shared_ptr<ADriver> &db,
+                                     const QString &name) override;
 
 private:
     inline void setupCheckReceiver(APGQuery &pgQuery, QObject *receiver);

@@ -6,10 +6,9 @@
 
 #include <adatabase.h>
 #include <asqlexports.h>
+#include <chrono>
 
 #include <QObject>
-
-#include <chrono>
 
 namespace ASql {
 
@@ -33,7 +32,9 @@ public:
      * \return
      */
     bool clear(QStringView query, const QVariantList &params = {});
-    bool expire(std::chrono::milliseconds maxAge, QStringView query, const QVariantList &params = {});
+    bool expire(std::chrono::milliseconds maxAge,
+                QStringView query,
+                const QVariantList &params = {});
     int expireAll(std::chrono::milliseconds maxAge);
 
     /*!
@@ -44,13 +45,27 @@ public:
 
     void exec(QStringView query, QObject *receiver, AResultFn cb);
     void exec(QStringView query, const QVariantList &args, QObject *receiver, AResultFn cb);
-    void execExpiring(QStringView query, std::chrono::milliseconds maxAge, QObject *receiver, AResultFn cb);
-    void execExpiring(QStringView query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb);
+    void execExpiring(QStringView query,
+                      std::chrono::milliseconds maxAge,
+                      QObject *receiver,
+                      AResultFn cb);
+    void execExpiring(QStringView query,
+                      std::chrono::milliseconds maxAge,
+                      const QVariantList &args,
+                      QObject *receiver,
+                      AResultFn cb);
 
     void exec(const QString &query, QObject *receiver, AResultFn cb);
     void exec(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb);
-    void execExpiring(const QString &query, std::chrono::milliseconds maxAge, QObject *receiver, AResultFn cb);
-    void execExpiring(const QString &query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb);
+    void execExpiring(const QString &query,
+                      std::chrono::milliseconds maxAge,
+                      QObject *receiver,
+                      AResultFn cb);
+    void execExpiring(const QString &query,
+                      std::chrono::milliseconds maxAge,
+                      const QVariantList &args,
+                      QObject *receiver,
+                      AResultFn cb);
 
 private:
     ACachePrivate *d_ptr;

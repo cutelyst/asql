@@ -128,7 +128,8 @@ void AMigrations::fromString(const QString &text)
     d_ptr->data        = text;
 
     QTextStream stream(&d_ptr->data);
-    QRegularExpression re(QStringLiteral("^\\s*--\\s*(\\d+)\\s*(up|down)\\s*(no-transaction)?"), QRegularExpression::CaseInsensitiveOption);
+    QRegularExpression re(QStringLiteral("^\\s*--\\s*(\\d+)\\s*(up|down)\\s*(no-transaction)?"),
+                          QRegularExpression::CaseInsensitiveOption);
     QString line;
     while (!stream.atEnd()) {
         stream.readLineInto(&line);
@@ -230,7 +231,9 @@ void AMigrations::migrate(std::function<void(bool, const QString &)> cb, bool dr
     migrate(d->latest, cb, dryRun);
 }
 
-void AMigrations::migrate(int targetVersion, std::function<void(bool, const QString &)> cb, bool dryRun)
+void AMigrations::migrate(int targetVersion,
+                          std::function<void(bool, const QString &)> cb,
+                          bool dryRun)
 {
     Q_D(AMigrations);
     if (targetVersion < 0) {
@@ -263,7 +266,10 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
             }
 
             if (active > latest()) {
-                cb(true, QStringLiteral("Current version %1 is greater than the latest version %2").arg(active).arg(latest()));
+                cb(true,
+                   QStringLiteral("Current version %1 is greater than the latest version %2")
+                       .arg(active)
+                       .arg(latest()));
                 return;
             }
 
@@ -275,12 +281,18 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
                 return;
             }
 
-            qDebug(ASQL_MIG) << "Migrating current version" << active << "ẗo" << migration.version << "target version" << targetVersion << "transaction" << !migration.noTransaction << "has query" << !migration.query.isEmpty();
+            qDebug(ASQL_MIG) << "Migrating current version" << active << "ẗo" << migration.version
+                             << "target version" << targetVersion << "transaction"
+                             << !migration.noTransaction << "has query"
+                             << !migration.query.isEmpty();
             if (migration.noTransaction) {
-                qWarning(ASQL_MIG) << "Migrating from" << active << "to" << migration.version << "without a transaction, might fail to update the version.";
+                qWarning(ASQL_MIG) << "Migrating from" << active << "to" << migration.version
+                                   << "without a transaction, might fail to update the version.";
 
                 if (dryRun) {
-                    qCritical(ASQL_MIG) << "Cannot dry run a migration that requires no transaction: " << migration.version;
+                    qCritical(ASQL_MIG)
+                        << "Cannot dry run a migration that requires no transaction: "
+                        << migration.version;
                     if (cb) {
                         cb(true, QStringLiteral("Done."));
                     }
@@ -295,7 +307,8 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
             }
 
             ADatabase db = migration.noTransaction ? d->noTransactionDB : d->db;
-            db.exec(migration.noTransaction ? migration.query : migration.versionQuery + migration.query,
+            db.exec(migration.noTransaction ? migration.query
+                                            : migration.versionQuery + migration.query,
                     this,
                     [=, this](AResult &result) mutable {
                 if (result.error()) {
@@ -310,7 +323,8 @@ void AMigrations::migrate(int targetVersion, std::function<void(bool, const QStr
                                     cb(true, result.errorString());
                                 }
                             } else {
-                                qInfo(ASQL_MIG) << "Migrated from" << active << "to" << migration.version;
+                                qInfo(ASQL_MIG)
+                                    << "Migrated from" << active << "to" << migration.version;
                                 if (dryRun) {
                                     if (cb) {
                                         cb(false, QStringLiteral("Done."));
@@ -349,11 +363,10 @@ RETURNING version;
         auto it = up.constBegin();
         while (it != up.constEnd()) {
             if (it.key() <= versionTo && it.key() > versionFrom) {
-                ret = {
-                    query.arg(name).arg(it.key()),
-                    it.value().query,
-                    it.key(),
-                    it.value().noTransaction};
+                ret = {query.arg(name).arg(it.key()),
+                       it.value().query,
+                       it.key(),
+                       it.value().noTransaction};
                 break;
             }
             ++it;
@@ -363,11 +376,10 @@ RETURNING version;
         auto it = down.constBegin();
         while (it != down.constEnd()) {
             if (it.key() > versionTo && it.key() <= versionFrom) {
-                ret = {
-                    query.arg(name).arg(it.key() - 1),
-                    it.value().query,
-                    it.key() - 1,
-                    it.value().noTransaction};
+                ret = {query.arg(name).arg(it.key() - 1),
+                       it.value().query,
+                       it.key() - 1,
+                       it.value().noTransaction};
             }
             ++it;
         }

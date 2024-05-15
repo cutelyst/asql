@@ -45,7 +45,8 @@ int main(int argc, char *argv[])
                     }
 
                     if (result.size()) {
-                        qDebug() << "PIPELINE SELECT value" << id << result.begin()[1].toInt() << result.begin().value(0);
+                        qDebug() << "PIPELINE SELECT value" << id << result.begin()[1].toInt()
+                                 << result.begin().value(0);
                     }
                 });
             };
@@ -74,20 +75,25 @@ int main(int argc, char *argv[])
                     }
 
                     if (result.size()) {
-                        qDebug() << "2 PIPELINE SELECT value" << id << result.begin()[1].toInt() << result.begin().value(0);
+                        qDebug() << "2 PIPELINE SELECT value" << id << result.begin()[1].toInt()
+                                 << result.begin().value(0);
                     }
                 });
             };
 
             auto callStaticDb = [db](int id) mutable {
-                db.exec(APreparedQueryLiteral(u"SELECT now(), $1"), {id}, nullptr, [=](AResult &result) {
+                db.exec(APreparedQueryLiteral(u"SELECT now(), $1"),
+                        {id},
+                        nullptr,
+                        [=](AResult &result) {
                     if (result.error()) {
                         qDebug() << "2 PIPELINE SELECT error" << id << result.errorString();
                         return;
                     }
 
                     if (result.size()) {
-                        qDebug() << "2 PIPELINE SELECT value" << id << result.begin()[1].toInt() << result.begin().value(0);
+                        qDebug() << "2 PIPELINE SELECT value" << id << result.begin()[1].toInt()
+                                 << result.begin().value(0);
                     }
                 });
             };

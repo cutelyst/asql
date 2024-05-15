@@ -9,10 +9,10 @@
 #include "apool.h"
 #include "aresult.h"
 
+#include <optional>
+
 #include <QLoggingCategory>
 #include <QPointer>
-
-#include <optional>
 
 Q_LOGGING_CATEGORY(ASQL_CACHE, "asql.cache", QtWarningMsg)
 
@@ -43,8 +43,15 @@ public:
         Pool,
     };
 
-    bool searchOrQueue(QStringView query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb);
-    void requestData(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb);
+    bool searchOrQueue(QStringView query,
+                       std::chrono::milliseconds maxAge,
+                       const QVariantList &args,
+                       QObject *receiver,
+                       AResultFn cb);
+    void requestData(const QString &query,
+                     const QVariantList &args,
+                     QObject *receiver,
+                     AResultFn cb);
 
     QObject *q_ptr;
     QString poolName;
@@ -53,7 +60,11 @@ public:
     DbSource dbSource = DbSource::Unset;
 };
 
-bool ACachePrivate::searchOrQueue(QStringView query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb)
+bool ACachePrivate::searchOrQueue(QStringView query,
+                                  std::chrono::milliseconds maxAge,
+                                  const QVariantList &args,
+                                  QObject *receiver,
+                                  AResultFn cb)
 {
     auto it = cache.find(query);
     while (it != cache.end() && it.key() == query) {
@@ -80,10 +91,7 @@ bool ACachePrivate::searchOrQueue(QStringView query, std::chrono::milliseconds m
             } else {
                 qDebug(ASQL_CACHE) << "queuing request" << query;
                 // queue another request
-                value.receivers.emplace_back(ACacheReceiverCb{
-                    cb,
-                    receiver,
-                    receiver});
+                value.receivers.emplace_back(ACacheReceiverCb{cb, receiver, receiver});
             }
 
             return true;
@@ -94,17 +102,17 @@ bool ACachePrivate::searchOrQueue(QStringView query, std::chrono::milliseconds m
     return false;
 }
 
-void ACachePrivate::requestData(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb)
+void ACachePrivate::requestData(const QString &query,
+                                const QVariantList &args,
+                                QObject *receiver,
+                                AResultFn cb)
 {
     qCDebug(ASQL_CACHE) << "requesting data" << query << int(dbSource);
 
     ACacheValue cacheValue;
     cacheValue.query = query;
     cacheValue.args  = args;
-    cacheValue.receivers.emplace_back(ACacheReceiverCb{
-        cb,
-        receiver,
-        receiver});
+    cacheValue.receivers.emplace_back(ACacheReceiverCb{cb, receiver, receiver});
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     cache.emplace(query, std::move(cacheValue));
@@ -120,10 +128,13 @@ void ACachePrivate::requestData(const QString &query, const QVariantList &args, 
                 if (value.args == args) {
                     value.result      = result;
                     value.hasResultTP = steady_clock::now();
-                    qInfo(ASQL_CACHE) << "got request data, dispatching to" << value.receivers.size() << "receivers" << query;
+                    qInfo(ASQL_CACHE) << "got request data, dispatching to"
+                                      << value.receivers.size() << "receivers" << query;
                     for (const ACacheReceiverCb &receiverObj : value.receivers) {
-                        if (receiverObj.checkReceiver == nullptr || !receiverObj.receiver.isNull()) {
-                            qDebug(ASQL_CACHE) << "dispatching to receiver" << receiverObj.checkReceiver << query;
+                        if (receiverObj.checkReceiver == nullptr ||
+                            !receiverObj.receiver.isNull()) {
+                            qDebug(ASQL_CACHE)
+                                << "dispatching to receiver" << receiverObj.checkReceiver << query;
                             receiverObj.cb(result);
                         }
                     }
@@ -252,12 +263,19 @@ void ACache::exec(QStringView query, const QVariantList &args, QObject *receiver
     execExpiring(query, -1ms, args, receiver, cb);
 }
 
-void ACache::execExpiring(QStringView query, std::chrono::milliseconds maxAge, QObject *receiver, AResultFn cb)
+void ACache::execExpiring(QStringView query,
+                          std::chrono::milliseconds maxAge,
+                          QObject *receiver,
+                          AResultFn cb)
 {
     execExpiring(query, maxAge, {}, receiver, cb);
 }
 
-void ACache::execExpiring(QStringView query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb)
+void ACache::execExpiring(QStringView query,
+                          std::chrono::milliseconds maxAge,
+                          const QVariantList &args,
+                          QObject *receiver,
+                          AResultFn cb)
 {
     Q_D(ACache);
     if (!d->searchOrQueue(query, maxAge, args, receiver, cb)) {
@@ -275,12 +293,19 @@ void ACache::exec(const QString &query, const QVariantList &args, QObject *recei
     execExpiring(query, -1ms, args, receiver, cb);
 }
 
-void ACache::execExpiring(const QString &query, std::chrono::milliseconds maxAge, QObject *receiver, AResultFn cb)
+void ACache::execExpiring(const QString &query,
+                          std::chrono::milliseconds maxAge,
+                          QObject *receiver,
+                          AResultFn cb)
 {
     execExpiring(query, maxAge, {}, receiver, cb);
 }
 
-void ACache::execExpiring(const QString &query, std::chrono::milliseconds maxAge, const QVariantList &args, QObject *receiver, AResultFn cb)
+void ACache::execExpiring(const QString &query,
+                          std::chrono::milliseconds maxAge,
+                          const QVariantList &args,
+                          QObject *receiver,
+                          AResultFn cb)
 {
     Q_D(ACache);
     if (!d->searchOrQueue(query, maxAge, args, receiver, cb)) {

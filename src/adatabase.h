@@ -33,11 +33,7 @@ class ASQL_EXPORT ADatabase
 {
     Q_GADGET
 public:
-    enum class State {
-        Disconnected,
-        Connecting,
-        Connected
-    };
+    enum class State { Disconnected, Connecting, Connected };
     Q_ENUM(State)
 
     /*!
@@ -93,7 +89,8 @@ public:
      *
      * \param cb
      */
-    void open(QObject *receiver = nullptr, std::function<void(bool isOpen, const QString &error)> cb = {});
+    void open(QObject *receiver                                         = nullptr,
+              std::function<void(bool isOpen, const QString &error)> cb = {});
 
     /*!
      * \brief state
@@ -108,7 +105,8 @@ public:
      *
      * \param cb
      */
-    void onStateChanged(QObject *receiver, std::function<void(State state, const QString &status)> cb);
+    void onStateChanged(QObject *receiver,
+                        std::function<void(State state, const QString &status)> cb);
 
     /*!
      * \brief isOpen returns if the database connection is open.
@@ -199,7 +197,10 @@ public:
      * \param params
      * \param cb
      */
-    void exec(QStringView query, const QVariantList &params, QObject *receiver = nullptr, AResultFn cb = {});
+    void exec(QStringView query,
+              const QVariantList &params,
+              QObject *receiver = nullptr,
+              AResultFn cb      = {});
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     /*!
@@ -214,7 +215,10 @@ public:
      * \param params
      * \param cb
      */
-    void exec(QUtf8StringView query, const QVariantList &params, QObject *receiver = nullptr, AResultFn cb = {});
+    void exec(QUtf8StringView query,
+              const QVariantList &params,
+              QObject *receiver = nullptr,
+              AResultFn cb      = {});
 #endif
 
     /*!
@@ -229,7 +233,10 @@ public:
      * \param query
      * \param cb
      */
-    void exec(const APreparedQuery &query, const QVariantList &params, QObject *receiver = nullptr, AResultFn cb = {});
+    void exec(const APreparedQuery &query,
+              const QVariantList &params,
+              QObject *receiver = nullptr,
+              AResultFn cb      = {});
 
     /**
      * @brief setSingleRowMode
@@ -239,16 +246,19 @@ public:
     void setLastQuerySingleRowMode();
 
     /**
-     * @brief enterPipelineMode will enable the pipeline mode on the driver, it's queue must be empty and the connection must be open
+     * @brief enterPipelineMode will enable the pipeline mode on the driver, it's queue must be
+     * empty and the connection must be open
      *
-     * \param autoSyncMS if greater than zero it will setup a timer to send pipeline sync at each ms.
+     * \param autoSyncMS if greater than zero it will setup a timer to send pipeline sync at each
+     * ms.
      *
      * @return
      */
     bool enterPipelineMode(qint64 autoSyncMS = 0);
 
     /**
-     * @brief exitPipelineModewill disables the pipeline mode on the driver, it's queue must be empty and the connection must be open
+     * @brief exitPipelineModewill disables the pipeline mode on the driver, it's queue must be
+     * empty and the connection must be open
      * @return
      */
     bool exitPipelineMode();

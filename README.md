@@ -47,14 +47,14 @@ APool::setMaxIdleConnections(15, "my_read_only_pool");
 
     // Grabs a connection from a read-only pool
     auto dbRO = APool::database("my_read_only_pool");
-    
+
 } // The scope is over, now once ADatabase db variables are
   // done with the queries they will return to the pool
 
 ```
 
 ### Performing a query without params
-Please if you have user input values that you need to pass to your query, do yourself a favour and pass it as parameters, thus reducing the risk of SQL injection attacks.  
+Please if you have user input values that you need to pass to your query, do yourself a favour and pass it as parameters, thus reducing the risk of SQL injection attacks.
 ```c++
 auto db = APool::database();
 db.exec(u"SELECT id, message FROM messages LIMIT 5", nullptr, [=] (AResult &result) {
@@ -62,7 +62,7 @@ db.exec(u"SELECT id, message FROM messages LIMIT 5", nullptr, [=] (AResult &resu
         qDebug() << result.errorString();
         return;
     }
-    
+
     // iterate over your data
     for (auto row : result) {
         for (int i = 0; i < result.fields(); ++i) {
@@ -83,11 +83,11 @@ db.exec(u"SELECT * FROM logs LIMIT 5; SELECT * FROM messages LIMIT 5", nullptr, 
         qDebug() << result.errorString();
         return;
     }
-    
+
     if (result.lastResulSet()) {
         // do something..
     }
-    
+
     // iterate over your data
     for (auto row : result) {
         for (int i = 0; i < result.fields(); ++i) {
@@ -172,7 +172,7 @@ db.exec(u"SELECT pg_sleep(5)", cancelator, [=] (AResult &result) {
     cancelator->setProperty("foo");
 
 }); // notice the object being passed here
-    
+
 delete cancelator;
 ```
 
@@ -229,7 +229,7 @@ drop table log;
 -- 3 up
 create table log (message text);
 )V0G0N");
-                                  
+
 mig->connect(mig, &AMigrations::ready, [=] (bool error, const QString &erroString) {
     qDebug() << "LOADED" << error << erroString;
 

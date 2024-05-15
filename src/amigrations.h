@@ -20,10 +20,9 @@ public:
     virtual ~AMigrations();
 
     /*!
-     * \brief load migration information from the asql_migrations table using the specified migration \p name.
-     * \param db a valid dabase option
-     * \param name of the migration
-     * \param noTransactionDB a database object in case some script must run outside a transaction block
+     * \brief load migration information from the asql_migrations table using the specified
+     * migration \p name. \param db a valid dabase option \param name of the migration \param
+     * noTransactionDB a database object in case some script must run outside a transaction block
      */
     void load(const ADatabase &db, const QString &name, const ADatabase &noTransactionDB = {});
 
@@ -75,11 +74,12 @@ public:
      *
      * \sa finished() signal is emitted with the result.
      * \param cb callback function that is called to inform the result
-     * \param dryRun if set will rollback the transaction instead of committing, this option diverges
-     * from regular operation as it will perform a single transaction block with all up/down
-     * steps at once, which depending on the operation will fail.
+     * \param dryRun if set will rollback the transaction instead of committing, this option
+     * diverges from regular operation as it will perform a single transaction block with all
+     * up/down steps at once, which depending on the operation will fail.
      */
-    void migrate(std::function<void(bool error, const QString &errorString)> cb, bool dryRun = false);
+    void migrate(std::function<void(bool error, const QString &errorString)> cb,
+                 bool dryRun = false);
 
     /*!
      * \brief migrate Migrate from "active" to different version, up or down.
@@ -88,11 +88,13 @@ public:
      * \sa finished() signal is emitted with the result.
      * \param targetVersion to try to apply changes
      * \param cb callback function that is called to inform the result
-     * \param dryRun if set will rollback the transaction instead of committing, this option diverges
-     * from regular operation as it will perform a single transaction block with all up/down
-     * steps at once, which depending on the operation will fail.
+     * \param dryRun if set will rollback the transaction instead of committing, this option
+     * diverges from regular operation as it will perform a single transaction block with all
+     * up/down steps at once, which depending on the operation will fail.
      */
-    void migrate(int targetVersion, std::function<void(bool error, const QString &errorString)> cb, bool dryRun = false);
+    void migrate(int targetVersion,
+                 std::function<void(bool error, const QString &errorString)> cb,
+                 bool dryRun = false);
 
 Q_SIGNALS:
     void ready(bool error, const QString &errorString);

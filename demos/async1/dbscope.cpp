@@ -29,18 +29,16 @@ int main(int argc, char *argv[])
         db.open([db, obj](bool ok, const QString &status) {
             qDebug() << "OPEN value" << ok << status;
 
-            ADatabase(db).exec(
-                QStringLiteral("SELECT now()"), [db](AResult &result) {
-                    if (result.error()) {
-                        qDebug() << "SELECT error" << result.errorString();
-                        return;
-                    }
+            ADatabase(db).exec(QStringLiteral("SELECT now()"), [db](AResult &result) {
+                if (result.error()) {
+                    qDebug() << "SELECT error" << result.errorString();
+                    return;
+                }
 
-                    if (result.next()) {
-                        qDebug() << "SELECT value" << result.value(0);
-                    }
-                },
-                obj);
+                if (result.next()) {
+                    qDebug() << "SELECT value" << result.value(0);
+                }
+            }, obj);
         });
     }
 

@@ -20,7 +20,7 @@ public:
     virtual bool error() const          = 0;
     virtual QString errorString() const = 0;
 
-    virtual QByteArray query() const = 0;
+    virtual QByteArray query() const       = 0;
     virtual QVariantList queryArgs() const = 0;
 
     virtual int size() const            = 0;
@@ -119,7 +119,8 @@ public:
     [[nodiscard]] QJsonArray toJsonArrayObject() const;
 
     /*!
-     * \brief toJsonObjectArray returns all rows as JSON object with columns as keys and rows as arrays
+     * \brief toJsonObjectArray returns all rows as JSON object with columns as keys and rows as
+     * arrays
      *
      * This is a more compact representation than \sa toJsonArrayObject.
      *
@@ -128,13 +129,15 @@ public:
     [[nodiscard]] QJsonObject toJsonObjectArray() const;
 
     /*!
-     * \brief toJsonObjectArray returns all rows as JSON object with columns as keys and rows as arrays
+     * \brief toJsonObjectArray returns all rows as JSON object with columns as keys and rows as
+     * arrays
      *
      * This is a more compact representation than \sa toJsonArrayObject.
      *
      * \return { "columns": ["col1", "col2"], "rows": [ [1, "foo"], [2, "bar"] ] }
      */
-    [[nodiscard]] QJsonObject toJsonObjectIndexed(QStringView columnKey = u"columns", QStringView rowsKey = u"rows") const;
+    [[nodiscard]] QJsonObject toJsonObjectIndexed(QStringView columnKey = u"columns",
+                                                  QStringView rowsKey   = u"rows") const;
 
     /*!
      * \brief toCborArrayMap returns all rows as an array of Cbor maps.
@@ -143,16 +146,17 @@ public:
     [[nodiscard]] QCborArray toCborArrayMap() const;
 
     /*!
-     * \brief toCborMapArray returns returns all rows as Cbor map with columns as keys and rows as arrays
-     * \return
+     * \brief toCborMapArray returns returns all rows as Cbor map with columns as keys and rows as
+     * arrays \return
      */
     [[nodiscard]] QCborMap toCborMapArray() const;
 
     /*!
-     * \brief toCborMapIndexed returns returns all rows as Cbor map with columns as keys and rows as arrays, indexed by params
-     * \return
+     * \brief toCborMapIndexed returns returns all rows as Cbor map with columns as keys and rows as
+     * arrays, indexed by params \return
      */
-    [[nodiscard]] QCborMap toCborMapIndexed(QStringView columnKey = u"columns", QStringView rowsKey = u"rows") const;
+    [[nodiscard]] QCborMap toCborMapIndexed(QStringView columnKey = u"columns",
+                                            QStringView rowsKey   = u"rows") const;
 
     AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;
@@ -228,13 +232,34 @@ public:
 
         [[nodiscard]] inline int at() const { return row; }
         [[nodiscard]] inline QVariant value(int column) const { return d->value(row, column); }
-        [[nodiscard]] inline QVariant value(const QString &name) const { return d->value(row, d->indexOfField(name)); }
-        [[nodiscard]] inline QVariant value(QLatin1String name) const { return d->value(row, d->indexOfField(name)); }
-        [[nodiscard]] inline QVariant value(QStringView name) const { return d->value(row, d->indexOfField(name)); }
-        [[nodiscard]] inline AColumn operator[](int column) const { return AColumn(d, row, column); }
-        [[nodiscard]] inline AColumn operator[](const QString &name) const { return AColumn(d, row, d->indexOfField(name)); }
-        [[nodiscard]] inline AColumn operator[](QLatin1String name) const { return AColumn(d, row, d->indexOfField(name)); }
-        [[nodiscard]] inline AColumn operator[](QStringView name) const { return AColumn(d, row, d->indexOfField(name)); }
+        [[nodiscard]] inline QVariant value(const QString &name) const
+        {
+            return d->value(row, d->indexOfField(name));
+        }
+        [[nodiscard]] inline QVariant value(QLatin1String name) const
+        {
+            return d->value(row, d->indexOfField(name));
+        }
+        [[nodiscard]] inline QVariant value(QStringView name) const
+        {
+            return d->value(row, d->indexOfField(name));
+        }
+        [[nodiscard]] inline AColumn operator[](int column) const
+        {
+            return AColumn(d, row, column);
+        }
+        [[nodiscard]] inline AColumn operator[](const QString &name) const
+        {
+            return AColumn(d, row, d->indexOfField(name));
+        }
+        [[nodiscard]] inline AColumn operator[](QLatin1String name) const
+        {
+            return AColumn(d, row, d->indexOfField(name));
+        }
+        [[nodiscard]] inline AColumn operator[](QStringView name) const
+        {
+            return AColumn(d, row, d->indexOfField(name));
+        }
     };
 
     class ASQL_EXPORT const_iterator
@@ -284,13 +309,31 @@ public:
         [[nodiscard]] QCborMap toCborMap() const;
 
         [[nodiscard]] inline QVariant value(int column) const { return d->value(i, column); }
-        [[nodiscard]] inline QVariant value(const QString &name) const { return d->value(i, d->indexOfField(name)); }
-        [[nodiscard]] inline QVariant value(QLatin1String name) const { return d->value(i, d->indexOfField(name)); }
-        [[nodiscard]] inline QVariant value(QStringView name) const { return d->value(i, d->indexOfField(name)); }
+        [[nodiscard]] inline QVariant value(const QString &name) const
+        {
+            return d->value(i, d->indexOfField(name));
+        }
+        [[nodiscard]] inline QVariant value(QLatin1String name) const
+        {
+            return d->value(i, d->indexOfField(name));
+        }
+        [[nodiscard]] inline QVariant value(QStringView name) const
+        {
+            return d->value(i, d->indexOfField(name));
+        }
         [[nodiscard]] inline AColumn operator[](int column) const { return AColumn(d, i, column); }
-        [[nodiscard]] inline AColumn operator[](const QString &name) const { return AColumn(d, i, d->indexOfField(name)); }
-        [[nodiscard]] inline AColumn operator[](QLatin1String name) const { return AColumn(d, i, d->indexOfField(name)); }
-        [[nodiscard]] inline AColumn operator[](QStringView name) const { return AColumn(d, i, d->indexOfField(name)); }
+        [[nodiscard]] inline AColumn operator[](const QString &name) const
+        {
+            return AColumn(d, i, d->indexOfField(name));
+        }
+        [[nodiscard]] inline AColumn operator[](QLatin1String name) const
+        {
+            return AColumn(d, i, d->indexOfField(name));
+        }
+        [[nodiscard]] inline AColumn operator[](QStringView name) const
+        {
+            return AColumn(d, i, d->indexOfField(name));
+        }
 
         inline bool operator==(const const_iterator &o) const { return i == o.i; }
         inline bool operator!=(const const_iterator &o) const { return i != o.i; }
@@ -349,16 +392,16 @@ protected:
 };
 
 #define AColumnIndex(result, columnName) \
-([result]() Q_DECL_NOEXCEPT -> int { \
-    static const int ix = result.indexOfField(columnName); \
-    return ix; \
-}()) /**/
+    ([result]() Q_DECL_NOEXCEPT -> int { \
+        static const int ix = result.indexOfField(columnName); \
+        return ix; \
+    }()) /**/
 
 #define AColumn(row, columnName) \
-([row]() Q_DECL_NOEXCEPT -> AResult::AColumn { \
-    static const int ix = row.d->indexOfField(columnName); \
-    return row[ix]; \
-}()) /**/
+    ([row]() Q_DECL_NOEXCEPT -> AResult::AColumn { \
+        static const int ix = row.d->indexOfField(columnName); \
+        return row[ix]; \
+    }()) /**/
 
 } // namespace ASql
 

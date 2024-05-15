@@ -93,11 +93,13 @@ void APool::pushDatabaseBack(QStringView connectionName, ADriver *driver)
         }
 
         if (iPool.pool.size() >= iPool.maxIdleConnections) {
-            qDebug(ASQL_POOL) << "Deleting database connection due max idle connections" << iPool.maxIdleConnections << iPool.pool.size();
+            qDebug(ASQL_POOL) << "Deleting database connection due max idle connections"
+                              << iPool.maxIdleConnections << iPool.pool.size();
             delete driver;
             --iPool.connectionCount;
         } else {
-            qDebug(ASQL_POOL) << "Returning database connection to pool" << connectionName << driver;
+            qDebug(ASQL_POOL) << "Returning database connection to pool" << connectionName
+                              << driver;
             iPool.pool.push_back(driver);
         }
     } else {
@@ -113,14 +115,15 @@ ADatabase APool::database(QStringView poolName)
         APoolInternal &iPool = it.value();
         if (iPool.pool.empty()) {
             if (iPool.maximuConnections && iPool.connectionCount >= iPool.maximuConnections) {
-                qCritical(ASQL_POOL) << "Maximum number of connections reached" << poolName << iPool.connectionCount << iPool.connectionQueue.size();
+                qCritical(ASQL_POOL) << "Maximum number of connections reached" << poolName
+                                     << iPool.connectionCount << iPool.connectionQueue.size();
             } else {
                 ++iPool.connectionCount;
                 auto driver = iPool.driverFactory->createRawDriver();
-                qDebug(ASQL_POOL) << "Creating a database connection for pool" << poolName << driver;
-                db.d = std::shared_ptr<ADriver>(driver, [poolName](ADriver *driver) {
-                    pushDatabaseBack(poolName, driver);
-                });
+                qDebug(ASQL_POOL) << "Creating a database connection for pool" << poolName
+                                  << driver;
+                db.d = std::shared_ptr<ADriver>(
+                    driver, [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); });
 
                 if (iPool.setupCb) {
                     iPool.setupCb(db);
@@ -129,9 +132,8 @@ ADatabase APool::database(QStringView poolName)
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << poolName;
             ADriver *driver = iPool.pool.takeLast();
-            db.d            = std::shared_ptr<ADriver>(driver, [poolName](ADriver *driver) {
-                pushDatabaseBack(poolName, driver);
-            });
+            db.d            = std::shared_ptr<ADriver>(
+                driver, [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); });
 
             if (iPool.reuseCb) {
                 iPool.reuseCb(db);
@@ -160,7 +162,8 @@ void APool::database(QObject *receiver, ADatabaseFn cb, QStringView poolName)
         APoolInternal &iPool = it.value();
         if (iPool.pool.empty()) {
             if (iPool.maximuConnections && iPool.connectionCount >= iPool.maximuConnections) {
-                qInfo(ASQL_POOL) << "Maximum number of connections reached, queuing" << poolName << iPool.connectionCount << iPool.connectionQueue.size();
+                qInfo(ASQL_POOL) << "Maximum number of connections reached, queuing" << poolName
+                                 << iPool.connectionCount << iPool.connectionQueue.size();
                 APoolQueuedClient queued;
                 queued.cb            = cb;
                 queued.receiver      = receiver;
@@ -170,9 +173,9 @@ void APool::database(QObject *receiver, ADatabaseFn cb, QStringView poolName)
             }
             ++iPool.connectionCount;
             qDebug(ASQL_POOL) << "Creating a database connection for pool" << poolName;
-            ADatabase db{std::shared_ptr<ADriver>(iPool.driverFactory->createRawDriver(), [poolName](ADriver *driver) {
-                pushDatabaseBack(poolName, driver);
-            })};
+            ADatabase db{std::shared_ptr<ADriver>(
+                iPool.driverFactory->createRawDriver(),
+                [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); })};
 
             if (iPool.setupCb) {
                 iPool.setupCb(db);
@@ -185,9 +188,8 @@ void APool::database(QObject *receiver, ADatabaseFn cb, QStringView poolName)
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << poolName;
             ADriver *priv = iPool.pool.takeLast();
-            ADatabase db{std::shared_ptr<ADriver>(priv, [poolName](ADriver *driver) {
-                pushDatabaseBack(poolName, driver);
-            })};
+            ADatabase db{std::shared_ptr<ADriver>(
+                priv, [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); })};
 
             if (iPool.reuseCb) {
                 iPool.reuseCb(db);
@@ -215,7 +217,8 @@ void APool::setMaxIdleConnections(int max, QStringView poolName)
     if (it != m_connectionPool.end()) {
         it.value().maxIdleConnections = max;
     } else {
-        qCritical(ASQL_POOL) << "Failed to set maximum idle connections: Database pool NOT FOUND" << poolName;
+        qCritical(ASQL_POOL) << "Failed to set maximum idle connections: Database pool NOT FOUND"
+                             << poolName;
     }
 }
 
@@ -225,7 +228,8 @@ void APool::setMaxConnections(int max, QStringView poolName)
     if (it != m_connectionPool.end()) {
         it.value().maximuConnections = max;
     } else {
-        qCritical(ASQL_POOL) << "Failed to set maximum connections: Database pool NOT FOUND" << poolName;
+        qCritical(ASQL_POOL) << "Failed to set maximum connections: Database pool NOT FOUND"
+                             << poolName;
     }
 }
 
@@ -235,7 +239,8 @@ void APool::setSetupCallback(ADatabaseFn cb, QStringView poolName)
     if (it != m_connectionPool.end()) {
         it.value().setupCb = cb;
     } else {
-        qCritical(ASQL_POOL) << "Failed to set maximum connections: Database pool NOT FOUND" << poolName;
+        qCritical(ASQL_POOL) << "Failed to set maximum connections: Database pool NOT FOUND"
+                             << poolName;
     }
 }
 
@@ -245,6 +250,7 @@ void APool::setReuseCallback(ADatabaseFn cb, QStringView poolName)
     if (it != m_connectionPool.end()) {
         it.value().reuseCb = cb;
     } else {
-        qCritical(ASQL_POOL) << "Failed to set maximum connections: Database pool NOT FOUND" << poolName;
+        qCritical(ASQL_POOL) << "Failed to set maximum connections: Database pool NOT FOUND"
+                             << poolName;
     }
 }

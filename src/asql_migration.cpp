@@ -28,25 +28,31 @@ int main(int argc, char *argv[])
     QCoreApplication app(argc, argv);
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QCoreApplication::translate("main", "ASql database migration tool."));
+    parser.setApplicationDescription(
+        QCoreApplication::translate("main", "ASql database migration tool."));
     parser.addHelpOption();
     parser.addVersionOption();
-    parser.addPositionalArgument(QStringLiteral("source"), QCoreApplication::translate("main", "Migration file(s)."));
+    parser.addPositionalArgument(QStringLiteral("source"),
+                                 QCoreApplication::translate("main", "Migration file(s)."));
 
-    QCommandLineOption confirmOption(QStringLiteral("y"), QCoreApplication::translate("main", "Automatically confirm migration"));
+    QCommandLineOption confirmOption(
+        QStringLiteral("y"),
+        QCoreApplication::translate("main", "Automatically confirm migration"));
     parser.addOption(confirmOption);
 
-    QCommandLineOption dryRunOption({QStringLiteral("d"), QStringLiteral("dry-run")},
-                                    QCoreApplication::translate("main", "Do not actually commit changes to the database."));
+    QCommandLineOption dryRunOption(
+        {QStringLiteral("d"), QStringLiteral("dry-run")},
+        QCoreApplication::translate("main", "Do not actually commit changes to the database."));
     parser.addOption(dryRunOption);
 
     QCommandLineOption showSqlOption({QStringLiteral("s"), QStringLiteral("show-sql")},
                                      QCoreApplication::translate("main", "Show migration SQL."));
     parser.addOption(showSqlOption);
 
-    QCommandLineOption connOption({QStringLiteral("c"), QStringLiteral("connection")},
-                                  QCoreApplication::translate("main", "Connection URL to the database."),
-                                  QCoreApplication::translate("main", "url"));
+    QCommandLineOption connOption(
+        {QStringLiteral("c"), QStringLiteral("connection")},
+        QCoreApplication::translate("main", "Connection URL to the database."),
+        QCoreApplication::translate("main", "url"));
     parser.addOption(connOption);
 
     QCommandLineOption nameOption({QStringLiteral("n"), QStringLiteral("name")},
@@ -54,9 +60,10 @@ int main(int argc, char *argv[])
                                   QCoreApplication::translate("main", "name"));
     parser.addOption(nameOption);
 
-    QCommandLineOption targetVersionOption(QStringLiteral("target"),
-                                           QCoreApplication::translate("main", "Migrate database to target <version>."),
-                                           QCoreApplication::translate("main", "version"));
+    QCommandLineOption targetVersionOption(
+        QStringLiteral("target"),
+        QCoreApplication::translate("main", "Migrate database to target <version>."),
+        QCoreApplication::translate("main", "version"));
     parser.addOption(targetVersionOption);
 
     // Process the actual command line arguments given by the user
@@ -64,7 +71,9 @@ int main(int argc, char *argv[])
 
     const QStringList args = parser.positionalArguments();
     if (args.empty()) {
-        std::cerr << qPrintable(QCoreApplication::translate("main", "No migration file(s) specified.")) << std::endl;
+        std::cerr << qPrintable(
+                         QCoreApplication::translate("main", "No migration file(s) specified."))
+                  << std::endl;
         return 1;
     }
 
@@ -76,13 +85,17 @@ int main(int argc, char *argv[])
         bool ok;
         targetVersion = parser.value(targetVersionOption).toInt(&ok);
         if (!ok || targetVersion < 0) {
-            std::cerr << qPrintable(QCoreApplication::translate("main", "Invalid target version %1.").arg(parser.value(targetVersionOption))) << std::endl;
+            std::cerr << qPrintable(
+                             QCoreApplication::translate("main", "Invalid target version %1.")
+                                 .arg(parser.value(targetVersionOption)))
+                      << std::endl;
             return 2;
         }
     }
 
     if (!parser.isSet(connOption)) {
-        std::cerr << qPrintable(QCoreApplication::translate("main", "Connection URL not set.")) << std::endl;
+        std::cerr << qPrintable(QCoreApplication::translate("main", "Connection URL not set."))
+                  << std::endl;
         return 3;
     }
 
@@ -91,7 +104,8 @@ int main(int argc, char *argv[])
         // Use the first filename as the migration name
         name = QFileInfo(args.value(0)).baseName();
         if (name.isEmpty()) {
-            std::cerr << qPrintable(QCoreApplication::translate("main", "Migration name not set.")) << std::endl;
+            std::cerr << qPrintable(QCoreApplication::translate("main", "Migration name not set."))
+                      << std::endl;
             return 4;
         }
     }
@@ -104,7 +118,10 @@ int main(int argc, char *argv[])
         if (f.open(QFile::ReadOnly | QFile::Text)) {
             sql.append(QString::fromLocal8Bit(f.readAll()));
         } else {
-            std::cerr << qPrintable(QCoreApplication::translate("main", "Failed to open migration file: %1.").arg(file)) << std::endl;
+            std::cerr << qPrintable(QCoreApplication::translate(
+                                        "main", "Failed to open migration file: %1.")
+                                        .arg(file))
+                      << std::endl;
             return 5;
         }
     }
@@ -116,13 +133,18 @@ int main(int argc, char *argv[])
         noTransactionDB = APg::database(conn);
         noTransactionDB.open();
     } else {
-        std::cerr << qPrintable(QCoreApplication::translate("main", "No driver for uri: %1.").arg(conn)) << std::endl;
+        std::cerr << qPrintable(
+                         QCoreApplication::translate("main", "No driver for uri: %1.").arg(conn))
+                  << std::endl;
         return 5;
     }
 
     db.open(nullptr, [=](bool isOpen, const QString &errorString) {
         if (!isOpen) {
-            std::cerr << qPrintable(QCoreApplication::translate("main", "Failed to open database: %1.").arg(errorString)) << std::endl;
+            std::cerr << qPrintable(
+                             QCoreApplication::translate("main", "Failed to open database: %1.")
+                                 .arg(errorString))
+                      << std::endl;
             qApp->exit(6);
             return;
         }
@@ -131,36 +153,54 @@ int main(int argc, char *argv[])
         mig->fromString(sql);
         mig->connect(mig, &AMigrations::ready, [=](bool error, const QString &errorString) {
             if (error) {
-                std::cerr << qPrintable(QCoreApplication::translate("main", "Failed to initialize migrations: %1.").arg(errorString)) << std::endl;
+                std::cerr << qPrintable(QCoreApplication::translate(
+                                            "main", "Failed to initialize migrations: %1.")
+                                            .arg(errorString))
+                          << std::endl;
                 qApp->exit(7);
                 return;
             }
 
-            const int newVersion = targetVersion != -1 && targetVersion <= mig->latest() ? targetVersion : mig->latest();
+            const int newVersion = targetVersion != -1 && targetVersion <= mig->latest()
+                                       ? targetVersion
+                                       : mig->latest();
 
             if (mig->active() == newVersion) {
-                std::cerr << qPrintable(QCoreApplication::translate("main", "Database is already at target version: %1.").arg(QString::number(mig->active()))) << std::endl;
+                std::cerr << qPrintable(QCoreApplication::translate(
+                                            "main", "Database is already at target version: %1.")
+                                            .arg(QString::number(mig->active())))
+                          << std::endl;
                 qApp->exit(0);
                 return;
             }
 
             if (showSql) {
-                std::cout << qPrintable(QCoreApplication::translate("main", "Migration SQL:")) << std::endl
+                std::cout << qPrintable(QCoreApplication::translate("main", "Migration SQL:"))
+                          << std::endl
                           << qPrintable(mig->sqlFor(mig->active(), newVersion)) << std::endl;
             }
 
             if (!confirm || newVersion < mig->active()) {
                 if (newVersion < mig->active()) {
-                    std::cout << qPrintable(QCoreApplication::translate("main", "Do you want to migrate '%1' from %2 to %3? [yes/no] ")
-                                                .arg(name).arg(QString::number(mig->active())).arg(QString::number(newVersion)));
+                    std::cout << qPrintable(
+                        QCoreApplication::translate(
+                            "main", "Do you want to migrate '%1' from %2 to %3? [yes/no] ")
+                            .arg(name)
+                            .arg(QString::number(mig->active()))
+                            .arg(QString::number(newVersion)));
                 } else {
-                    std::cout << qPrintable(QCoreApplication::translate("main", "Do you wanto to migrate '%1' from %2 to %3? [y/n] ")
-                                                .arg(name).arg(QString::number(mig->active())).arg(QString::number(newVersion)));
+                    std::cout << qPrintable(
+                        QCoreApplication::translate(
+                            "main", "Do you wanto to migrate '%1' from %2 to %3? [y/n] ")
+                            .arg(name)
+                            .arg(QString::number(mig->active()))
+                            .arg(QString::number(newVersion)));
                 }
 
                 std::string value;
                 std::cin >> value;
-                if ((newVersion < mig->active() && value != "yes") || (newVersion > mig->active() && value != "y")) {
+                if ((newVersion < mig->active() && value != "yes") ||
+                    (newVersion > mig->active() && value != "y")) {
                     qApp->exit(8);
                     return;
                 }
@@ -168,20 +208,23 @@ int main(int argc, char *argv[])
 
             QElapsedTimer t;
             t.start();
-            mig->migrate(
-                newVersion, [t](bool error, const QString &errorString) {
-                    if (error) {
-                        std::cerr << qPrintable(QCoreApplication::translate("main", "Failed to migrate: %1.").arg(errorString)) << std::endl;
-                        qApp->exit(9);
-                    } else {
-                        std::cout << qPrintable(QCoreApplication::translate("main", "Migration finished with success: '%1'. Took %2 ms")
-                                                    .arg(errorString)
-                                                    .arg(t.elapsed()))
-                                  << std::endl;
-                        qApp->exit(0);
-                    }
-                },
-                dryRun);
+            mig->migrate(newVersion, [t](bool error, const QString &errorString) {
+                if (error) {
+                    std::cerr << qPrintable(
+                                     QCoreApplication::translate("main", "Failed to migrate: %1.")
+                                         .arg(errorString))
+                              << std::endl;
+                    qApp->exit(9);
+                } else {
+                    std::cout << qPrintable(QCoreApplication::translate(
+                                                "main",
+                                                "Migration finished with success: '%1'. Took %2 ms")
+                                                .arg(errorString)
+                                                .arg(t.elapsed()))
+                              << std::endl;
+                    qApp->exit(0);
+                }
+            }, dryRun);
         });
 
         mig->load(db, name, noTransactionDB);

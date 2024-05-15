@@ -29,7 +29,9 @@ public:
     virtual void open(QObject *receiver, std::function<void(bool isOpen, const QString &error)> cb);
 
     virtual ADatabase::State state() const;
-    virtual void onStateChanged(QObject *receiver, std::function<void(ADatabase::State state, const QString &status)> cb);
+    virtual void
+        onStateChanged(QObject *receiver,
+                       std::function<void(ADatabase::State state, const QString &status)> cb);
 
     virtual bool isOpen() const;
 
@@ -38,11 +40,23 @@ public:
     virtual void rollback(const std::shared_ptr<ADriver> &driver, QObject *receiver, AResultFn cb);
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    virtual void exec(const std::shared_ptr<ADriver> &driver, QUtf8StringView query, const QVariantList &params, QObject *receiver, AResultFn cb);
+    virtual void exec(const std::shared_ptr<ADriver> &driver,
+                      QUtf8StringView query,
+                      const QVariantList &params,
+                      QObject *receiver,
+                      AResultFn cb);
 #endif
-    virtual void exec(const std::shared_ptr<ADriver> &driver, QStringView query, const QVariantList &params, QObject *receiver, AResultFn cb);
+    virtual void exec(const std::shared_ptr<ADriver> &driver,
+                      QStringView query,
+                      const QVariantList &params,
+                      QObject *receiver,
+                      AResultFn cb);
 
-    virtual void exec(const std::shared_ptr<ADriver> &driver, const APreparedQuery &query, const QVariantList &params, QObject *receiver, AResultFn cb);
+    virtual void exec(const std::shared_ptr<ADriver> &driver,
+                      const APreparedQuery &query,
+                      const QVariantList &params,
+                      QObject *receiver,
+                      AResultFn cb);
 
     virtual void setLastQuerySingleRowMode();
 
@@ -56,9 +70,13 @@ public:
 
     virtual int queueSize() const;
 
-    virtual void subscribeToNotification(const std::shared_ptr<ADriver> &driver, const QString &name, QObject *receiver, ANotificationFn cb);
+    virtual void subscribeToNotification(const std::shared_ptr<ADriver> &driver,
+                                         const QString &name,
+                                         QObject *receiver,
+                                         ANotificationFn cb);
     virtual QStringList subscribedToNotifications() const;
-    virtual void unsubscribeFromNotification(const std::shared_ptr<ADriver> &driver, const QString &name);
+    virtual void unsubscribeFromNotification(const std::shared_ptr<ADriver> &driver,
+                                             const QString &name);
 
 private:
     QString m_info;

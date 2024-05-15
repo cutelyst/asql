@@ -56,7 +56,8 @@ int main(int argc, char *argv[])
     callBD();
 
     auto simpleDb = APool::database();
-    simpleDb.exec(APreparedQuery(u"SELECT $1, now()"), {qint64(12345)}, nullptr, [=](AResult &result) {
+    simpleDb.exec(
+        APreparedQuery(u"SELECT $1, now()"), {qint64(12345)}, nullptr, [=](AResult &result) {
         if (result.error()) {
             qDebug() << "SELECT error" << result.errorString();
             return;
@@ -64,7 +65,8 @@ int main(int argc, char *argv[])
 
         qDebug() << "PREPARED size" << result.size();
     });
-    simpleDb.exec(APreparedQueryLiteral(u"SELECT broken"), {qint64(12345)}, nullptr, [=](AResult &result) {
+    simpleDb.exec(
+        APreparedQueryLiteral(u"SELECT broken"), {qint64(12345)}, nullptr, [=](AResult &result) {
         if (result.error()) {
             qDebug() << "SELECT broken error" << result.errorString();
             return;
@@ -147,7 +149,8 @@ int main(int argc, char *argv[])
         }
 
         if (result.size()) {
-            qDebug() << "SELECT value 2" << result.begin().value(0) << result.begin().value(1) << query2.identification();
+            qDebug() << "SELECT value 2" << result.begin().value(0) << result.begin().value(1)
+                     << query2.identification();
         }
     });
 
@@ -158,17 +161,21 @@ int main(int argc, char *argv[])
         }
 
         if (result.size()) {
-            qDebug() << "SELECT value 2" << result.begin().value(0) << result.begin().value(1) << query2.identification();
+            qDebug() << "SELECT value 2" << result.begin().value(0) << result.begin().value(1)
+                     << query2.identification();
         }
     });
 
     auto dbStatic = APool::database(QStringLiteral("static"));
-    auto loopFn = [=](double sleep) {
-        auto queryStatic = APreparedQueryLiteral(u"SELECT $1::text AS first, now() AS ts, pg_sleep($1::integer)");
+    auto loopFn   = [=](double sleep) {
+        auto queryStatic =
+            APreparedQueryLiteral(u"SELECT $1::text AS first, now() AS ts, pg_sleep($1::integer)");
         ADatabase(dbStatic).exec(queryStatic,
-                           {sleep,},
-                           nullptr,
-                           [=](AResult &result) {
+                                   {
+                                     sleep,
+                                 },
+                                 nullptr,
+                                 [=](AResult &result) {
             if (result.error()) {
                 qDebug() << "SELECT error END" << result.errorString();
                 return;
@@ -176,8 +183,12 @@ int main(int argc, char *argv[])
 
             if (result.size()) {
                 const auto firstRow = result.begin();
-                qDebug() << "SELECT value AColumnIndex" << firstRow.value(AColumnIndex(result, u"first")) << firstRow.value(AColumnIndex(result, u"ts")) << queryStatic.identification();
-                qDebug() << "SELECT value AColumn" << AColumn(firstRow, u"first").value() << AColumn(firstRow, u"ts").value() << queryStatic.identification();
+                qDebug() << "SELECT value AColumnIndex"
+                         << firstRow.value(AColumnIndex(result, u"first"))
+                         << firstRow.value(AColumnIndex(result, u"ts"))
+                         << queryStatic.identification();
+                qDebug() << "SELECT value AColumn" << AColumn(firstRow, u"first").value()
+                         << AColumn(firstRow, u"ts").value() << queryStatic.identification();
             }
         });
     };

@@ -65,7 +65,8 @@ ADatabase::State ADatabase::state() const
     return ADatabase::State::Disconnected;
 }
 
-void ADatabase::onStateChanged(QObject *receiver, std::function<void(ADatabase::State, const QString &)> cb)
+void ADatabase::onStateChanged(QObject *receiver,
+                               std::function<void(ADatabase::State, const QString &)> cb)
 {
     Q_ASSERT(d);
     d->onStateChanged(receiver, cb);
@@ -122,14 +123,20 @@ void ADatabase::exec(QStringView query, const QVariantList &params, QObject *rec
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-void ADatabase::exec(QUtf8StringView query, const QVariantList &params, QObject *receiver, AResultFn cb)
+void ADatabase::exec(QUtf8StringView query,
+                     const QVariantList &params,
+                     QObject *receiver,
+                     AResultFn cb)
 {
     Q_ASSERT(d);
     d->exec(d, query, params, receiver, cb);
 }
 #endif
 
-void ADatabase::exec(const APreparedQuery &query, const QVariantList &params, QObject *receiver, AResultFn cb)
+void ADatabase::exec(const APreparedQuery &query,
+                     const QVariantList &params,
+                     QObject *receiver,
+                     AResultFn cb)
 {
     Q_ASSERT(d);
     d->exec(d, query, params, receiver, cb);
@@ -165,7 +172,9 @@ bool ADatabase::pipelineSync()
     return d->pipelineSync();
 }
 
-void ADatabase::subscribeToNotification(const QString &channel, QObject *receiver, ANotificationFn cb)
+void ADatabase::subscribeToNotification(const QString &channel,
+                                        QObject *receiver,
+                                        ANotificationFn cb)
 {
     Q_ASSERT(d);
     d->subscribeToNotification(d, channel, receiver, cb);
