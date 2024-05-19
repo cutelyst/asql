@@ -88,7 +88,7 @@ version bigint not null check (version >= 0)
             } else {
                 d_ptr->active = 0;
             }
-            Q_EMIT ready(false, QString());
+            Q_EMIT ready(false, QString{});
         });
     });
 }
@@ -136,7 +136,7 @@ void AMigrations::fromString(const QString &text)
     while (!stream.atEnd()) {
         stream.readLineInto(&line);
         qDebug(ASQL_MIG) << "MIG LINE" << line << upWay << version;
-        static QRegularExpressionMatch match = re.match(line);
+        QRegularExpressionMatch match = re.match(line);
         if (match.hasMatch()) {
             const QStringView way = match.capturedView(2);
             noTransaction         = !match.capturedView(3).isNull();
@@ -338,7 +338,7 @@ AMigrationsPrivate::MigQuery AMigrationsPrivate::nextQuery(int versionFrom, int 
 {
     AMigrationsPrivate::MigQuery ret;
 
-    static QString query = uR"V0G0N(
+    QString query = uR"V0G0N(
 INSERT INTO public.asql_migrations VALUES ('%1', %2)
 ON CONFLICT (name) DO UPDATE
 SET version=EXCLUDED.version
