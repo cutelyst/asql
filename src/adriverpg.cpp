@@ -467,15 +467,16 @@ void ADriverPg::setLastQuerySingleRowMode()
     }
 }
 
-bool ADriverPg::enterPipelineMode(qint64 autoSyncMS)
+bool ADriverPg::enterPipelineMode(std::chrono::milliseconds timeout)
 {
 #ifdef LIBPQ_HAS_PIPELINING
     // Refuse to enter Pipeline mode if we have queued queries
     if (isConnected() && m_queuedQueries.empty() && PQenterPipelineMode(m_conn->conn()) == 1) {
-        if (autoSyncMS && !m_autoSyncTimer) {
+        using namespace std::chrono;
+        if (timeout > 0ms && !m_autoSyncTimer) {
             m_autoSyncTimer = std::make_unique<QTimer>();
-            m_autoSyncTimer->setInterval(autoSyncMS);
-            m_autoSyncTimer->setSingleShot(autoSyncMS);
+            m_autoSyncTimer->setInterval(timeout);
+            m_autoSyncTimer->setSingleShot(true);
             connect(m_autoSyncTimer.get(), &QTimer::timeout, this, &ADriverPg::pipelineSync);
         }
         return true;

@@ -170,7 +170,7 @@ public:
 
     void setLastQuerySingleRowMode() override;
 
-    bool enterPipelineMode(qint64 autoSyncMS) override;
+    bool enterPipelineMode(std::chrono::milliseconds timeout) override;
 
     bool exitPipelineMode() override;
 

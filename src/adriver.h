@@ -59,7 +59,7 @@ public:
 
     virtual void setLastQuerySingleRowMode();
 
-    virtual bool enterPipelineMode(qint64 autoSyncMS);
+    virtual bool enterPipelineMode(std::chrono::milliseconds timeout);
 
     virtual bool exitPipelineMode();
 

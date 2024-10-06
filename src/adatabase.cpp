@@ -144,10 +144,10 @@ void ADatabase::setLastQuerySingleRowMode()
     d->setLastQuerySingleRowMode();
 }
 
-bool ADatabase::enterPipelineMode(qint64 autoSyncMS)
+bool ADatabase::enterPipelineMode(std::chrono::milliseconds timeout)
 {
     Q_ASSERT(d);
-    return d->enterPipelineMode(autoSyncMS);
+    return d->enterPipelineMode(timeout);
 }
 
 bool ADatabase::exitPipelineMode()

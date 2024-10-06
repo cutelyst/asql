@@ -5,6 +5,7 @@
 #pragma once
 
 #include <asqlexports.h>
+#include <chrono>
 #include <functional>
 #include <memory>
 
@@ -250,7 +251,7 @@ public:
      *
      * @return
      */
-    bool enterPipelineMode(qint64 autoSyncMS = 0);
+    bool enterPipelineMode(std::chrono::milliseconds timeout = std::chrono::milliseconds{0});
 
     /**
      * @brief exitPipelineModewill disables the pipeline mode on the driver, it's queue must be

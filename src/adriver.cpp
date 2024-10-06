@@ -170,9 +170,9 @@ void ADriver::setLastQuerySingleRowMode()
 {
 }
 
-bool ADriver::enterPipelineMode(qint64 autoSyncMS)
+bool ADriver::enterPipelineMode(std::chrono::milliseconds timeout)
 {
-    Q_UNUSED(autoSyncMS);
+    Q_UNUSED(timeout);
     return false;
 }
 
