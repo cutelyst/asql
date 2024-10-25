@@ -10,7 +10,6 @@
 #include "../../src/apool.h"
 #include "../../src/aresult.h"
 #include "../../src/atransaction.h"
-#include "../../src/atransactioncommit.h"
 
 #include <thread>
 
