@@ -10,6 +10,7 @@
 #include "../../src/apool.h"
 #include "../../src/aresult.h"
 #include "../../src/atransaction.h"
+#include "../../src/atransactioncommit.h"
 
 #include <thread>
 
@@ -66,6 +67,35 @@ int main(int argc, char *argv[])
                 if (result.size()) {
                     qDebug() << "SELECT value" << result.begin().value(0);
                 }
+            });
+        });
+    }
+
+    {
+        auto db = APool::database();
+        ATransactionCommit t(db, nullptr, [](AResult &result, bool rollback) {
+            qDebug() << "COMMIT result" << rollback << result.error() << result.errorString();
+        });
+
+        t.begin(nullptr, [t](AResult &result) mutable {
+            if (result.error()) {
+                qDebug() << "BEGIN error" << result.errorString();
+                return;
+            }
+
+            t.database().exec(u"INSERT INTO foo"_s, nullptr, [t](AResult &result) mutable {
+                if (result.error()) {
+                    qDebug() << "SELECT error" << result.errorString();
+                    // t.rollback();
+                    return;
+                }
+
+                if (result.size()) {
+                    qDebug() << "SELECT value" << result.begin().value(0);
+                }
+                qDebug() << "call roll" << result.begin().value(0);
+
+                // should COMMIT now, resulting in a ROLLBACK due broken select
             });
         });
     }

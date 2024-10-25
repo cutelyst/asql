@@ -7,7 +7,7 @@
 
 #include <QLoggingCategory>
 
-Q_LOGGING_CATEGORY(ASQL_TRANSACTION, "asql.transaction", QtInfoMsg)
+Q_DECLARE_LOGGING_CATEGORY(ASQL_TRANSACTION)
 
 namespace ASql {
 

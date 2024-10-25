@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+# SPDX-FileCopyrightText: (C) 2020-2024 Daniel Nicoletti <dantti12@gmail.com>
 # SPDX-License-Identifier: MIT
 
 set(asql_SRC
@@ -6,6 +6,7 @@ set(asql_SRC
     adatabase.h
     apool.cpp
     atransaction.cpp
+    atransactioncommit.cpp
     adriver.cpp
     adriver.h
     adriverfactory.cpp
@@ -20,6 +21,7 @@ set(asql_HEADERS
     apreparedquery.h
     apool.h
     atransaction.h
+    atransactioncommit.h
     aresult.h
     adriver.h
     adriverfactory.h
@@ -30,12 +32,11 @@ add_library(ASqlQt${QT_VERSION_MAJOR}
     ${asql_SRC}
     ${asql_HEADERS}
     ${asql_HEADERS_PRIVATE}
-
 )
 
 configure_file(asqlexports.h.in asqlexports.h @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/asqlexports.h
-        DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
+    DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
 )
 
 #Add an alias so that library can be used inside the build tree, e.g. when testing
