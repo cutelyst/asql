@@ -6,7 +6,7 @@ set(asql_SRC
     adatabase.h
     apool.cpp
     atransaction.cpp
-    atransactioncommit.cpp
+
     adriver.cpp
     adriver.h
     adriverfactory.cpp
@@ -21,7 +21,7 @@ set(asql_HEADERS
     apreparedquery.h
     apool.h
     atransaction.h
-    atransactioncommit.h
+
     aresult.h
     adriver.h
     adriverfactory.h

@@ -79,8 +79,10 @@ void ATransaction::commit(QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
     if (d->running) {
-        d->running = false;
-        d->db.commit(receiver, cb);
+        if (d.use_count() == 1) {
+            d->running = false;
+            d->db.commit(receiver, cb);
+        }
     } else {
         qWarning(ASQL_TRANSACTION, "Transaction not started");
     }

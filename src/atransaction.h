@@ -41,9 +41,14 @@ public:
     void begin(QObject *receiver = nullptr, AResultFn cb = {});
 
     /*!
-     * \brief commit a transaction, this operation usually succeeds,
-     * but one can hook up a callback to check it's result.
-     * \note the commit will get into the front of the query queue as best as possible
+     * \brief commit a transaction only if our usage count equals 1
+     *
+     * Because we are implicit shared we can see if this is the last
+     * reference to this object, this call can be make multiple times
+     * but it will be ignored if it was not using the last reference.
+     *
+     * This is so that you can call this on a INSERT loop and have
+     * COMMIT being issued only on the last INSERT result.
      *
      * \param cb
      */
@@ -52,11 +57,10 @@ public:
     /*!
      * \brief rollback a transaction, this operation usually succeeds,
      * but one can hook up a callback to check it's result.
-     * \note the commit will get into the front of the query queue as best as possible
      *
      * \param cb
      */
-    void rollback(QObject *receiver = nullptr, AResultFn cb = {});
+    Q_DECL_DEPRECATED void rollback(QObject *receiver = nullptr, AResultFn cb = {});
 
 private:
     std::shared_ptr<ATransactionPrivate> d;

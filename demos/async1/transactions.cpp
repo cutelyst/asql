@@ -72,31 +72,34 @@ int main(int argc, char *argv[])
     }
 
     {
-        auto db = APool::database();
-        ATransactionCommit t(db, nullptr, [](AResult &result, bool rollback) {
-            qDebug() << "COMMIT result" << rollback << result.error() << result.errorString();
-        });
-
-        t.begin(nullptr, [t](AResult &result) mutable {
+        ATransaction t(APool::database());
+        t.begin(nullptr, [t](AResult &result) {
             if (result.error()) {
                 qDebug() << "BEGIN error" << result.errorString();
                 return;
             }
 
-            t.database().exec(u"INSERT INTO foo"_s, nullptr, [t](AResult &result) mutable {
-                if (result.error()) {
-                    qDebug() << "SELECT error" << result.errorString();
-                    // t.rollback();
-                    return;
-                }
+            for (int i = 0; i < 5; ++i) {
+                t.database().exec(u"SELECT $1"_s,
+                                  {
+                                      i,
+                                  },
+                                  nullptr,
+                                  [t](AResult &result) mutable {
+                    if (result.error()) {
+                        qDebug() << "SELECT i error" << result.errorString();
+                        return;
+                    }
 
-                if (result.size()) {
-                    qDebug() << "SELECT value" << result.begin().value(0);
-                }
-                qDebug() << "call roll" << result.begin().value(0);
+                    if (result.size()) {
+                        qDebug() << "SELECT i value" << result.begin().value(0);
+                    }
 
-                // should COMMIT now, resulting in a ROLLBACK due broken select
-            });
+                    t.commit(nullptr, [](AResult &result) {
+                        qDebug() << "COMMIT i result" << result.error() << result.errorString();
+                    });
+                });
+            }
         });
     }
 

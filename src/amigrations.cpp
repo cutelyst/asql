@@ -322,11 +322,9 @@ void AMigrations::migrate(int targetVersion,
                             }
                         });
                     } else {
-                        t.rollback(this, [=](AResult &result) {
-                            if (cb) {
-                                cb(true, result.errorString());
-                            }
-                        });
+                        if (cb) {
+                            cb(true, u"Rolling back"_s);
+                        }
                     }
                 }
             });
