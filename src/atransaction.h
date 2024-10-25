@@ -58,9 +58,13 @@ public:
      * \brief rollback a transaction, this operation usually succeeds,
      * but one can hook up a callback to check it's result.
      *
+     * It might be useful to explict rollback a transaction in case
+     * we want to reuse the database connection for a query not
+     * related to the transaction.
+     *
      * \param cb
      */
-    Q_DECL_DEPRECATED void rollback(QObject *receiver = nullptr, AResultFn cb = {});
+    void rollback(QObject *receiver = nullptr, AResultFn cb = {});
 
 private:
     std::shared_ptr<ATransactionPrivate> d;
