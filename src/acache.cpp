@@ -5,6 +5,7 @@
 
 #include "acache.h"
 
+#include "acoroexpected.h"
 #include "adatabase.h"
 #include "apool.h"
 #include "aresult.h"
@@ -247,6 +248,38 @@ int ACache::size() const
 {
     Q_D(const ACache);
     return d->cache.size();
+}
+
+AExpectedResult ACache::coExec(QStringView query, QObject *receiver)
+{
+    AExpectedResult coro(receiver);
+    execExpiring(query, -1ms, {}, receiver, coro.callback);
+    return coro;
+}
+
+AExpectedResult ACache::coExec(QStringView query, const QVariantList &args, QObject *receiver)
+{
+    AExpectedResult coro(receiver);
+    execExpiring(query, -1ms, args, receiver, coro.callback);
+    return coro;
+}
+
+AExpectedResult
+    ACache::coExecExpiring(QStringView query, std::chrono::milliseconds maxAge, QObject *receiver)
+{
+    AExpectedResult coro(receiver);
+    execExpiring(query, maxAge, {}, receiver, coro.callback);
+    return coro;
+}
+
+AExpectedResult ACache::coExecExpiring(QStringView query,
+                                       std::chrono::milliseconds maxAge,
+                                       const QVariantList &args,
+                                       QObject *receiver)
+{
+    AExpectedResult coro(receiver);
+    execExpiring(query, maxAge, args, receiver, coro.callback);
+    return coro;
 }
 
 void ACache::exec(QStringView query, QObject *receiver, AResultFn cb)

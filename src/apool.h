@@ -15,6 +15,8 @@ namespace ASql {
 
 using ADatabaseFn = std::function<void(ADatabase db)>;
 
+class AExpectedDatabase;
+
 class ASQL_EXPORT APool
 {
 public:
@@ -87,6 +89,9 @@ public:
      * \param connectionName
      */
     static void database(QObject *receiver, ADatabaseFn cb, QStringView poolName = defaultPool);
+
+    static AExpectedDatabase coDatabase(QObject *receiver    = nullptr,
+                                        QStringView poolName = defaultPool);
 
     /*!
      * \brief setMaxIdleConnections maximum number of idle connections of the pool

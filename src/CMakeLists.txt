@@ -14,6 +14,7 @@ set(asql_SRC
     acache.cpp
     apreparedquery.cpp
     apreparedquery.h
+    acoroexpected.cpp
 )
 
 set(asql_HEADERS
@@ -21,7 +22,7 @@ set(asql_HEADERS
     apreparedquery.h
     apool.h
     atransaction.h
-
+    acoroexpected.h
     aresult.h
     adriver.h
     adriverfactory.h
