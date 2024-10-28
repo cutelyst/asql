@@ -12,6 +12,11 @@
 
 namespace ASql {
 
+template <typename T>
+class ACoroExpected;
+
+using AExpectedResult = ACoroExpected<AResult>;
+
 class ACachePrivate;
 class ASQL_EXPORT ACache : public QObject
 {
@@ -42,6 +47,17 @@ public:
      * \return the number of entries in the cache
      */
     [[nodiscard]] int size() const;
+
+    AExpectedResult coExec(QStringView query, QObject *receiver = nullptr);
+    AExpectedResult
+        coExec(QStringView query, const QVariantList &args, QObject *receiver = nullptr);
+    AExpectedResult coExecExpiring(QStringView query,
+                                   std::chrono::milliseconds maxAge,
+                                   QObject *receiver = nullptr);
+    AExpectedResult coExecExpiring(QStringView query,
+                                   std::chrono::milliseconds maxAge,
+                                   const QVariantList &args,
+                                   QObject *receiver = nullptr);
 
     void exec(QStringView query, QObject *receiver, AResultFn cb);
     void exec(QStringView query, const QVariantList &args, QObject *receiver, AResultFn cb);

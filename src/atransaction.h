@@ -9,6 +9,11 @@
 
 namespace ASql {
 
+template <typename T>
+class ACoroExpected;
+
+using AExpectedResult = ACoroExpected<AResult>;
+
 class ATransactionPrivate;
 class ASQL_EXPORT ATransaction
 {
@@ -54,6 +59,8 @@ public:
      */
     void commit(QObject *receiver = nullptr, AResultFn cb = {});
 
+    AExpectedResult coCommit(QObject *receiver = nullptr);
+
     /*!
      * \brief rollback a transaction, this operation usually succeeds,
      * but one can hook up a callback to check it's result.
@@ -65,6 +72,12 @@ public:
      * \param cb
      */
     void rollback(QObject *receiver = nullptr, AResultFn cb = {});
+
+    AExpectedResult coRollback(QObject *receiver = nullptr);
+
+protected:
+    friend class ACoroExpected<ATransaction>;
+    ATransaction(const ADatabase &db, bool started);
 
 private:
     std::shared_ptr<ATransactionPrivate> d;

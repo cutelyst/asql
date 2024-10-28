@@ -15,6 +15,7 @@
 namespace ASql {
 
 class AResult;
+class ATransaction;
 class ADriver;
 class ADriverFactory;
 
@@ -28,6 +29,12 @@ public:
 
 using AResultFn       = std::function<void(AResult &result)>;
 using ANotificationFn = std::function<void(const ADatabaseNotification &payload)>;
+
+template <typename T>
+class ACoroExpected;
+
+using AExpectedResult      = ACoroExpected<AResult>;
+using AExpectedTransaction = ACoroExpected<ATransaction>;
 
 class APreparedQuery;
 class ASQL_EXPORT ADatabase
@@ -123,6 +130,8 @@ public:
      */
     void begin(QObject *receiver = nullptr, AResultFn cb = {});
 
+    AExpectedTransaction coBegin(QObject *receiver = nullptr);
+
     /*!
      * \brief commit a transaction, this operation usually succeeds,
      * but one can hook up a callback to check it's result.
@@ -138,6 +147,22 @@ public:
      * \param cb
      */
     void rollback(QObject *receiver = nullptr, AResultFn cb = {});
+
+    AExpectedResult coExec(QStringView query, QObject *receiver = nullptr);
+
+    AExpectedResult
+        coExec(QStringView query, const QVariantList &params, QObject *receiver = nullptr);
+
+    AExpectedResult coExec(QUtf8StringView query, QObject *receiver = nullptr);
+
+    AExpectedResult
+        coExec(QUtf8StringView query, const QVariantList &params, QObject *receiver = nullptr);
+
+    AExpectedResult coExec(const APreparedQuery &query, QObject *receiver = nullptr);
+
+    AExpectedResult coExec(const APreparedQuery &query,
+                           const QVariantList &params,
+                           QObject *receiver = nullptr);
 
     /*!
      * \brief exec excutes a \param query against this database connection,

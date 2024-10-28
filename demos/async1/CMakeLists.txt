@@ -8,6 +8,13 @@ target_link_libraries(async1
     Qt::Core
 )
 
+add_executable(coroutines coroutines.cpp)
+target_link_libraries(coroutines
+    ASql::Core
+    ASql::Pg
+    Qt::Core
+)
+
 add_executable(transactions transactions.cpp)
 target_link_libraries(transactions
     ASql::Core

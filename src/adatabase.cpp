@@ -5,8 +5,10 @@
 
 #include "adatabase.h"
 
+#include "acoroexpected.h"
 #include "adriver.h"
 #include "adriverfactory.h"
+#include "atransaction.h"
 
 #include <QLoggingCategory>
 
@@ -84,6 +86,15 @@ void ADatabase::begin(QObject *receiver, AResultFn cb)
     d->begin(d, receiver, cb);
 }
 
+AExpectedTransaction ADatabase::coBegin(QObject *receiver)
+{
+    Q_ASSERT(d);
+    AExpectedTransaction coro(receiver);
+    coro.database = d;
+    d->begin(d, receiver, coro.callback);
+    return coro;
+}
+
 void ADatabase::commit(QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
@@ -94,6 +105,56 @@ void ADatabase::rollback(QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
     d->rollback(d, receiver, cb);
+}
+
+AExpectedResult ADatabase::coExec(QStringView query, QObject *receiver)
+{
+    Q_ASSERT(d);
+    AExpectedResult coro(receiver);
+    d->exec(d, query, QVariantList(), receiver, coro.callback);
+    return coro;
+}
+
+AExpectedResult ADatabase::coExec(QStringView query, const QVariantList &params, QObject *receiver)
+{
+    Q_ASSERT(d);
+    AExpectedResult coro(receiver);
+    d->exec(d, query, params, receiver, coro.callback);
+    return coro;
+}
+
+AExpectedResult ADatabase::coExec(QUtf8StringView query, QObject *receiver)
+{
+    Q_ASSERT(d);
+    AExpectedResult coro(receiver);
+    d->exec(d, query, QVariantList(), receiver, coro.callback);
+    return coro;
+}
+
+AExpectedResult
+    ADatabase::coExec(QUtf8StringView query, const QVariantList &params, QObject *receiver)
+{
+    Q_ASSERT(d);
+    AExpectedResult coro(receiver);
+    d->exec(d, query, params, receiver, coro.callback);
+    return coro;
+}
+
+AExpectedResult ADatabase::coExec(const APreparedQuery &query, QObject *receiver)
+{
+    Q_ASSERT(d);
+    AExpectedResult coro(receiver);
+    d->exec(d, query, QVariantList(), receiver, coro.callback);
+    return coro;
+}
+
+AExpectedResult
+    ADatabase::coExec(const APreparedQuery &query, const QVariantList &params, QObject *receiver)
+{
+    Q_ASSERT(d);
+    AExpectedResult coro(receiver);
+    d->exec(d, query, params, receiver, coro.callback);
+    return coro;
 }
 
 void ADatabase::exec(QStringView query, QObject *receiver, AResultFn cb)

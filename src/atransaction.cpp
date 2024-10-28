@@ -5,6 +5,8 @@
 
 #include "atransaction.h"
 
+#include "acoroexpected.h"
+
 #include <QLoggingCategory>
 
 Q_LOGGING_CATEGORY(ASQL_TRANSACTION, "asql.transaction", QtInfoMsg)
@@ -37,6 +39,12 @@ using namespace ASql;
 ATransaction::ATransaction() = default;
 
 ATransaction::~ATransaction() = default;
+
+ATransaction::ATransaction(const ADatabase &db, bool started)
+    : ATransaction{db}
+{
+    d->running = started;
+}
 
 ATransaction::ATransaction(const ADatabase &db)
     : d(std::make_shared<ATransactionPrivate>(db))
@@ -88,6 +96,14 @@ void ATransaction::commit(QObject *receiver, AResultFn cb)
     }
 }
 
+AExpectedResult ATransaction::coCommit(QObject *receiver)
+{
+    d->running = false;
+    AExpectedResult coro(receiver);
+    d->db.commit(receiver, coro.callback);
+    return coro;
+}
+
 void ATransaction::rollback(QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
@@ -97,4 +113,13 @@ void ATransaction::rollback(QObject *receiver, AResultFn cb)
     } else {
         qWarning(ASQL_TRANSACTION, "Transaction not started");
     }
+}
+
+AExpectedResult ATransaction::coRollback(QObject *receiver)
+{
+    Q_ASSERT(d);
+    d->running = false;
+    AExpectedResult coro(receiver);
+    d->db.rollback(receiver, coro.callback);
+    return coro;
 }

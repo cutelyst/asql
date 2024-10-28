@@ -5,6 +5,7 @@
 
 #include "apool.h"
 
+#include "acoroexpected.h"
 #include "adriver.h"
 #include "adriverfactory.h"
 
@@ -205,6 +206,13 @@ void APool::database(QObject *receiver, ADatabaseFn cb, QStringView poolName)
             cb(std::move(db));
         }
     }
+}
+
+AExpectedDatabase APool::coDatabase(QObject *receiver, QStringView poolName)
+{
+    AExpectedDatabase coro(receiver);
+    database(receiver, coro.callback, poolName);
+    return coro;
 }
 
 void APool::setMaxIdleConnections(int max, QStringView poolName)
