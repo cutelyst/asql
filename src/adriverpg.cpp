@@ -1029,7 +1029,7 @@ QVariant AResultPg::value(int row, int column) const
         } else {
             QChar sign = dtval[dtval.size() - 3];
             if (sign == u'-' || sign == u'+') {
-                dtval += u8":00";
+                dtval += u":00";
             }
             return QDateTime::fromString(dtval, Qt::ISODate);
         }
@@ -1160,7 +1160,7 @@ QDateTime AResultPg::toDateTime(int row, int column) const
     } else {
         QChar sign = dtval[dtval.size() - 3];
         if (sign == u'-' || sign == u'+') {
-            dtval += u8":00";
+            dtval += u":00";
         }
         return QDateTime::fromString(dtval, Qt::ISODate);
     }

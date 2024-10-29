@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
         });
 
         db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8, $1",
-                {"I ♥ Cutelyst!"_qba},
+                {"I ♥ Cutelyst!"_ba},
                 nullptr,
                 [](AResult &result) {
             qDebug() << "=====iterator qba row" << result.toHash();
