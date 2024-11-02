@@ -3,6 +3,7 @@
 #include <adatabase.h>
 #include <aresult.h>
 #include <asqlexports.h>
+#include <atransaction.h>
 #include <coroutine>
 #include <expected>
 
