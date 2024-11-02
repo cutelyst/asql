@@ -34,9 +34,11 @@ add_library(ASqlQt${QT_VERSION_MAJOR}
     ${asql_HEADERS}
     ${asql_HEADERS_PRIVATE}
 )
-
-configure_file(asqlexports.h.in asqlexports.h @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/asqlexports.h
+generate_export_header(ASqlQt${QT_VERSION_MAJOR}
+    BASE_NAME ASQL
+)
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/asql_export.h
     DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
 )
 
@@ -100,6 +102,14 @@ add_library(ASqlQt${QT_VERSION_MAJOR}Migrations
     ${asql_migrations_HEADERS}
 )
 
+generate_export_header(ASqlQt${QT_VERSION_MAJOR}Migrations
+    BASE_NAME ASQL_MIGRATIONS
+)
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/asql_migrations_export.h
+    DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
+)
+
 add_library(ASql::Migrations ALIAS ASqlQt${QT_VERSION_MAJOR}Migrations)
 project_target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}Migrations)
 
@@ -152,6 +162,14 @@ set(asql_pg_HEADERS
 add_library(ASqlQt${QT_VERSION_MAJOR}Pg
     ${asql_pg_SRC}
     ${asql_pg_HEADERS}
+)
+
+generate_export_header(ASqlQt${QT_VERSION_MAJOR}Pg
+    BASE_NAME ASQL_PG
+)
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/asql_pg_export.h
+    DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
 )
 
 add_library(ASql::Pg ALIAS ASqlQt${QT_VERSION_MAJOR}Pg)

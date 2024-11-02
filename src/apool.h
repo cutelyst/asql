@@ -6,7 +6,7 @@
 
 #include <adatabase.h>
 #include <adriverfactory.h>
-#include <asqlexports.h>
+#include <asql_export.h>
 
 #include <QObject>
 #include <QUrl>

@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+          - windows-latest
+          - macos-latest
+        config:
+          - qt_version: "6.4.2"
+
+    steps:
+      - name: Install dependencies on Ubuntu
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update -qq
+          sudo apt install -y doxygen graphviz postgresql-server-dev-16
+
+      - name: Install dependencies on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install postgresql@16
+
+      - name: Install PostgreSQL 16 with Chocolatey
+        if: runner.os == 'Windows'
+        run: |
+          choco install postgresql --version=16.0 -y
+
+      - name: Install Qt with options and default aqtversion
+        uses: jurplel/install-qt-action@v4
+        with:
+          aqtversion: null  # use whatever the default is
+          version: ${{ matrix.config.qt_version }}
+          cache: true
+
+      - name: Install ninja-build tool (must be after Qt due PATH changes)
+        uses: turtlesec-no/get-ninja@main
+
+      - name: Make sure MSVC is found when Ninja generator is in use
+        if: ${{ runner.os == 'Windows' }}
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure project (Shared Link)
+        run: >
+          cmake -S . -B ./build-shared -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/postgresql@16;C:\Program Files\PostgreSQL\16"
+          -DENABLE_MAINTAINER_CFLAGS=${{ matrix.build_type == 'Debug' }}
+          -DBUILD_SHARED_LIBS=ON
+
+      - name: Build project
+        run: cmake --build ./build-shared
+
+      - name: Run tests
+        id: ctest_shared
+        run: ctest --test-dir ./build-shared -C Debug --output-on-failure
+
+      - name: Read tests log when it fails
+        uses: andstor/file-reader-action@v1
+        if: ${{ steps.ctest_shared.conclusion == 'failure' }}
+        with:
+          path: "./build-shared/Testing/Temporary/LastTest.log"
+
+      # Installing PostgreSQL on Windows takes too much time, so better reuse it here
+      - name: Configure project (Static Link)
+        run: >
+          cmake -S . -B ./build-static -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/postgresql@16;C:\Program Files\PostgreSQL\16"
+          -DBUILD_SHARED_LIBS=OFF
+
+      - name: Build project
+        run: cmake --build ./build-static
+
+      - name: Run tests
+        id: ctest_static
+        run: ctest --test-dir ./build-static -C Debug --output-on-failure
+
+      - name: Read tests log when it fails
+        uses: andstor/file-reader-action@v1
+        if: ${{ steps.ctest_static.conclusion == 'failure' }}
+        with:
+          path: "./build-static/Testing/Temporary/LastTest.log"

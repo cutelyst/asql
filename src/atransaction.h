@@ -5,7 +5,7 @@
 #pragma once
 
 #include <adatabase.h>
-#include <asqlexports.h>
+#include <asql_export.h>
 
 namespace ASql {
 
