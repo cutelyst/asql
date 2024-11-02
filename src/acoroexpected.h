@@ -2,7 +2,7 @@
 
 #include <adatabase.h>
 #include <aresult.h>
-#include <asqlexports.h>
+#include <asql_export.h>
 #include <atransaction.h>
 #include <coroutine>
 #include <expected>

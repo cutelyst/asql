@@ -6,7 +6,7 @@
 
 #include "adriverfactory.h"
 
-#include <asqlexports.h>
+#include <asql_pg_export.h>
 
 #include <QUrl>
 

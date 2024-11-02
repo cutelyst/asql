@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.16)
 project(libasql VERSION 0.92.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
+include(GenerateExportHeader)
 
 find_package(PostgreSQL REQUIRED)
 find_package(QT NAMES Qt6 COMPONENTS Core REQUIRED)

@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include <asqlexports.h>
+#include <asql_export.h>
 
 #include <QString>
 
