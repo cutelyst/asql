@@ -32,7 +32,6 @@ set(asql_HEADERS
 add_library(ASqlQt${QT_VERSION_MAJOR}
     ${asql_SRC}
     ${asql_HEADERS}
-    ${asql_HEADERS_PRIVATE}
 )
 generate_export_header(ASqlQt${QT_VERSION_MAJOR}
     BASE_NAME ASQL
