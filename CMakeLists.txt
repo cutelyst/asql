@@ -39,8 +39,6 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     "/usr" CACHE PATH "asql default install prefix" FORCE)
 endif()
 
-add_definitions("-DLOCALSTATEDIR=\"${LOCALSTATEDIR}\"")
-
 set(CMAKE_INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_LIBRARY_ARCHITECTURE}" CACHE PATH "Output directory for libraries")
 
 option(BUILD_SHARED_LIBS "Build in shared lib mode" ON)

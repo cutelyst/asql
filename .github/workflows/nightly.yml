@@ -3,8 +3,8 @@ name: CI Nightly
 on:
   workflow_dispatch:
 
-  schedule:
-    - cron: '0 3 * * *'
+  # schedule:
+  #   - cron: '0 3 * * *'
 
 jobs:
   build:
@@ -29,7 +29,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update -qq
-          sudo apt install -y clazy doxygen graphviz postgresql-server-dev-all
+          sudo apt install -y clazy doxygen graphviz postgresql-server-dev-16 clang-tidy-18
 
       - name: Install Qt ${{ matrix.config.qt_version }} with options and default aqtversion
         uses: jurplel/install-qt-action@v4

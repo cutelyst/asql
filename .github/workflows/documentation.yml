@@ -4,9 +4,9 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-  push:
-    branches:
-      - master
+  # push:
+  #   branches:
+  #     - master
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -28,7 +28,7 @@ jobs:
       - name: Install Dependencies on Linux
         run: |
           sudo apt update -qq
-          sudo apt install -y doxygen graphviz postgresql-server-dev-all
+          sudo apt install -y doxygen graphviz postgresql-server-dev-16
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -48,9 +48,6 @@ jobs:
         run: >
           cmake -S . -B ./build
           -DBUILD_ALL=ON
-          -DPLUGIN_VIEW_CUTELEE=OFF
-          -DPLUGIN_VIEW_EMAIL=OFF
-          -DUSE_JEMALLOC=OFF
           -DDOCS_QTDOCSDIR:PATH="${{ runner.workspace }}/Qt/Docs/Qt-6.6.0"
 
       - name: Create docs
