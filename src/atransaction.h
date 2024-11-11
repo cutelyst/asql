@@ -75,6 +75,8 @@ public:
 
     AExpectedResult coRollback(QObject *receiver = nullptr);
 
+    bool isActive() const;
+
 protected:
     friend class ACoroExpected<ATransaction>;
     ATransaction(const ADatabase &db, bool started);

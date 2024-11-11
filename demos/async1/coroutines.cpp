@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
         callInvalid();
     }
 
-    if (true) {
+    if (false) {
         auto callOuter = []() -> ACoroTerminator {
             auto _ = qScopeGuard([] { qDebug() << "coro outer exited"; });
             qDebug() << "coro outer started";
@@ -200,9 +200,12 @@ int main(int argc, char *argv[])
                     co_return;
                 }
 
-                auto result = co_await db->coExec(u"SELECT now()"_s, nullptr);
+                auto result = co_await db->coExec(u"SELECT now() at time zone 'UTC'"_s, nullptr);
                 if (result.has_value()) {
-                    qDebug() << "coro result has value" << result->toJsonObject();
+                    qDebug() << "coro result has value" << result->toJsonArrayObject();
+                    for (const auto &row : *result) {
+                        qDebug() << "coro result row" << row.toJsonObject();
+                    }
                 } else {
                     qDebug() << "coro result error" << result.error();
                 }
@@ -284,6 +287,87 @@ int main(int argc, char *argv[])
         };
 
         callTerminatorLater();
+    }
+
+    if (false) {
+        auto callPool = []() -> ACoroTerminator {
+            auto _ = qScopeGuard([] { qDebug() << "coro pool exited"; });
+            qDebug() << "coro exec pool started";
+
+            auto result = co_await APool::exec(u8"SELECT now()", nullptr, u"invalid");
+            if (result.has_value()) {
+                qDebug() << "coro exec result has value" << result->toJsonObject();
+            } else {
+                qDebug() << "coro exec result error" << result.error();
+            }
+
+            result = co_await APool::exec(u8"SELECT now()", nullptr);
+            if (result.has_value()) {
+                qDebug() << "coro exec result has value" << result->toJsonObject();
+            } else {
+                qDebug() << "coro exec result error" << result.error();
+            }
+
+            auto obj = new QObject;
+            QTimer::singleShot(500, obj, [obj] {
+                qDebug() << "Delete Obj later";
+                delete obj;
+            });
+            co_yield obj; // so that this promise is destroyed if this object is destroyed
+
+            result = co_await APool::exec(u8"SELECT now(), pg_sleep(1)", obj);
+            if (result.has_value()) {
+                qDebug() << "coro exec result has value" << result->toJsonObject();
+            } else {
+                qDebug() << "coro exec result error" << result.error();
+            }
+        };
+
+        callPool();
+    }
+
+    if (true) {
+        auto callPoolBegin = []() -> ACoroTerminator {
+            auto _ = qScopeGuard([] { qDebug() << "coro pool exited"; });
+            qDebug() << "coro exec pool started";
+
+            auto t = co_await APool::begin(nullptr);
+            if (t.has_value()) {
+                qDebug() << "coro exec t has value" << t->database().isOpen();
+            } else {
+                qDebug() << "coro exec t error" << t.error();
+            }
+
+            auto result = co_await t->database().coExec(u8"SELECT now()", nullptr);
+            if (result.has_value()) {
+                qDebug() << "coro exec result has value" << result->toJsonObject();
+            } else {
+                qDebug() << "coro exec result error" << result.error();
+            }
+
+            auto obj = new QObject;
+            QTimer::singleShot(500, obj, [obj] {
+                qDebug() << "Delete Obj later";
+                delete obj;
+            });
+            co_yield obj; // so that this promise is destroyed if this object is destroyed
+
+            result = co_await t->database().coExec(u8"SELECT now(), pg_sleep(1)", obj);
+            if (result.has_value()) {
+                qDebug() << "coro exec result has value" << result->toJsonObject();
+            } else {
+                qDebug() << "coro exec result error" << result.error();
+            }
+
+            result = co_await t->coCommit();
+            if (result.has_value()) {
+                qDebug() << "coro exec result has value" << result->toJsonObject();
+            } else {
+                qDebug() << "coro exec result error" << result.error();
+            }
+        };
+
+        callPoolBegin();
     }
 
     app.exec();

@@ -8,6 +8,10 @@
 #include "acoroexpected.h"
 #include "adriver.h"
 #include "adriverfactory.h"
+#include "apreparedquery.h"
+#include "atransaction.h"
+
+#include <expected>
 
 #include <QLoggingCategory>
 #include <QObject>
@@ -257,4 +261,140 @@ void APool::setReuseCallback(ADatabaseFn cb, QStringView poolName)
         qCritical(ASQL_POOL) << "Failed to set maximum connections: Database pool NOT FOUND"
                              << poolName;
     }
+}
+
+AExpectedResult APool::exec(QStringView query, QObject *receiver, QStringView poolName)
+{
+    AExpectedResult coro(receiver);
+    auto cb = coro.callback;
+
+    database(receiver, [cb, query, receiver](ADatabase db) {
+        if (db.isValid()) {
+            db.exec(query, {}, receiver, cb);
+            return;
+        }
+
+        AResult result;
+        cb(result);
+    }, poolName);
+
+    return coro;
+}
+
+AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringView poolName)
+{
+    AExpectedResult coro(receiver);
+    auto cb = coro.callback;
+
+    database(receiver, [cb, query, receiver](ADatabase db) {
+        if (db.isValid()) {
+            db.exec(query, {}, receiver, cb);
+            return;
+        }
+
+        AResult result;
+        cb(result);
+    }, poolName);
+
+    return coro;
+}
+
+AExpectedResult APool::exec(const APreparedQuery &query, QObject *receiver, QStringView poolName)
+{
+    AExpectedResult coro(receiver);
+    auto cb = coro.callback;
+
+    database(receiver, [cb, query, receiver](ADatabase db) {
+        if (db.isValid()) {
+            db.exec(query, {}, receiver, cb);
+            return;
+        }
+
+        AResult result;
+        cb(result);
+    }, poolName);
+
+    return coro;
+}
+
+AExpectedResult APool::exec(QStringView query,
+                            const QVariantList &params,
+                            QObject *receiver,
+                            QStringView poolName)
+{
+    AExpectedResult coro(receiver);
+    auto cb = coro.callback;
+
+    database(receiver, [cb, query, params, receiver](ADatabase db) {
+        if (db.isValid()) {
+            db.exec(query, params, receiver, cb);
+            return;
+        }
+
+        AResult result;
+        cb(result);
+    }, poolName);
+
+    return coro;
+}
+
+AExpectedResult APool::exec(QUtf8StringView query,
+                            const QVariantList &params,
+                            QObject *receiver,
+                            QStringView poolName)
+{
+    AExpectedResult coro(receiver);
+    auto cb = coro.callback;
+
+    database(receiver, [cb, query, params, receiver](ADatabase db) {
+        if (db.isValid()) {
+            db.exec(query, params, receiver, cb);
+            return;
+        }
+
+        AResult result;
+        cb(result);
+    }, poolName);
+
+    return coro;
+}
+
+AExpectedResult APool::exec(const APreparedQuery &query,
+                            const QVariantList &params,
+                            QObject *receiver,
+                            QStringView poolName)
+{
+    AExpectedResult coro(receiver);
+    auto cb = coro.callback;
+
+    database(receiver, [cb, query, params, receiver](ADatabase db) {
+        if (db.isValid()) {
+            db.exec(query, params, receiver, cb);
+            return;
+        }
+
+        AResult result;
+        cb(result);
+    }, poolName);
+
+    return coro;
+}
+
+AExpectedTransaction APool::begin(QObject *receiver, QStringView poolName)
+{
+    AExpectedTransaction coro(receiver);
+    auto cb = coro.callback;
+
+    database(receiver, [cb, receiver, &coro](ADatabase db) {
+        if (db.isValid()) {
+            coro.database = db;
+            db.begin(receiver, cb);
+            return;
+        }
+
+        AResult result;
+        cb(result);
+    }, poolName);
+
+    return coro;
 }

@@ -62,6 +62,7 @@ protected:
     friend class ADatabase;
     friend class ACache;
     friend class ATransaction;
+    friend class APool;
     std::function<void(AResult &result)> callback;
     ADatabase database;
 
@@ -176,8 +177,6 @@ public:
             connections.emplace_back(std::move(conn));
             return {};
         }
-        void await_suspend(std::coroutine_handle<> h) noexcept {}
-        void await_resume() const noexcept {}
 
         ~promise_type() { clean(); }
     };

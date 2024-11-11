@@ -123,3 +123,9 @@ AExpectedResult ATransaction::coRollback(QObject *receiver)
     d->db.rollback(receiver, coro.callback);
     return coro;
 }
+
+bool ATransaction::isActive() const
+{
+    Q_ASSERT(d);
+    return d->running;
+}
