@@ -236,26 +236,32 @@ public:
         {
             return d->value(row, d->indexOfField(name));
         }
+
         [[nodiscard]] inline QVariant value(QLatin1String name) const
         {
             return d->value(row, d->indexOfField(name));
         }
+
         [[nodiscard]] inline QVariant value(QStringView name) const
         {
             return d->value(row, d->indexOfField(name));
         }
+
         [[nodiscard]] inline AColumn operator[](int column) const
         {
             return AColumn(d, row, column);
         }
+
         [[nodiscard]] inline AColumn operator[](const QString &name) const
         {
             return AColumn(d, row, d->indexOfField(name));
         }
+
         [[nodiscard]] inline AColumn operator[](QLatin1String name) const
         {
             return AColumn(d, row, d->indexOfField(name));
         }
+
         [[nodiscard]] inline AColumn operator[](QStringView name) const
         {
             return AColumn(d, row, d->indexOfField(name));
@@ -309,27 +315,34 @@ public:
         [[nodiscard]] QCborMap toCborMap() const;
 
         [[nodiscard]] inline QVariant value(int column) const { return d->value(i, column); }
+
         [[nodiscard]] inline QVariant value(const QString &name) const
         {
             return d->value(i, d->indexOfField(name));
         }
+
         [[nodiscard]] inline QVariant value(QLatin1String name) const
         {
             return d->value(i, d->indexOfField(name));
         }
+
         [[nodiscard]] inline QVariant value(QStringView name) const
         {
             return d->value(i, d->indexOfField(name));
         }
+
         [[nodiscard]] inline AColumn operator[](int column) const { return AColumn(d, i, column); }
+
         [[nodiscard]] inline AColumn operator[](const QString &name) const
         {
             return AColumn(d, i, d->indexOfField(name));
         }
+
         [[nodiscard]] inline AColumn operator[](QLatin1String name) const
         {
             return AColumn(d, i, d->indexOfField(name));
         }
+
         [[nodiscard]] inline AColumn operator[](QStringView name) const
         {
             return AColumn(d, i, d->indexOfField(name));
@@ -346,33 +359,39 @@ public:
             ++i;
             return *this;
         }
+
         inline const_iterator operator++(int)
         {
             const_iterator n = *this;
             ++i;
             return n;
         }
+
         inline const_iterator &operator--()
         {
             i--;
             return *this;
         }
+
         inline const_iterator operator--(int)
         {
             const_iterator n = *this;
             i--;
             return n;
         }
+
         inline const_iterator &operator+=(int j)
         {
             i += j;
             return *this;
         }
+
         inline const_iterator &operator-=(int j)
         {
             i -= j;
             return *this;
         }
+
         inline const_iterator operator+(int j) const { return const_iterator(d, i + j); }
         inline const_iterator operator-(int j) const { return const_iterator(d, i - j); }
         inline int operator-(const_iterator j) const { return i - j.i; }

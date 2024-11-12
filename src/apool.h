@@ -154,34 +154,34 @@ public:
      */
     static void setReuseCallback(ADatabaseFn cb, QStringView poolName = defaultPool);
 
-    static AExpectedResult
+    [[nodiscard]] static AExpectedResult
         exec(QStringView query, QObject *receiver = nullptr, QStringView poolName = defaultPool);
 
-    static AExpectedResult exec(QUtf8StringView query,
-                                QObject *receiver    = nullptr,
-                                QStringView poolName = defaultPool);
+    [[nodiscard]] static AExpectedResult exec(QUtf8StringView query,
+                                              QObject *receiver    = nullptr,
+                                              QStringView poolName = defaultPool);
 
-    static AExpectedResult exec(const APreparedQuery &query,
-                                QObject *receiver    = nullptr,
-                                QStringView poolName = defaultPool);
+    [[nodiscard]] static AExpectedResult exec(const APreparedQuery &query,
+                                              QObject *receiver    = nullptr,
+                                              QStringView poolName = defaultPool);
 
-    static AExpectedResult exec(QStringView query,
-                                const QVariantList &params,
-                                QObject *receiver    = nullptr,
-                                QStringView poolName = defaultPool);
+    [[nodiscard]] static AExpectedResult exec(QStringView query,
+                                              const QVariantList &params,
+                                              QObject *receiver    = nullptr,
+                                              QStringView poolName = defaultPool);
 
-    static AExpectedResult exec(QUtf8StringView query,
-                                const QVariantList &params,
-                                QObject *receiver    = nullptr,
-                                QStringView poolName = defaultPool);
+    [[nodiscard]] static AExpectedResult exec(QUtf8StringView query,
+                                              const QVariantList &params,
+                                              QObject *receiver    = nullptr,
+                                              QStringView poolName = defaultPool);
 
-    static AExpectedResult exec(const APreparedQuery &query,
-                                const QVariantList &params,
-                                QObject *receiver    = nullptr,
-                                QStringView poolName = defaultPool);
+    [[nodiscard]] static AExpectedResult exec(const APreparedQuery &query,
+                                              const QVariantList &params,
+                                              QObject *receiver    = nullptr,
+                                              QStringView poolName = defaultPool);
 
-    static AExpectedTransaction begin(QObject *receiver    = nullptr,
-                                      QStringView poolName = defaultPool);
+    [[nodiscard]] static AExpectedTransaction begin(QObject *receiver    = nullptr,
+                                                    QStringView poolName = defaultPool);
 
 private:
     inline static void pushDatabaseBack(QStringView connectionName, ADriver *driver);

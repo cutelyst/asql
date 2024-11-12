@@ -1,18 +1,17 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020-2024 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2023 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 #pragma once
 
 #include <adatabase.h>
-#include <asql_migrations_export.h>
 
 #include <QObject>
 
 namespace ASql {
 
 class AMigrationsPrivate;
-class ASQL_MIGRATIONS_EXPORT AMigrations : public QObject
+class ASQL_EXPORT AMigrations : public QObject
 {
     Q_OBJECT
     Q_DECLARE_PRIVATE(AMigrations)

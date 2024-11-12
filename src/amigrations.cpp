@@ -8,6 +8,7 @@
 #include "aresult.h"
 #include "atransaction.h"
 
+#include <QElapsedTimer>
 #include <QFile>
 #include <QLoggingCategory>
 #include <QRegularExpression>
@@ -224,6 +225,10 @@ void AMigrations::migrate(int targetVersion,
                           bool dryRun)
 {
     Q_D(AMigrations);
+
+    QElapsedTimer elapsed;
+    elapsed.start();
+
     if (targetVersion < 0) {
         if (cb) {
             cb(true, u"Failed to migrate: invalid target version"_s);
@@ -311,7 +316,8 @@ void AMigrations::migrate(int targetVersion,
                                 }
                             } else {
                                 qInfo(ASQL_MIG)
-                                    << "Migrated from" << active << "to" << migration.version;
+                                    << "Migrated from" << active << "to" << migration.version
+                                    << "in" << elapsed.elapsed() << "ms";
                                 if (dryRun) {
                                     if (cb) {
                                         cb(false, u"Done."_s);

@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
                 if (newVersion < mig->active()) {
                     std::cout << qPrintable(
                         QCoreApplication::translate(
-                            "main", "Do you want to migrate '%1' from %2 to %3? [yes/no] ")
+                            "main", "Do you want to ROLLBACK '%1' from %2 to %3? [yes/no] ")
                             .arg(name)
                             .arg(QString::number(mig->active()))
                             .arg(QString::number(newVersion)));

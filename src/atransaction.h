@@ -59,7 +59,7 @@ public:
      */
     void commit(QObject *receiver = nullptr, AResultFn cb = {});
 
-    AExpectedResult coCommit(QObject *receiver = nullptr);
+    [[nodiscard]] AExpectedResult coCommit(QObject *receiver = nullptr);
 
     /*!
      * \brief rollback a transaction, this operation usually succeeds,
@@ -73,9 +73,9 @@ public:
      */
     void rollback(QObject *receiver = nullptr, AResultFn cb = {});
 
-    AExpectedResult coRollback(QObject *receiver = nullptr);
+    [[nodiscard]] AExpectedResult coRollback(QObject *receiver = nullptr);
 
-    bool isActive() const;
+    [[nodiscard]] bool isActive() const;
 
 protected:
     friend class ACoroExpected<ATransaction>;
