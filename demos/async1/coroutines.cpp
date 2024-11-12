@@ -352,19 +352,19 @@ int main(int argc, char *argv[])
             });
             co_yield obj; // so that this promise is destroyed if this object is destroyed
 
-            result = co_await t->database().coExec(u8"SELECT now(), pg_sleep(1)", obj);
-            if (result.has_value()) {
-                qDebug() << "coro exec result has value" << result->toJsonObject();
-            } else {
-                qDebug() << "coro exec result error" << result.error();
-            }
+            auto fooresult = /*co_await*/ APool::exec(u8"SELECT now(), pg_sleep(1)" /*, obj*/);
+            // if (result.has_value()) {
+            //     qDebug() << "coro exec result has value" << result->toJsonObject();
+            // } else {
+            //     qDebug() << "coro exec result error" << result.error();
+            // }
 
-            result = co_await t->coCommit();
-            if (result.has_value()) {
-                qDebug() << "coro exec result has value" << result->toJsonObject();
-            } else {
-                qDebug() << "coro exec result error" << result.error();
-            }
+            // result = co_await t->coCommit();
+            // if (result.has_value()) {
+            //     qDebug() << "coro exec result has value" << result->toJsonObject();
+            // } else {
+            //     qDebug() << "coro exec result error" << result.error();
+            // }
         };
 
         callPoolBegin();
