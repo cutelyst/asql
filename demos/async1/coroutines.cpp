@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
         callPool();
     }
 
-    if (true) {
+    if (false) {
         auto callPoolBegin = []() -> ACoroTerminator {
             auto _ = qScopeGuard([] { qDebug() << "coro pool exited"; });
             qDebug() << "coro exec pool started";
@@ -352,22 +352,65 @@ int main(int argc, char *argv[])
             });
             co_yield obj; // so that this promise is destroyed if this object is destroyed
 
-            auto fooresult = /*co_await*/ APool::exec(u8"SELECT now(), pg_sleep(1)" /*, obj*/);
-            // if (result.has_value()) {
-            //     qDebug() << "coro exec result has value" << result->toJsonObject();
-            // } else {
-            //     qDebug() << "coro exec result error" << result.error();
-            // }
-
-            // result = co_await t->coCommit();
-            // if (result.has_value()) {
-            //     qDebug() << "coro exec result has value" << result->toJsonObject();
-            // } else {
-            //     qDebug() << "coro exec result error" << result.error();
-            // }
+            std::ignore = APool::exec(u8"SELECT now(), pg_sleep(1)" /*, obj*/);
         };
 
         callPoolBegin();
+    }
+
+    if (true) {
+        auto callJsonBegin = []() -> ACoroTerminator {
+            auto _ = qScopeGuard([] { qDebug() << "coro pool exited"; });
+            qDebug() << "coro exec pool started";
+
+            auto result = co_await APool::exec(u8"SELECT jsonb_build_object()", nullptr);
+            if (result.has_value()) {
+                auto row = result->begin();
+                qDebug() << "coro exec result has value" << result->toJsonObject();
+                qDebug() << "coro exec result has value" << row.value(0);
+            } else {
+                qDebug() << "coro exec result error" << result.error();
+            }
+
+            result = co_await APool::exec(u8"SELECT jsonb_build_array()", nullptr);
+            if (result.has_value()) {
+                auto row = result->begin();
+                qDebug() << "coro exec result has value" << result->toJsonObject();
+                qDebug() << "coro exec result has value" << row.value(0);
+            } else {
+                qDebug() << "coro exec result error" << result.error();
+            }
+
+            result = co_await APool::exec(u8"SELECT json_build_object()", nullptr);
+            if (result.has_value()) {
+                auto row = result->begin();
+                qDebug() << "coro exec result has value" << result->toJsonObject();
+                qDebug() << "coro exec result has value" << row.value(0);
+            } else {
+                qDebug() << "coro exec result error" << result.error();
+            }
+
+            result = co_await APool::exec(u8"SELECT json_build_array()", nullptr);
+            if (result.has_value()) {
+                auto row = result->begin();
+                qDebug() << "coro exec result has value" << result->toJsonObject();
+                qDebug() << "coro exec result has value" << row.value(0);
+            } else {
+                qDebug() << "coro exec result error" << result.error();
+            }
+
+            result = co_await APool::exec(u8"SELECT 'b12e975f-9717-4edb-b37e-d1e3827e6b3b'::uuid",
+                                          nullptr);
+            if (result.has_value()) {
+                auto row = result->begin();
+                qDebug() << "coro exec result has value" << result->toJsonObject();
+                qDebug() << "coro exec result has value" << row.value(0);
+            } else {
+                qDebug() << "coro exec result error" << result.error();
+            }
+        };
+
+        callJsonBegin();
     }
 
     app.exec();

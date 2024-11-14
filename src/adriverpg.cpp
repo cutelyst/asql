@@ -22,6 +22,10 @@
 
 Q_LOGGING_CATEGORY(ASQL_PG, "asql.pg", QtInfoMsg)
 
+using namespace ASql;
+using namespace Qt::StringLiterals;
+
+namespace {
 // workaround for postgres defining their OIDs in a private header file
 #define QBOOLOID 16
 #define QINT8OID 20
@@ -44,6 +48,7 @@ Q_LOGGING_CATEGORY(ASQL_PG, "asql.pg", QtInfoMsg)
 #define QREGPROCOID 24
 #define QXIDOID 28
 #define QCIDOID 29
+#define QJSONOID 114
 #define QJSONBOID 3802
 #define QUUIDOID 2950
 #define QBITOID 1560
@@ -51,19 +56,59 @@ Q_LOGGING_CATEGORY(ASQL_PG, "asql.pg", QtInfoMsg)
 
 #define VARHDRSZ 4
 
-using namespace ASql;
-using namespace Qt::StringLiterals;
-
-ADriverPg::ADriverPg(const QString &connInfo)
-    : ADriver(connInfo)
+inline QMetaType qDecodePSQLType(int t)
 {
-}
-
-ADriverPg::~ADriverPg() = default;
-
-bool ADriverPg::isValid() const
-{
-    return true;
+    int type = QMetaType::UnknownType;
+    switch (t) {
+    case QBOOLOID:
+        type = QMetaType::Bool;
+        break;
+    case QINT8OID:
+        type = QMetaType::LongLong;
+        break;
+    case QINT2OID:
+    case QINT4OID:
+    case QOIDOID:
+    case QREGPROCOID:
+    case QXIDOID:
+    case QCIDOID:
+        type = QMetaType::Int;
+        break;
+    case QNUMERICOID:
+    case QFLOAT4OID:
+    case QFLOAT8OID:
+        type = QMetaType::Double;
+        break;
+    case QABSTIMEOID:
+    case QRELTIMEOID:
+    case QDATEOID:
+        type = QMetaType::QDate;
+        break;
+    case QTIMEOID:
+    case QTIMETZOID:
+        type = QMetaType::QTime;
+        break;
+    case QTIMESTAMPOID:
+    case QTIMESTAMPTZOID:
+        type = QMetaType::QDateTime;
+        break;
+    case QBYTEAOID:
+        type = QMetaType::QByteArray;
+        break;
+    case QJSONBOID:
+        [[fallthrough]];
+    case QJSONOID:
+        type = QMetaType::QJsonValue;
+        break;
+    case QUUIDOID:
+        type = QMetaType::QUuid;
+        break;
+    default:
+        type = QMetaType::QString;
+        break;
+    }
+    //    qDebug(ASQL_PG) << "decode pg type" << t << type;
+    return QMetaType(type);
 }
 
 QString connectionStatus(ConnStatusType type)
@@ -83,6 +128,19 @@ QString connectionStatus(ConnStatusType type)
     default:
         return u"STATUS: "_s.arg(type);
     }
+}
+} // namespace
+
+ADriverPg::ADriverPg(const QString &connInfo)
+    : ADriver(connInfo)
+{
+}
+
+ADriverPg::~ADriverPg() = default;
+
+bool ADriverPg::isValid() const
+{
+    return true;
 }
 
 void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &)> cb)
@@ -900,53 +958,6 @@ QString AResultPg::fieldName(int column) const
     return QString::fromUtf8(PQfname(m_result, column));
 }
 
-static QMetaType qDecodePSQLType(int t)
-{
-    int type = QMetaType::UnknownType;
-    switch (t) {
-    case QBOOLOID:
-        type = QMetaType::Bool;
-        break;
-    case QINT8OID:
-        type = QMetaType::LongLong;
-        break;
-    case QINT2OID:
-    case QINT4OID:
-    case QOIDOID:
-    case QREGPROCOID:
-    case QXIDOID:
-    case QCIDOID:
-        type = QMetaType::Int;
-        break;
-    case QNUMERICOID:
-    case QFLOAT4OID:
-    case QFLOAT8OID:
-        type = QMetaType::Double;
-        break;
-    case QABSTIMEOID:
-    case QRELTIMEOID:
-    case QDATEOID:
-        type = QMetaType::QDate;
-        break;
-    case QTIMEOID:
-    case QTIMETZOID:
-        type = QMetaType::QTime;
-        break;
-    case QTIMESTAMPOID:
-    case QTIMESTAMPTZOID:
-        type = QMetaType::QDateTime;
-        break;
-    case QBYTEAOID:
-        type = QMetaType::QByteArray;
-        break;
-    default:
-        type = QMetaType::QString;
-        break;
-    }
-    //    qDebug(ASQL_PG) << "decode pg type" << t << type;
-    return QMetaType(type);
-}
-
 QVariant AResultPg::value(int row, int column) const
 {
     if (column >= PQnfields(m_result)) {
@@ -1045,6 +1056,18 @@ QVariant AResultPg::value(int row, int column) const
         PQfreemem(data);
         return QVariant(ba);
     }
+    case QMetaType::QJsonValue:
+    {
+        const auto doc = QJsonDocument::fromJson(val);
+        if (doc.isObject()) {
+            return doc.object();
+        } else if (doc.isArray()) {
+            return doc.array();
+        }
+        break;
+    }
+    case QMetaType::QUuid:
+        return QUuid::fromString(val);
     default:
     case QMetaType::UnknownType:
         qWarning(ASQL_PG, "unknown data type");
