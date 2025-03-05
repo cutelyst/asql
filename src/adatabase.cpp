@@ -16,13 +16,8 @@ using namespace ASql;
 
 ADatabase::ADatabase() = default;
 
-ADatabase::ADatabase(const std::shared_ptr<ADriver> &driver)
-    : d(driver)
-{
-}
-
-ADatabase::ADatabase(std::shared_ptr<ADriver> &&driver)
-    : d(driver)
+ADatabase::ADatabase(std::shared_ptr<ADriver> driver)
+    : d(std::move(driver))
 {
 }
 

@@ -32,8 +32,7 @@ public:
      * \param poolName is an identifier for such pools, for example "read-write" or
      * "read-only-replicas"
      */
-    static void create(const std::shared_ptr<ADriverFactory> &factory,
-                       QStringView poolName = defaultPool);
+    static void create(std::shared_ptr<ADriverFactory> factory, QStringView poolName = defaultPool);
 
     /*!
      * \brief create creates a new database pool
@@ -45,7 +44,7 @@ public:
      * \param poolName is an identifier for such pools, for example "read-write" or
      * "read-only-replicas"
      */
-    static void create(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName);
+    static void create(std::shared_ptr<ADriverFactory> factory, const QString &poolName);
 
     /*!
      * \brief remove removes the database pool

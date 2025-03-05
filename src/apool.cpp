@@ -44,17 +44,17 @@ static thread_local QHash<QStringView, APoolInternal> m_connectionPool;
 
 const QStringView APool::defaultPool = u"asql_default_pool";
 
-void APool::create(const std::shared_ptr<ADriverFactory> &factory, QStringView poolName)
+void APool::create(std::shared_ptr<ADriverFactory> factory, QStringView poolName)
 {
-    APool::create(factory, poolName.toString());
+    APool::create(std::move(factory), poolName.toString());
 }
 
-void APool::create(const std::shared_ptr<ADriverFactory> &factory, const QString &poolName)
+void APool::create(std::shared_ptr<ADriverFactory> factory, const QString &poolName)
 {
     if (!m_connectionPool.contains(poolName)) {
         APoolInternal pool;
         pool.name          = poolName;
-        pool.driverFactory = factory;
+        pool.driverFactory = std::move(factory);
         m_connectionPool.emplace(pool.name, std::move(pool));
     } else {
         qWarning(ASQL_POOL) << "Ignoring addDatabase, connectionName already available" << poolName;

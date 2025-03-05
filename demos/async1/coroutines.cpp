@@ -33,35 +33,72 @@ int main(int argc, char *argv[])
     APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setMaxIdleConnections(10);
 
-    auto db = APool::database();
-
-    auto counter = std::make_shared<int>(0);
+    AResultFn resultFn;
     QElapsedTimer t;
-    if (false) {
-        t.start();
-        for (int i = 0; i < 100'000; ++i) {
-            db.exec(u"SELECT 1", nullptr, [counter, &t](AResult &result) {
-                if (*counter == 999) {
-                    qDebug() << "lambda" << t.elapsed();
-                }
-                *counter = *counter + 1;
-            });
-        }
+    if (true) {
+        auto coroBench = [&t, &resultFn]() -> ACoroTerminator {
+            auto db      = APool::database();
+            auto counter = std::make_shared<int>(0);
 
-        *counter = 0;
-        t.start();
-        auto bench = [&t, counter, &db]() -> ACoroTerminator {
-            auto counter = std::make_shared<int>();
-            for (int i = 0; i < 100'000; ++i) {
+            const int maxQueries = 100'000;
+
+            // warm up
+            t.start();
+            for (int i = 0; i < maxQueries; ++i) {
                 auto result = co_await db.coExec(u"SELECT 1", nullptr);
                 // qDebug() << "coroutine" << *counter << t.elapsed();
-                if (*counter == 999) {
-                    qDebug() << "coroutine" << *counter << t.elapsed();
+                if (*counter == maxQueries - 1) {
+                    qDebug() << "coroutine warminig" << t.elapsed();
                 }
                 *counter = *counter + 1;
             }
-        };
-        bench();
+
+            *counter = 0;
+            t.restart();
+
+            for (int i = 0; i < maxQueries; ++i) {
+                auto result = co_await db.coExec(u"SELECT 1", nullptr);
+                // qDebug() << "coroutine" << *counter << t.elapsed();
+                if (*counter == maxQueries - 1) {
+                    qDebug() << "coroutine warm" << t.elapsed();
+                }
+                *counter = *counter + 1;
+            }
+
+            *counter = 0;
+            t.restart();
+
+            // Biggest non coro issue seems to be queueing queries
+            // this recursive mode that prevents queueing doesn't make much of a
+            // performance difference but is still rather more complex to write.
+            // After all coro machinery still uses AResultFn lambdas to be notified
+            // of a result and resume execution.
+            resultFn = [counter, db, &resultFn, &t](AResult &result) mutable {
+                // qDebug() << "lambda" << *counter << t.elapsed();
+                if (*counter == maxQueries - 1) {
+                    qDebug() << "recursive  lambda" << t.elapsed();
+
+                    *counter = 0;
+                    t.restart();
+                    for (int i = 0; i < maxQueries; ++i) {
+                        db.exec(u"SELECT 1", nullptr, [counter, db, &t](AResult &result) mutable {
+                            // qDebug() << "lambda" << *counter << t.elapsed();
+                            if (*counter == maxQueries - 1) {
+                                qDebug() << "queued lambda" << t.elapsed();
+                            }
+                            *counter = *counter + 1;
+                        });
+                    }
+
+                    return;
+                }
+                *counter = *counter + 1;
+
+                db.exec(u"SELECT 1", nullptr, resultFn);
+            };
+
+            db.exec(u"SELECT 1", nullptr, resultFn);
+        }();
     }
 
     if (false) {
@@ -144,7 +181,7 @@ int main(int argc, char *argv[])
 
     if (false) {
         auto cache = new ACache;
-        cache->setDatabase(db);
+        cache->setDatabase(APool::database());
 
         auto callCache = [cache]() -> ACoroTerminator {
             auto _ = qScopeGuard([] { qDebug() << "coro cache exited"; });
@@ -358,7 +395,7 @@ int main(int argc, char *argv[])
         callPoolBegin();
     }
 
-    if (true) {
+    if (false) {
         auto callJsonBegin = []() -> ACoroTerminator {
             auto _ = qScopeGuard([] { qDebug() << "coro pool exited"; });
             qDebug() << "coro exec pool started";
