@@ -978,10 +978,11 @@ QVariant AResultPg::value(int row, int column) const
     case QMetaType::QString:
         return QString::fromUtf8(val);
     case QMetaType::LongLong:
-        if (val[0] == '-')
+        if (val[0] == '-') {
             return QString::fromLatin1(val).toLongLong();
-        else
+        } else {
             return QString::fromLatin1(val).toULongLong();
+        }
     case QMetaType::Int:
         return atoi(val);
     case QMetaType::Double:
@@ -1003,10 +1004,12 @@ QVariant AResultPg::value(int row, int column) const
         //            }
         //            return QString::fromLatin1(val);
         //        }
-        if (qstricmp(val, "Infinity") == 0)
+        if (qstricmp(val, "Infinity") == 0) {
             return qInf();
-        if (qstricmp(val, "-Infinity") == 0)
+        }
+        if (qstricmp(val, "-Infinity") == 0) {
             return -qInf();
+        }
         return QString::fromLatin1(val).toDouble();
     }
     case QMetaType::QDate:
@@ -1023,10 +1026,11 @@ QVariant AResultPg::value(int row, int column) const
     {
         const QString str = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
-        if (str.isEmpty())
+        if (str.isEmpty()) {
             return QTime();
-        else
+        } else {
             return QTime::fromString(str, Qt::ISODate);
+        }
 #else
         return QVariant(str);
 #endif
@@ -1113,10 +1117,12 @@ double AResultPg::toDouble(int row, int column) const
 {
     Q_ASSERT_X(column < PQnfields(m_result), "toDouble", "column out of range");
     const char *val = PQgetvalue(m_result, row, column);
-    if (qstricmp(val, "Infinity") == 0)
+    if (qstricmp(val, "Infinity") == 0) {
         return qInf();
-    if (qstricmp(val, "-Infinity") == 0)
+    }
+    if (qstricmp(val, "-Infinity") == 0) {
         return -qInf();
+    }
     return QString::fromLatin1(val).toDouble();
 }
 
@@ -1163,10 +1169,11 @@ QTime AResultPg::toTime(int row, int column) const
     const char *val   = PQgetvalue(m_result, row, column);
     const QString str = QString::fromLatin1(val);
 #ifndef QT_NO_DATESTRING
-    if (str.isEmpty())
+    if (str.isEmpty()) {
         return {};
-    else
+    } else {
         return QTime::fromString(str, Qt::ISODate);
+    }
 #else
     return {};
 #endif
