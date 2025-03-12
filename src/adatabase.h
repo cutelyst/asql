@@ -162,7 +162,7 @@ public:
     /*!
      * \brief exec excutes a \param query against this database connection,
      * once done AResult object will have the retrieved data if any, always
-     * check for AResult::error() to see if the query was successful.
+     * check for AResult::hasError() to see if the query was successful.
      *
      * Postgres allows for multiple commands to be sent, in this case the callback
      * will be called once per command you must then check for AResult::lastResultSet(),
@@ -178,7 +178,7 @@ public:
     /*!
      * \brief exec excutes a \param query against this database connection,
      * once done AResult object will have the retrieved data if any, always
-     * check for AResult::error() to see if the query was successful.
+     * check for AResult::hasError() to see if the query was successful.
      *
      * Postgres allows for multiple commands to be sent, in this case the callback
      * will be called once per command you must then check for AResult::lastResultSet(),
@@ -197,7 +197,7 @@ public:
     /*!
      * \brief exec executes a prepared \param query against this database connection,
      * once done AResult object will have the retrieved data if any, always
-     * check for AResult::error() to see if the query was successful.
+     * check for AResult::hasError() to see if the query was successful.
      *
      * \note For proper usage of APreparedQuery see it's documentation.
      * \note Postgres does not allow for multiple commands on prepared queries.
@@ -210,7 +210,7 @@ public:
     /*!
      * \brief exec executes a \param query against this database connection,
      * once done AResult object will have the retrieved data if any, always
-     * check for AResult::error() to see if the query was successful.
+     * check for AResult::hasError() to see if the query was successful.
      *
      * \param query
      * \param params
@@ -224,7 +224,7 @@ public:
     /*!
      * \brief exec executes a \param query against this database connection,
      * once done AResult object will have the retrieved data if any, always
-     * check for AResult::error() to see if the query was successful.
+     * check for AResult::hasError() to see if the query was successful.
      *
      * \note Since ASql might queue queries only use this method for strings that can outlive
      * the query execution, such as string literals
@@ -242,7 +242,7 @@ public:
      * \brief exec executes a prepared \param query against this database connection
      * with the following \p params to be bound,
      * once done AResult object will have the retrieved data if any, always
-     * check for AResult::error() to see if the query was successful.
+     * check for AResult::hasError() to see if the query was successful.
      *
      * \note For proper usage of APreparedQuery see it's documentation.
      * \note Postgres does not allow for multiple commands on prepared queries.

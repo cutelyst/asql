@@ -40,7 +40,7 @@ public:
         , m_result{std::unexpected(QString{})}
     {
         callback = [this](AResult &result) {
-            if (result.error()) {
+            if (result.hasError()) {
                 m_result = std::unexpected(result.errorString());
             } else {
                 if constexpr (std::is_same_v<T, ATransaction>) {

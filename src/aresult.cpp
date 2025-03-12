@@ -28,9 +28,9 @@ bool AResult::lastResulSet() const
     return d->lastResulSet();
 }
 
-bool AResult::error() const
+bool AResult::hasError() const
 {
-    return !d || d->error();
+    return !d || d->hasError();
 }
 
 QString AResult::errorString() const

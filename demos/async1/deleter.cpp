@@ -31,14 +31,16 @@ int main(int argc, char *argv[])
     APool::setSetupCallback([](ADatabase db) {
         qDebug() << "setup db";
         db.exec(u"SET TIME ZONE 'Europe/Rome';", nullptr, [](AResult &result) {
-            qDebug() << "SETUP" << result.error() << result.errorString() << result.toJsonObject();
+            qDebug() << "SETUP" << result.hasError() << result.errorString()
+                     << result.toJsonObject();
         });
     });
 
     APool::setReuseCallback([](ADatabase db) {
         qDebug() << "reuse db";
         db.exec(u"DISCARD ALL", nullptr, [](AResult &result) {
-            qDebug() << "REUSE" << result.error() << result.errorString() << result.toJsonObject();
+            qDebug() << "REUSE" << result.hasError() << result.errorString()
+                     << result.toJsonObject();
         });
     });
 
@@ -48,7 +50,7 @@ int main(int argc, char *argv[])
         db.open(nullptr,
                 [](bool ok, const QString &status) { qDebug() << "OPEN value" << ok << status; });
         db.exec(u"SELECT now()"_s, obj, [](AResult &result) {
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "SELECT error" << result.errorString();
                 return;
             }
@@ -60,12 +62,12 @@ int main(int argc, char *argv[])
     }
 
     APool::database().exec(u"SELECT pg_sleep(5)", obj, [](AResult &result) {
-        qDebug() << "SELECT result.size()" << result.error() << result.errorString()
+        qDebug() << "SELECT result.size()" << result.hasError() << result.errorString()
                  << result.size();
     });
 
     APool::database().exec(u"SELECT now()", obj, [](AResult &result) {
-        qDebug() << "SELECT result.size()" << result.error() << result.errorString()
+        qDebug() << "SELECT result.size()" << result.hasError() << result.errorString()
                  << result.toJsonObject();
     });
 
@@ -77,7 +79,7 @@ int main(int argc, char *argv[])
     QTimer::singleShot(2500, [=] {
         qDebug() << "Reuse Timer Obj";
         APool::database().exec(u"SELECT now()", nullptr, [](AResult &result) {
-            qDebug() << "SELECT result.size()" << result.error() << result.errorString()
+            qDebug() << "SELECT result.size()" << result.hasError() << result.errorString()
                      << result.toJsonObject();
         });
     });

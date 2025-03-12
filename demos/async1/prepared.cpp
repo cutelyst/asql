@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     auto callBD = []() {
         auto db = APool::database();
         db.exec(APreparedQuery(u"SELECT now()"), nullptr, [=](AResult &result) {
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "SELECT operator error" << result.errorString();
                 return;
             }
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     auto simpleDb = APool::database();
     simpleDb.exec(
         APreparedQuery(u"SELECT $1, now()"), {qint64(12345)}, nullptr, [=](AResult &result) {
-        if (result.error()) {
+        if (result.hasError()) {
             qDebug() << "SELECT error" << result.errorString();
             return;
         }
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
     });
     simpleDb.exec(
         APreparedQueryLiteral(u"SELECT broken"), {qint64(12345)}, nullptr, [=](AResult &result) {
-        if (result.error()) {
+        if (result.hasError()) {
             qDebug() << "SELECT broken error" << result.errorString();
             return;
         }
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
         ATransaction t(db7);
         t.begin();
         db7.exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "SELECT error db7" << result.errorString();
                 return;
             }
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
             qDebug() << "Got db" << db.isOpen() << db.state();
 
             db.exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
-                if (result.error()) {
+                if (result.hasError()) {
                     qDebug() << "got db, SELECT error" << result.errorString();
                     return;
                 }
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
     auto db = APool::database();
     static APreparedQuery query(u"SELECT now()"_s);
     db.exec(query, nullptr, [=](AResult &result) {
-        if (result.error()) {
+        if (result.hasError()) {
             qDebug() << "SELECT 1 error" << result.errorString();
             return;
         }
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
     });
 
     db.exec(query, nullptr, [=](AResult &result) {
-        if (result.error()) {
+        if (result.hasError()) {
             qDebug() << "SELECT error" << result.errorString();
             return;
         }
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
 
     static APreparedQuery query2(u"SELECT now(), $1"_s);
     db.exec(query2, {qint64(12345)}, nullptr, [=](AResult &result) {
-        if (result.error()) {
+        if (result.hasError()) {
             qDebug() << "SELECT error" << result.errorString();
             return;
         }
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
     });
 
     db.exec(query2, {qint64(12345)}, nullptr, [=](AResult &result) {
-        if (result.error()) {
+        if (result.hasError()) {
             qDebug() << "SELECT error" << result.errorString();
             return;
         }
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
                                  },
                                  nullptr,
                                  [=](AResult &result) {
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "SELECT error END" << result.errorString();
                 return;
             }

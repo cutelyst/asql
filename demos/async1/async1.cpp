@@ -28,7 +28,7 @@ void recursiveLoop()
 {
     auto db = APool::database(u"memory_loop");
     db.exec(u"SELECT now()", {QJsonObject{{u"foo"_s, true}}}, nullptr, [](AResult &result) {
-        if (result.error()) {
+        if (result.hasError()) {
             qDebug() << "Error memory_loop" << result.errorString();
         } else {
             recursiveLoop();
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
         APool::database(nullptr, [](ADatabase db) {
             db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
                 qDebug() << "=====iterator single row" << result.toHash();
-                if (result.error()) {
+                if (result.hasError()) {
                     qDebug() << "Error" << result.errorString();
                 }
             });
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
         APool::database(nullptr, [](ADatabase db) {
             db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
                 qDebug() << "=====iterator single row" << result.toHash();
-                if (result.error()) {
+                if (result.hasError()) {
                     qDebug() << "Error" << result.errorString();
                 }
             });
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
             APool::database(u"delete_db_after_use")
                 .exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
                 qDebug() << "=====iterator single row" << result.toHash();
-                if (result.error()) {
+                if (result.hasError()) {
                     qDebug() << "Error" << result.errorString();
                 }
             });
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
         // Zero-copy and zero allocation
         db.exec(u8"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
             qDebug() << "=====iterator single row" << result.toHash();
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "Error" << result.errorString();
             }
         });
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
         // Zero-copy but allocates due toUtf8()
         db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
             qDebug() << "=====iterator single row" << result.toHash();
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "Error" << result.errorString();
             }
         });
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
                 nullptr,
                 [](AResult &result) {
             qDebug() << "=====iterator qba row" << result.toHash();
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "Error" << result.errorString();
             }
         });
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
                 [&series](AResult &result) mutable {
             qDebug() << "=====iterator single row" << result.errorString() << result.size()
                      << "last" << result.lastResulSet() << "mutable" << series.size();
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "Error" << result.errorString();
             }
 
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
                 [&series](AResult &result) mutable {
             qDebug() << "=====iterator" << result.errorString() << result.size() << "last"
                      << result.lastResulSet() << "mutable" << series.size();
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "Error" << result.errorString();
             }
 
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
                            [&series](AResult &result) mutable {
         qDebug() << "=====iterator JSON" << result.errorString() << result.size() << "last"
                  << result.lastResulSet() << "mutable" << series.size();
-        if (result.error()) {
+        if (result.hasError()) {
             qDebug() << "Error" << result.errorString();
         }
 
@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
         u"select jsonb_build_object('foo', now());"_s, nullptr, [](AResult &result) mutable {
         qDebug() << "=====iterator JSON" << result.errorString() << result.size() << "last"
                  << result[0][0].toJsonValue();
-        if (result.error()) {
+        if (result.hasError()) {
             qDebug() << "Error" << result.errorString();
         }
 
@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
     cache->setDatabase(APool::database());
     cache->exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
         qDebug() << "CACHED 1" << result.errorString() << result.size();
-        if (result.error()) {
+        if (result.hasError()) {
             qDebug() << "Error" << result.errorString();
         }
 
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
     QTimer::singleShot(2000, cache, [=] {
         cache->exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
             qDebug() << "CACHED 2" << result.errorString() << result.size();
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "Error" << result.errorString();
             }
 
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
 
         cache->exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
             qDebug() << "CACHED 3" << result.errorString() << result.size();
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "Error 3" << result.errorString();
             }
 
@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
     //    auto obj = new QObject;
 
     //    APool::database().exec(u"select 100, pg_sleep(1)"_s, [=] (AResult &result) {
-    //        qDebug() << "data" << result.size() << result.error() << result.errorString() <<
+    //        qDebug() << "data" << result.size() << result.hasError() << result.errorString() <<
     //        "LAST" << result.lastResulSet(); delete obj; while (result.next()) {
     //            for (int i = 0; i < result.fields(); ++i) {
     //                qDebug() << "data" << result.at() << i << result.value(i);
@@ -277,7 +277,7 @@ int main(int argc, char *argv[])
     //    }, obj);
 
     //    APool::database().exec(u"select 200, pg_sleep(5)"_s, [=] (AResult &result) {
-    //        qDebug() << "data" << result.size() << result.error() << result.errorString() <<
+    //        qDebug() << "data" << result.size() << result.hasError() << result.errorString() <<
     //        "LAST" << result.lastResulSet(); delete obj; while (result.next()) {
     //            for (int i = 0; i < result.fields(); ++i) {
     //                qDebug() << "data" << result.at() << i << result.value(i);
@@ -289,8 +289,8 @@ int main(int argc, char *argv[])
     //        qDebug() << "OPEN" << isOpen << error;
 
     ////        ADatabase(db).exec(u"select 1; select 2"_s, [=] (AResult &result) {
-    ////            qDebug() << "data" << result.size() << result.error() << result.errorString() <<
-    ///"LAST" << result.lastResulSet(); /            while (result.next()) { /                for
+    ////            qDebug() << "data" << result.size() << result.hasError() << result.errorString()
+    ///<< "LAST" << result.lastResulSet(); /            while (result.next()) { /                for
     ///(int i = 0; i < result.fields(); ++i) { /                    qDebug() << "data" <<
     /// result.at() << i << result.value(i); /                } /            } /        }); /
     /// QJsonObject obj{ /            {u"foo"_s, 234} /        };
@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
     //        {true, u"bla bla"_s, QVariant::Int, QDateTime::currentDateTime(),
     //        123456.78, uuid},
     //                [=] (AResult &result) {
-    //            qDebug() << "data" << result.size() << result.error() << result.errorString();
+    //            qDebug() << "data" << result.size() << result.hasError() << result.errorString();
     //            while (result.next()) {
     //                for (int i = 0; i < result.fields(); ++i) {
     //                    qDebug() << "data" << result.at() << i << result.value(i);
@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
 
     //    APool::database().exec(u"select * from aaa.users limit 3"_s, [=] (AResult
     //    &result) {
-    //        qDebug() << "data" << result.size() << result.error() << result.errorString() <<
+    //        qDebug() << "data" << result.size() << result.hasError() << result.errorString() <<
     //        "LAST" << result.lastResulSet(); qDebug() << "data" << result.hash(); qDebug() <<
     //        "data" << result.hashes();
     ////        while (result.next()) {
@@ -364,7 +364,7 @@ int main(int argc, char *argv[])
                  {},
                  [&count, t](AResult &result) mutable {
             (*count)++;
-            if (!result.error()) {
+            if (!result.hasError()) {
                 auto data = result.toHash();
                 if (data.size() && *count == 10000) {
                     qDebug() << "finish" << count << "elap" << t.elapsed();
@@ -380,7 +380,7 @@ int main(int argc, char *argv[])
     QObject::connect(loopT, &QTimer::timeout, loopT, [=] {
         auto db = APool::database();
         db.exec(u"SELECT now()", nullptr, [](AResult &result) {
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "Error" << result.errorString();
             } else {
                 qDebug() << "1s loop" << result.toHash();

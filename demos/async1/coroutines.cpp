@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 
             auto db = APool::database();
             db.exec(u"SELECT 2", nullptr, [](AResult &result) {
-                if (result.error()) {
+                if (result.hasError()) {
                     qDebug() << "Error" << result.errorString();
                 } else {
                     qDebug() << "1s loop" << result.toHash();

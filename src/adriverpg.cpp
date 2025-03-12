@@ -264,7 +264,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                                 m_queryRunning    = false;
 
                                 if (Q_UNLIKELY(pgQuery.preparedQuery && pgQuery.preparing)) {
-                                    if (Q_UNLIKELY(pgQuery.result && pgQuery.result->error())) {
+                                    if (Q_UNLIKELY(pgQuery.result && pgQuery.result->hasError())) {
                                         // PREPARE OR PREPARED QUERY ERROR
                                         auto query = m_queuedQueries.front();
                                         m_queuedQueries.pop();
@@ -591,8 +591,8 @@ void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db,
 
     m_subscribedNotifications.insert(name, cb);
     exec(db, QString{u"LISTEN " + name}, {}, this, [this, name](AResult &result) {
-        qDebug(ASQL_PG) << "subscribed" << !result.error() << result.errorString();
-        if (result.error()) {
+        qDebug(ASQL_PG) << "subscribed" << !result.hasError() << result.errorString();
+        if (result.hasError()) {
             m_subscribedNotifications.remove(name);
         }
     });
@@ -610,7 +610,7 @@ void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, 
 {
     if (m_subscribedNotifications.remove(name)) {
         exec(db, QString{u"UNLISTEN "_s + name}, {}, this, [=](AResult &result) {
-            qDebug(ASQL_PG) << "unsubscribed" << !result.error() << result.errorString();
+            qDebug(ASQL_PG) << "unsubscribed" << !result.hasError() << result.errorString();
         });
     }
 }
@@ -908,7 +908,7 @@ bool AResultPg::lastResulSet() const
     return m_lastResultSet;
 }
 
-bool AResultPg::error() const
+bool AResultPg::hasError() const
 {
     return m_error;
 }

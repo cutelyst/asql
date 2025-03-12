@@ -17,7 +17,7 @@ public:
     virtual ~AResultPrivate();
 
     virtual bool lastResulSet() const   = 0;
-    virtual bool error() const          = 0;
+    virtual bool hasError() const       = 0;
     virtual QString errorString() const = 0;
 
     virtual QByteArray query() const       = 0;
@@ -59,7 +59,7 @@ public:
     virtual ~AResult();
 
     [[nodiscard]] bool lastResulSet() const;
-    [[nodiscard]] bool error() const;
+    [[nodiscard]] bool hasError() const;
     [[nodiscard]] QString errorString() const;
 
     /*!

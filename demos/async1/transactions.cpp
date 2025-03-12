@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
         ATransaction t(db);
         t.begin();
         db.exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "SELECT error" << result.errorString();
                 return;
             }
@@ -52,13 +52,13 @@ int main(int argc, char *argv[])
     {
         ATransaction t(APool::database());
         t.begin(nullptr, [t](AResult &result) {
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "BEGIN error" << result.errorString();
                 return;
             }
 
             t.database().exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
-                if (result.error()) {
+                if (result.hasError()) {
                     qDebug() << "SELECT error" << result.errorString();
                     return;
                 }
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     {
         ATransaction t(APool::database());
         t.begin(nullptr, [t](AResult &result) {
-            if (result.error()) {
+            if (result.hasError()) {
                 qDebug() << "BEGIN error" << result.errorString();
                 return;
             }
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
                                   },
                                   nullptr,
                                   [t](AResult &result) mutable {
-                    if (result.error()) {
+                    if (result.hasError()) {
                         qDebug() << "SELECT i error" << result.errorString();
                         return;
                     }
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
                     }
 
                     t.commit(nullptr, [](AResult &result) {
-                        qDebug() << "COMMIT i result" << result.error() << result.errorString();
+                        qDebug() << "COMMIT i result" << result.hasError() << result.errorString();
                     });
                 });
             }

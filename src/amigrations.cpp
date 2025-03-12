@@ -71,7 +71,7 @@ version bigint not null check (version >= 0)
 )V0G0N",
                    this,
                    [=, this](AResult &result) {
-        if (result.error()) {
+        if (result.hasError()) {
             qDebug(ASQL_MIG) << "Create migrations table" << result.errorString();
         }
 
@@ -79,7 +79,7 @@ version bigint not null check (version >= 0)
                        {name},
                        this,
                        [=, this](AResult &result2) {
-            if (result2.error()) {
+            if (result2.hasError()) {
                 Q_EMIT ready(true, result2.errorString());
                 return;
             }
@@ -239,7 +239,7 @@ void AMigrations::migrate(int targetVersion,
 
     ATransaction t(d->db);
     t.begin(this, [=, this](AResult &result) mutable {
-        if (result.error()) {
+        if (result.hasError()) {
             cb(true, result.errorString());
             return;
         }
@@ -248,7 +248,7 @@ void AMigrations::migrate(int targetVersion,
                    {d->name},
                    this,
                    [=, this](AResult &result) mutable {
-            if (result.error()) {
+            if (result.hasError()) {
                 cb(true, result.errorString());
                 return;
             }
@@ -292,7 +292,7 @@ void AMigrations::migrate(int targetVersion,
                 }
 
                 d->db.exec(migration.versionQuery, this, [=](AResult &result) mutable {
-                    if (result.error()) {
+                    if (result.hasError()) {
                         qCritical(ASQL_MIG) << "Failed to update version" << result.errorString();
                     }
                 });
@@ -303,14 +303,14 @@ void AMigrations::migrate(int targetVersion,
                                             : migration.versionQuery + migration.query,
                     this,
                     [=, this](AResult &result) mutable {
-                if (result.error()) {
+                if (result.hasError()) {
                     if (cb) {
                         cb(true, result.errorString());
                     }
                 } else if (result.lastResulSet()) {
                     if (migration.noTransaction || !dryRun) {
                         t.commit(this, [=, this](AResult &result) {
-                            if (result.error()) {
+                            if (result.hasError()) {
                                 if (cb) {
                                     cb(true, result.errorString());
                                 }
