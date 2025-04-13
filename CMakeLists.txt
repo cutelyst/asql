@@ -31,6 +31,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Options
 #
 option(ENABLE_MAINTAINER_CFLAGS "Enable maintainer CFlags" OFF)
+option(DRIVER_SQLITE "Enable Sqlite Driver" ON)
+
+if (DRIVER_SQLITE)
+  enable_language(C)
+endif ()
 
 # NONE
 

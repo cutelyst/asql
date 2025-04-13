@@ -78,7 +78,7 @@ install(TARGETS ASqlQt${QT_VERSION_MAJOR}
     PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
 )
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/asql-qt5.pc.in
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/asql-qt.pc.in
   ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}.pc
   @ONLY
 )
@@ -211,6 +211,72 @@ install(TARGETS ASqlQt${QT_VERSION_MAJOR}Pg
 )
 
 # End Postgres Driver
+
+## Sqlite Driver
+if (DRIVER_SQLITE)
+    set(asql_sqlite_SRC
+        sqlite/sqlite3.c
+        sqlite/sqlite3.h
+        ADriverSqlite.cpp
+        ADriverSqlite.hpp
+        ASqlite.cpp
+    )
+
+    set(asql_sqlite_HEADERS
+        ASqlite.hpp
+    )
+
+    add_library(ASqlQt${QT_VERSION_MAJOR}Sqlite
+        ${asql_sqlite_SRC}
+        ${asql_sqlite_HEADERS}
+    )
+
+    generate_export_header(ASqlQt${QT_VERSION_MAJOR}Sqlite
+        BASE_NAME ASQL_SQLITE
+    )
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/asql_sqlite_export.h
+        DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
+    )
+
+    add_library(ASql::Sqlite ALIAS ASqlQt${QT_VERSION_MAJOR}Sqlite)
+    project_target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}Sqlite)
+
+    if (CMAKE_GENERATOR MATCHES "Visual Studio")
+      set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Sqlite PROPERTY DEBUG_POSTFIX "d")
+    endif()
+
+    target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}Sqlite
+      PRIVATE
+        PLUGINS_PREFER_DEBUG_POSTFIX=$<CONFIG:Debug>
+    )
+
+    target_include_directories(ASqlQt${QT_VERSION_MAJOR}Sqlite PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+      $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
+    )
+
+    set_target_properties(ASqlQt${QT_VERSION_MAJOR}Sqlite PROPERTIES
+        EXPORT_NAME Sqlite
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 0
+    )
+
+    target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Sqlite
+        PUBLIC
+            Qt::Core
+            ASql::Core
+    )
+
+    set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Sqlite PROPERTY PUBLIC_HEADER ${asql_sqlite_HEADERS})
+    install(TARGETS ASqlQt${QT_VERSION_MAJOR}Sqlite
+        EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION bin COMPONENT runtime
+        ARCHIVE DESTINATION lib COMPONENT devel
+        PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
+    )
+
+endif () # End Sqlite Driver
 
 add_executable(asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR} asql_migration.cpp)
 target_link_libraries(asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}

@@ -385,17 +385,17 @@ void ADriverPg::onStateChanged(QObject *receiver,
 
 void ADriverPg::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"BEGIN", QVariantList(), receiver, cb);
+    exec(db, u"BEGIN", {}, receiver, cb);
 }
 
 void ADriverPg::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"COMMIT", QVariantList(), receiver, cb);
+    exec(db, u"COMMIT", {}, receiver, cb);
 }
 
 void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"ROLLBACK", QVariantList(), receiver, cb);
+    exec(db, u"ROLLBACK", {}, receiver, cb);
 }
 
 void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
