@@ -205,7 +205,7 @@ private:
     QHash<QString, ANotificationFn> m_subscribedNotifications;
     std::queue<APGQuery> m_queuedQueries;
     std::shared_ptr<ADriver> selfDriver;
-    QByteArrayList m_preparedQueries;
+    QSet<QByteArray> m_preparedQueries;
     std::unique_ptr<QSocketNotifier> m_writeNotify;
     std::unique_ptr<QSocketNotifier> m_readNotify;
     std::unique_ptr<QTimer> m_autoSyncTimer;

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 cmake_minimum_required(VERSION 3.16)
-project(libasql VERSION 0.98.0 LANGUAGES CXX)
+project(libasql VERSION 0.99.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(GenerateExportHeader)
@@ -31,6 +31,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Options
 #
 option(ENABLE_MAINTAINER_CFLAGS "Enable maintainer CFlags" OFF)
+option(DRIVER_SQLITE "Enable Sqlite Driver" ON)
+option(DRIVER_POSTGRES "Enable PostgreSql Driver" ON)
+
+if (DRIVER_SQLITE)
+  enable_language(C)
+endif ()
 
 # NONE
 

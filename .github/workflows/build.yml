@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-24.04
+          - ubuntu-latest
           - windows-latest
           - macos-latest
         config:
@@ -27,6 +27,8 @@ jobs:
         run: |
           sudo apt update -qq
           sudo apt install -y doxygen graphviz postgresql-server-dev-16
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
 
       - name: Install dependencies on macOS
         if: runner.os == 'macOS'

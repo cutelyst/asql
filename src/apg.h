@@ -17,7 +17,7 @@ class ASQL_PG_EXPORT APg : public ADriverFactory
 {
 public:
     /*!
-     * \brief APg contructs an driver factory with the connection info
+     * \brief APg contructs a driver factory with the connection info
      *
      * This class allows for creating Postgres driver using the connection info.
      *

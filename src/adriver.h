@@ -13,6 +13,9 @@
 
 namespace ASql {
 
+using OpenFn         = std::function<void(bool isOpen, const QString &error)>;
+using StateChangedFn = std::function<void(ADatabase::State state, const QString &status)>;
+
 class AResult;
 class APreparedQuery;
 class ASQL_EXPORT ADriver : public QObject
@@ -26,12 +29,10 @@ public:
     QString connectionInfo() const;
 
     virtual bool isValid() const;
-    virtual void open(QObject *receiver, std::function<void(bool isOpen, const QString &error)> cb);
+    virtual void open(QObject *receiver, OpenFn cb);
 
     virtual ADatabase::State state() const;
-    virtual void
-        onStateChanged(QObject *receiver,
-                       std::function<void(ADatabase::State state, const QString &status)> cb);
+    virtual void onStateChanged(QObject *receiver, StateChangedFn cb);
 
     virtual bool isOpen() const;
 
