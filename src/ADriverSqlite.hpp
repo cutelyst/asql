@@ -4,7 +4,7 @@
 #include "adriver.h"
 #include "apreparedquery.h"
 #include "aresult.h"
-#include "sqlite3.h"
+#include "sqlite/sqlite3.h"
 
 #include <optional>
 
@@ -99,6 +99,8 @@ Q_SIGNALS:
     void queryFinished(ASql::QueryPromise promise);
 
 private:
+    bool prepare(ASql::QueryPromise promise);
+
     sqlite3 *m_db = nullptr;
     QString m_uri;
 };
