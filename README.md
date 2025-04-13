@@ -1,4 +1,4 @@
-<!-- SPDX-FileCopyrightText: (C) 2020-2022 Daniel Nicoletti <dantti12@gmail.com>
+<!-- SPDX-FileCopyrightText: (C) 2020-2025 Daniel Nicoletti <dantti12@gmail.com>
      SPDX-License-Identifier: MIT
 -->
 
@@ -6,7 +6,9 @@
 Qt Async Sql library
 
 ## Features
-* PostgreSQL driver
+* Drivers
+  - PostgreSQL
+  - SQLite
 * Navigate on your data with iterators
 * Scoped transactions objects
 * Prepared queries
@@ -20,10 +22,8 @@ Qt Async Sql library
 
 ## Requirements
 * Qt 6.4 or later
-* C++20 capable compiler
-
-Currently, there is only one driver, for PostgreSQL, so PostgreSQL
-libraries are required as well.
+* C++20 capable compiler, C++26 for experimental coroutines support (see demos)
+* For coroutines support g++-14 is required.
 
 ## Usage
 

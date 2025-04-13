@@ -274,7 +274,7 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                                         pgQuery.result.reset();
 
                                         // Query prepared
-                                        m_preparedQueries.append(
+                                        m_preparedQueries.insert(
                                             pgQuery.preparedQuery->identification());
                                         pgQuery.preparing = false;
                                         nextQuery();
@@ -385,17 +385,17 @@ void ADriverPg::onStateChanged(QObject *receiver,
 
 void ADriverPg::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"BEGIN", QVariantList(), receiver, cb);
+    exec(db, u"BEGIN", {}, receiver, cb);
 }
 
 void ADriverPg::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"COMMIT", QVariantList(), receiver, cb);
+    exec(db, u"COMMIT", {}, receiver, cb);
 }
 
 void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"ROLLBACK", QVariantList(), receiver, cb);
+    exec(db, u"ROLLBACK", {}, receiver, cb);
 }
 
 void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
@@ -665,7 +665,7 @@ int ADriverPg::doExec(APGQuery &pgQuery)
 
             if (ret == 1 && pipelineStatus() == ADatabase::PipelineStatus::On) {
                 // pretend that it was prepared otherwise it can't be used in in the pipeline
-                m_preparedQueries.append(pgQuery.preparedQuery->identification());
+                m_preparedQueries.insert(pgQuery.preparedQuery->identification());
                 isPrepared = true;
             }
             pgQuery.preparing = true;
@@ -835,7 +835,7 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
 
             if (ret == 1 && pipelineStatus() == ADatabase::PipelineStatus::On) {
                 // pretend that it was prepared otherwise it can't be used in in the pipeline
-                m_preparedQueries.append(pgQuery.preparedQuery->identification());
+                m_preparedQueries.insert(pgQuery.preparedQuery->identification());
                 isPrepared = true;
             }
             pgQuery.preparing = true;

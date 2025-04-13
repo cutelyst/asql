@@ -43,7 +43,8 @@ bool ADatabase::isValid()
     return d && d->isValid();
 }
 
-void ADatabase::open(QObject *receiver, std::function<void(bool error, const QString &fff)> cb)
+void ADatabase::open(QObject *receiver,
+                     std::function<void(bool error, const QString &errorString)> cb)
 {
     if (!d) {
         d = std::make_shared<ADriver>();

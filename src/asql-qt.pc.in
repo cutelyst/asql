@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+# SPDX-License-Identifier: MIT
+
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@/asql@PROJECT_VERSION_MAJOR@-qt5
+
+Name: asql-qt5
+Description: Async Sql library for Qt5
+Version: @PROJECT_VERSION@
+Requires: Qt5Core
+Libs: -L${libdir} -lASql@PROJECT_VERSION_MAJOR@Qt5
+Cflags: -I${includedir}
