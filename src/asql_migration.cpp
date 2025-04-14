@@ -229,9 +229,8 @@ int main(int argc, char *argv[])
             t.start();
             mig->migrate(newVersion, [t](bool error, const QString &errorString) {
                 if (error) {
-                    std::cerr << qPrintable(
-                                     QCoreApplication::translate("main", "Failed to migrate: %1.")
-                                         .arg(errorString))
+                    std::cerr << qPrintable(QCoreApplication::translate("main", "Error: %1.")
+                                                .arg(errorString))
                               << std::endl;
                     qApp->exit(9);
                 } else {

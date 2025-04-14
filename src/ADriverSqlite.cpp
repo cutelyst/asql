@@ -62,6 +62,11 @@ ADriverSqlite::~ADriverSqlite()
     m_thread.quit();
 }
 
+QString ADriverSqlite::driverName() const
+{
+    return u"sqlite"_s;
+}
+
 bool ADriverSqlite::isValid() const
 {
     return true;
@@ -114,24 +119,68 @@ void ADriverSqlite::onStateChanged(QObject *receiver,
 
 void ADriverSqlite::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"BEGIN", {}, receiver, cb);
+    exec(db, u8"BEGIN", receiver, cb);
 }
 
 void ADriverSqlite::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"COMMIT", {}, receiver, cb);
+    exec(db, u8"COMMIT", receiver, cb);
 }
 
 void ADriverSqlite::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"ROLLBACK", {}, receiver, cb);
+    exec(db, u8"ROLLBACK", receiver, cb);
 }
 
-QByteArray QStringToUtf16Bytes(QStringView str)
+void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
+                         QUtf8StringView query,
+                         QObject *receiver,
+                         AResultFn cb)
 {
-    const char16_t *utf16Data = str.utf16();
-    int byteSize              = str.length() * sizeof(QChar);
-    return QByteArray(reinterpret_cast<const char *>(utf16Data), byteSize);
+    ++m_queueSize;
+    selfDriver = db;
+
+    QueryPromise data{
+        .driver        = db,
+        .cb            = cb,
+        .result        = std::make_shared<AResultSqlite>(),
+        .receiver      = receiver,
+        .checkReceiver = static_cast<bool>(receiver),
+    };
+    data.result->m_query.setRawData(query.data(), query.size());
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    QMetaObject::invokeMethod(
+        &m_worker, &ASqliteThread::queryExec, Qt::QueuedConnection, std::move(data));
+#else
+    QMetaObject::invokeMethod(
+        &m_worker, "queryExec", Qt::QueuedConnection, Q_ARG(ASql::QueryPromise, std::move(data)));
+#endif
+}
+
+void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
+                         QStringView query,
+                         QObject *receiver,
+                         AResultFn cb)
+{
+    ++m_queueSize;
+
+    QueryPromise data{
+        .driver        = db,
+        .cb            = cb,
+        .result        = std::make_shared<AResultSqlite>(),
+        .receiver      = receiver,
+        .checkReceiver = static_cast<bool>(receiver),
+    };
+    data.result->m_query = query.toUtf8();
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    QMetaObject::invokeMethod(
+        &m_worker, &ASqliteThread::queryExec, Qt::QueuedConnection, std::move(data));
+#else
+    QMetaObject::invokeMethod(
+        &m_worker, "queryExec", Qt::QueuedConnection, Q_ARG(ASql::QueryPromise, std::move(data)));
+#endif
 }
 
 void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
@@ -177,10 +226,7 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
         .receiver      = receiver,
         .checkReceiver = static_cast<bool>(receiver),
     };
-    data.result->m_query = query.toUtf8();
-
-    // data.result->m_query = QStringToUtf16Bytes(query);
-    // data.result->m_utf16 = true;
+    data.result->m_query     = query.toUtf8();
     data.result->m_queryArgs = params;
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
@@ -327,7 +373,7 @@ void ASqliteThread::query(QueryPromise promise)
                 m_preparedQueries.remove(promise.preparedQuery->identification());
 
                 const char *sqliteError = sqlite3_errmsg(m_db);
-                qWarning() << u"Failed to reset prepared statement: '%1'"_s.arg(
+                qWarning(ASQL_SQLITE) << u"Failed to reset prepared statement: '%1'"_s.arg(
                     sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
                 return;
             }
@@ -336,7 +382,7 @@ void ASqliteThread::query(QueryPromise promise)
                 m_preparedQueries.remove(promise.preparedQuery->identification());
 
                 const char *sqliteError = sqlite3_errmsg(m_db);
-                qWarning() << u"Failed to reset prepared statement bindings: '%1'"_s.arg(
+                qWarning(ASQL_SQLITE) << u"Failed to reset prepared statement bindings: '%1'"_s.arg(
                     sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
                 return;
             }
@@ -454,12 +500,23 @@ void ASqliteThread::query(QueryPromise promise)
     promise.result->m_fields = columns;
 
     QVariantList rows;
-    while (sqlite3_step(promise.stmt.get()) == SQLITE_ROW) {
-        if (num_cols == 0) {
-            if (sqlite3_step(promise.stmt.get()) == 21) {
+    do {
+        if (QThread::currentThread()->isInterruptionRequested()) {
+            promise.result->m_error       = true;
+            promise.result->m_errorString = u"Interrupt requested"_s;
+            return;
+        }
+
+        res = sqlite3_step(promise.stmt.get());
+        if (res != SQLITE_ROW) {
+            if (res != SQLITE_DONE) {
+                promise.result->m_error       = true;
+                const char *sqliteError       = sqlite3_errmsg(m_db);
+                promise.result->m_errorString = u"Failed to execute query: '%2'"_s.arg(
+                    sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
                 return;
             }
-            continue;
+            break;
         }
 
         const int currentRow = rows.size();
@@ -489,9 +546,49 @@ void ASqliteThread::query(QueryPromise promise)
                 break;
             }
         }
-    }
+    } while (true);
 
     promise.result->m_rows = rows;
+}
+
+/**
+ * This method uses sqlite3_exec() interface which allows for
+ * more than one query to be processed at the same time, which
+ * we use for migrations and for non prepared statements, it
+ * also doesn't allod for parameters which is fine for this use case.
+ */
+void ASqliteThread::queryExec(QueryPromise promise)
+{
+    auto _ = qScopeGuard([&] { Q_EMIT queryFinished(std::move(promise)); });
+
+    auto callback = [](void *data, int argc, char **argv, char **azColName) -> int {
+        auto result = static_cast<QueryPromise *>(data)->result;
+
+        // Store column names (if needed, for the first row)
+        if (result->m_rows.empty()) {
+            for (int i = 0; i < argc; ++i) {
+                result->m_fields.append(QString::fromUtf8(azColName[i]));
+            }
+        }
+
+        // Store row data
+        QStringList row;
+        for (int i = 0; i < argc; ++i) {
+            row.append(argv[i] ? QString::fromUtf8(argv[i]) : QString{});
+        }
+        result->m_rows.append(row);
+
+        return QThread::currentThread()->isInterruptionRequested() ? -1 : 0;
+    };
+
+    char *errormsg = nullptr;
+    auto res =
+        sqlite3_exec(m_db, promise.result->m_query.constData(), callback, &promise, &errormsg);
+    if (res != SQLITE_OK) {
+        promise.result->m_error       = true;
+        promise.result->m_errorString = u"Failed to exec: '%1'"_s.arg(
+            errormsg ? QString::fromUtf8(errormsg) : u"Unknown error"_s);
+    }
 }
 
 int ASqliteThread::prepare(QueryPromise &promise, int flags)
@@ -633,7 +730,7 @@ QDateTime AResultSqlite::toDateTime(int row, int column) const
 
 QJsonValue AResultSqlite::toJsonValue(int row, int column) const
 {
-    auto doc = QJsonDocument::fromJson(toByteArray(row, column));
+    auto doc = QJsonDocument::fromJson(toString(row, column).toUtf8());
     return doc.isObject() ? doc.object() : doc.isArray() ? doc.array() : QJsonValue{};
 }
 

@@ -82,7 +82,14 @@ public:
      * are the ones created with invalid drivers, or using the empty constructor.
      * \return true if valid
      */
-    [[nodiscard]] bool isValid();
+    [[nodiscard]] bool isValid() const;
+
+    /*!
+     * \brief isValid checks if this is a valid connection, invalid connections
+     * are the ones created with invalid drivers, or using the empty constructor.
+     * \return true if valid
+     */
+    [[nodiscard]] QString driverName() const;
 
     /*!
      * \brief open the database, the callback is called once the operation is done

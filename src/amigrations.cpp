@@ -58,40 +58,48 @@ AMigrations::~AMigrations()
     delete d_ptr;
 }
 
-void AMigrations::load(const ADatabase &db, const QString &name, const ADatabase &noTransactionDB)
+ACoroTerminator
+    AMigrations::load(const ADatabase &db, const QString &name, const ADatabase &noTransactionDB)
 {
     d_ptr->name            = name;
     d_ptr->db              = db;
     d_ptr->noTransactionDB = noTransactionDB;
-    d_ptr->db.exec(uR"V0G0N(
+    auto result            = co_await d_ptr->db.coExec(uR"V0G0N(
 CREATE TABLE IF NOT EXISTS asql_migrations (
 name text primary key,
 version bigint not null check (version >= 0)
 )
 )V0G0N",
-                   this,
-                   [=, this](AResult &result) {
-        if (result.hasError()) {
-            qDebug(ASQL_MIG) << "Create migrations table" << result.errorString();
+                                            this);
+    if (!result) {
+        qDebug(ASQL_MIG) << "Create migrations table" << result.error();
+    }
+
+    const QString query = [db = d_ptr->db] {
+        if (db.driverName() == u"sqlite") {
+            return u"SELECT version FROM asql_migrations WHERE name = ?"_s;
         }
 
-        d_ptr->db.exec(u"SELECT version FROM asql_migrations WHERE name=$1",
-                       {name},
-                       this,
-                       [=, this](AResult &result2) {
-            if (result2.hasError()) {
-                Q_EMIT ready(true, result2.errorString());
-                return;
-            }
+        return u"SELECT version FROM asql_migrations WHERE name = $1"_s;
+    }();
 
-            if (result2.size()) {
-                d_ptr->active = result2.constBegin().value(0).toInt();
-            } else {
-                d_ptr->active = 0;
-            }
-            Q_EMIT ready(false, QString{});
-        });
-    });
+    result = co_await d_ptr->db.coExec(query,
+                                       {
+                                           name,
+                                       },
+                                       this);
+    if (!result) {
+        Q_EMIT ready(true, result.error());
+        co_return;
+    }
+
+    auto row = result->begin();
+    if (row != result->end()) {
+        d_ptr->active = row.value(0).toInt();
+    } else {
+        d_ptr->active = 0;
+    }
+    Q_EMIT ready(false, QString{});
 }
 
 int AMigrations::active() const
@@ -220,9 +228,9 @@ void AMigrations::migrate(std::function<void(bool, const QString &)> cb, bool dr
     migrate(d->latest, cb, dryRun);
 }
 
-void AMigrations::migrate(int targetVersion,
-                          std::function<void(bool, const QString &)> cb,
-                          bool dryRun)
+ACoroTerminator AMigrations::migrate(int targetVersion,
+                                     std::function<void(bool, const QString &)> cb,
+                                     bool dryRun)
 {
     Q_D(AMigrations);
 
@@ -234,108 +242,112 @@ void AMigrations::migrate(int targetVersion,
             cb(true, u"Failed to migrate: invalid target version"_s);
         }
         qWarning(ASQL_MIG) << "Failed to migrate: invalid target version" << targetVersion;
-        return;
+        co_return;
     }
 
-    ATransaction t(d->db);
-    t.begin(this, [=, this](AResult &result) mutable {
-        if (result.hasError()) {
-            cb(true, result.errorString());
-            return;
+    auto t = co_await d->db.coBegin();
+    if (!t) {
+        cb(true, t.error());
+        co_return;
+    }
+
+    const QString query = [db = d->db] {
+        if (db.driverName() == u"sqlite") {
+            return u"SELECT version FROM asql_migrations WHERE name = ?"_s;
         }
 
-        d->db.exec(u"SELECT version FROM asql_migrations WHERE name=$1 FOR UPDATE",
-                   {d->name},
-                   this,
-                   [=, this](AResult &result) mutable {
-            if (result.hasError()) {
-                cb(true, result.errorString());
-                return;
+        return u"SELECT version FROM asql_migrations WHERE name = $1 FOR UPDATE"_s;
+    }();
+
+    auto result = co_await d->db.coExec(query,
+                                        {
+                                            d->name,
+                                        },
+                                        this);
+    if (!result) {
+        cb(true, result.error());
+        co_return;
+    }
+
+    int active = 0;
+    auto row   = result->begin();
+    if (row != result->end()) {
+        active = row[0].toInt();
+    }
+
+    if (active > latest()) {
+        cb(true,
+           u"Current version %1 is greater than the latest version %2"_s.arg(active).arg(latest()));
+        co_return;
+    }
+
+    const auto migration = d->nextQuery(active, targetVersion);
+    if (migration.query.isEmpty()) {
+        if (cb) {
+            cb(false, u"Done."_s);
+        }
+        co_return;
+    }
+
+    qDebug(ASQL_MIG) << "Migrating current version" << active << "ẗo" << migration.version
+                     << "target version" << targetVersion << "transaction"
+                     << !migration.noTransaction << "has query" << !migration.query.isEmpty();
+    if (migration.noTransaction) {
+        qWarning(ASQL_MIG) << "Migrating from" << active << "to" << migration.version
+                           << "without a transaction, might fail to update the version.";
+
+        if (dryRun) {
+            qCritical(ASQL_MIG) << "Cannot dry run a migration that requires no transaction: "
+                                << migration.version;
+            if (cb) {
+                cb(true, u"Done."_s);
+            }
+            co_return;
+        }
+
+        result = co_await d->db.coExec(migration.versionQuery, this);
+        if (!result) {
+            qCritical(ASQL_MIG) << "Failed to update version" << result.error();
+            cb(true, result.error());
+            co_return;
+        }
+    }
+
+    ADatabase db = migration.noTransaction ? d->noTransactionDB : d->db;
+    result       = co_await db.coExec(
+        migration.noTransaction ? migration.query : migration.versionQuery + migration.query, this);
+    if (!result) {
+        qCritical(ASQL_MIG) << "Failed to migrate"
+                            << (active < migration.version ? migration.version
+                                                           : migration.version + 1)
+                            << (active < migration.version ? "up" : "down");
+        if (cb) {
+            cb(true, result.error());
+        }
+    } else if (result->lastResulSet()) {
+        if (migration.noTransaction || !dryRun) {
+            result = co_await t->coCommit(this);
+            if (!result) {
+                if (cb) {
+                    cb(true, result.error());
+                }
             }
 
-            int active = 0;
-            if (result.size()) {
-                active = result[0][0].toInt();
-            }
-
-            if (active > latest()) {
-                cb(true,
-                   u"Current version %1 is greater than the latest version %2"_s.arg(active).arg(
-                       latest()));
-                return;
-            }
-
-            const auto migration = d->nextQuery(active, targetVersion);
-            if (migration.query.isEmpty()) {
+            qInfo(ASQL_MIG) << "Migrated from" << active << "to" << migration.version << "in"
+                            << elapsed.elapsed() << "ms";
+            if (dryRun) {
                 if (cb) {
                     cb(false, u"Done."_s);
                 }
-                return;
+            } else {
+                migrate(targetVersion, cb, dryRun);
             }
-
-            qDebug(ASQL_MIG) << "Migrating current version" << active << "ẗo" << migration.version
-                             << "target version" << targetVersion << "transaction"
-                             << !migration.noTransaction << "has query"
-                             << !migration.query.isEmpty();
-            if (migration.noTransaction) {
-                qWarning(ASQL_MIG) << "Migrating from" << active << "to" << migration.version
-                                   << "without a transaction, might fail to update the version.";
-
-                if (dryRun) {
-                    qCritical(ASQL_MIG)
-                        << "Cannot dry run a migration that requires no transaction: "
-                        << migration.version;
-                    if (cb) {
-                        cb(true, u"Done."_s);
-                    }
-                    return;
-                }
-
-                d->db.exec(migration.versionQuery, this, [=](AResult &result) mutable {
-                    if (result.hasError()) {
-                        qCritical(ASQL_MIG) << "Failed to update version" << result.errorString();
-                    }
-                });
+        } else {
+            if (cb) {
+                cb(true, u"Rolling back"_s);
             }
-
-            ADatabase db = migration.noTransaction ? d->noTransactionDB : d->db;
-            db.exec(migration.noTransaction ? migration.query
-                                            : migration.versionQuery + migration.query,
-                    this,
-                    [=, this](AResult &result) mutable {
-                if (result.hasError()) {
-                    if (cb) {
-                        cb(true, result.errorString());
-                    }
-                } else if (result.lastResulSet()) {
-                    if (migration.noTransaction || !dryRun) {
-                        t.commit(this, [=, this](AResult &result) {
-                            if (result.hasError()) {
-                                if (cb) {
-                                    cb(true, result.errorString());
-                                }
-                            } else {
-                                qInfo(ASQL_MIG)
-                                    << "Migrated from" << active << "to" << migration.version
-                                    << "in" << elapsed.elapsed() << "ms";
-                                if (dryRun) {
-                                    if (cb) {
-                                        cb(false, u"Done."_s);
-                                    }
-                                } else {
-                                    migrate(targetVersion, cb, dryRun);
-                                }
-                            }
-                        });
-                    } else {
-                        if (cb) {
-                            cb(true, u"Rolling back"_s);
-                        }
-                    }
-                }
-            });
-        });
-    });
+        }
+    }
 }
 
 AMigrationsPrivate::MigQuery AMigrationsPrivate::nextQuery(int versionFrom, int versionTo) const
@@ -343,9 +355,12 @@ AMigrationsPrivate::MigQuery AMigrationsPrivate::nextQuery(int versionFrom, int 
     AMigrationsPrivate::MigQuery ret;
 
     QString query = uR"V0G0N(
-INSERT INTO asql_migrations VALUES ('%1', %2)
+INSERT INTO asql_migrations
+    (name, version)
+VALUES
+    ('%1', %2)
 ON CONFLICT (name) DO UPDATE
-SET version=EXCLUDED.version
+SET version = EXCLUDED.version
 RETURNING version;
 )V0G0N"_s;
 

@@ -27,6 +27,7 @@ public:
     virtual ~ADriver() = default;
 
     QString connectionInfo() const;
+    virtual QString driverName() const;
 
     virtual bool isValid() const;
     virtual void open(QObject *receiver, OpenFn cb);
@@ -39,6 +40,16 @@ public:
     virtual void begin(const std::shared_ptr<ADriver> &driver, QObject *receiver, AResultFn cb);
     virtual void commit(const std::shared_ptr<ADriver> &driver, QObject *receiver, AResultFn cb);
     virtual void rollback(const std::shared_ptr<ADriver> &driver, QObject *receiver, AResultFn cb);
+
+    virtual void exec(const std::shared_ptr<ADriver> &driver,
+                      QUtf8StringView query,
+                      QObject *receiver,
+                      AResultFn cb);
+
+    virtual void exec(const std::shared_ptr<ADriver> &driver,
+                      QStringView query,
+                      QObject *receiver,
+                      AResultFn cb);
 
     virtual void exec(const std::shared_ptr<ADriver> &driver,
                       QUtf8StringView query,

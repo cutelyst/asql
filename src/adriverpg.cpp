@@ -136,6 +136,11 @@ ADriverPg::ADriverPg(const QString &connInfo)
 {
 }
 
+QString ADriverPg::driverName() const
+{
+    return u"postgres"_s;
+}
+
 ADriverPg::~ADriverPg() = default;
 
 bool ADriverPg::isValid() const
@@ -385,17 +390,17 @@ void ADriverPg::onStateChanged(QObject *receiver,
 
 void ADriverPg::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"BEGIN", {}, receiver, cb);
+    exec(db, u8"BEGIN", receiver, cb);
 }
 
 void ADriverPg::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"COMMIT", {}, receiver, cb);
+    exec(db, u8"COMMIT", receiver, cb);
 }
 
 void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
 {
-    exec(db, u"ROLLBACK", {}, receiver, cb);
+    exec(db, u8"ROLLBACK", receiver, cb);
 }
 
 void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
@@ -452,6 +457,40 @@ bool ADriverPg::queryShouldBeQueued() const
 {
     return pipelineStatus() != ADatabase::PipelineStatus::On &&
            (m_queryRunning || !isConnected() || m_queuedQueries.size() > 0);
+}
+
+void ADriverPg::exec(const std::shared_ptr<ADriver> &db,
+                     QUtf8StringView query,
+                     QObject *receiver,
+                     AResultFn cb)
+{
+    APGQuery pgQuery;
+    pgQuery.query.setRawData(query.data(), query.size());
+    pgQuery.cb = cb;
+
+    setupCheckReceiver(pgQuery, receiver);
+
+    if (queryShouldBeQueued() || runQuery(pgQuery)) {
+        selfDriver = db;
+        m_queuedQueries.emplace(std::move(pgQuery));
+    }
+}
+
+void ADriverPg::exec(const std::shared_ptr<ADriver> &db,
+                     QStringView query,
+                     QObject *receiver,
+                     AResultFn cb)
+{
+    APGQuery pgQuery;
+    pgQuery.query = query.toUtf8();
+    pgQuery.cb    = cb;
+
+    setupCheckReceiver(pgQuery, receiver);
+
+    if (queryShouldBeQueued() || runQuery(pgQuery)) {
+        selfDriver = db;
+        m_queuedQueries.emplace(std::move(pgQuery));
+    }
 }
 
 void ADriverPg::exec(const std::shared_ptr<ADriver> &db,

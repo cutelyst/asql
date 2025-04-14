@@ -58,6 +58,11 @@ QString ADriver::connectionInfo() const
     return m_info;
 }
 
+QString ADriver::driverName() const
+{
+    return u"INVALID_DRIVER"_s;
+}
+
 bool ADriver::isValid() const
 {
     return false;
@@ -116,6 +121,22 @@ void ADriver::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AR
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
         cb(result);
     }
+}
+
+void ADriver::exec(const std::shared_ptr<ADriver> &driver,
+                   QUtf8StringView query,
+                   QObject *receiver,
+                   AResultFn cb)
+{
+    exec(driver, query, {}, receiver, cb);
+}
+
+void ADriver::exec(const std::shared_ptr<ADriver> &driver,
+                   QStringView query,
+                   QObject *receiver,
+                   AResultFn cb)
+{
+    exec(driver, query, {}, receiver, cb);
 }
 
 void ADriver::exec(const std::shared_ptr<ADriver> &db,

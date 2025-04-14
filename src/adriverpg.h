@@ -137,6 +137,8 @@ public:
     ADriverPg(const QString &connInfo);
     virtual ~ADriverPg();
 
+    QString driverName() const override;
+
     bool isValid() const override;
     void open(QObject *receiver,
               std::function<void(bool isOpen, const QString &error)> cb) override;
@@ -151,6 +153,16 @@ public:
     void begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
     void commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
     void rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
+
+    void exec(const std::shared_ptr<ADriver> &db,
+              QUtf8StringView query,
+              QObject *receiver,
+              AResultFn cb) override;
+
+    void exec(const std::shared_ptr<ADriver> &db,
+              QStringView query,
+              QObject *receiver,
+              AResultFn cb) override;
 
     void exec(const std::shared_ptr<ADriver> &db,
               QUtf8StringView query,

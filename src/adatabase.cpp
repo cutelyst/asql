@@ -13,6 +13,7 @@
 #include <QLoggingCategory>
 
 using namespace ASql;
+using namespace Qt::StringLiterals;
 
 ADatabase::ADatabase() = default;
 
@@ -38,9 +39,14 @@ ADatabase::ADatabase(ADatabase &&other) noexcept
 
 ADatabase::~ADatabase() = default;
 
-bool ADatabase::isValid()
+bool ADatabase::isValid() const
 {
     return d && d->isValid();
+}
+
+QString ADatabase::driverName() const
+{
+    return d ? d->driverName() : u"INVALID_DRIVER"_s;
 }
 
 void ADatabase::open(QObject *receiver,
@@ -107,7 +113,7 @@ AExpectedResult ADatabase::coExec(QStringView query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
-    d->exec(d, query, QVariantList(), receiver, coro.callback);
+    d->exec(d, query, receiver, coro.callback);
     return coro;
 }
 
@@ -156,19 +162,19 @@ AExpectedResult
 void ADatabase::exec(QStringView query, QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
-    d->exec(d, query, QVariantList(), receiver, cb);
+    d->exec(d, query, receiver, cb);
 }
 
 void ADatabase::exec(QUtf8StringView query, QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
-    d->exec(d, query, QVariantList(), receiver, cb);
+    d->exec(d, query, receiver, cb);
 }
 
 void ADatabase::exec(const APreparedQuery &query, QObject *receiver, AResultFn cb)
 {
     Q_ASSERT(d);
-    d->exec(d, query, QVariantList(), receiver, cb);
+    d->exec(d, query, {}, receiver, cb);
 }
 
 void ADatabase::exec(QStringView query, const QVariantList &params, QObject *receiver, AResultFn cb)

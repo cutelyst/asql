@@ -1,9 +1,10 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020-2024 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2025 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 #pragma once
 
+#include <acoroexpected.h>
 #include <adatabase.h>
 #include <asql_migrations_export.h>
 
@@ -25,7 +26,8 @@ public:
      * migration \p name. \param db a valid dabase option \param name of the migration \param
      * noTransactionDB a database object in case some script must run outside a transaction block
      */
-    void load(const ADatabase &db, const QString &name, const ADatabase &noTransactionDB = {});
+    ACoroTerminator
+        load(const ADatabase &db, const QString &name, const ADatabase &noTransactionDB = {});
 
     /*!
      * \brief active version of this migration, only valid after ready has been emitted
@@ -93,9 +95,9 @@ public:
      * diverges from regular operation as it will perform a single transaction block with all
      * up/down steps at once, which depending on the operation will fail.
      */
-    void migrate(int targetVersion,
-                 std::function<void(bool error, const QString &errorString)> cb,
-                 bool dryRun = false);
+    ACoroTerminator migrate(int targetVersion,
+                            std::function<void(bool error, const QString &errorString)> cb,
+                            bool dryRun = false);
 
 Q_SIGNALS:
     void ready(bool error, const QString &errorString);
