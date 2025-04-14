@@ -1,11 +1,18 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2025 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
 #include "adatabase.h"
 #include "amigrations.h"
-#include "apg.h"
+
+#if defined(DRIVER_POSTGRES)
+#    include "apg.h"
+#endif
+
+#if defined(DRIVER_SQLITE)
+#    include "ASqlite.hpp"
+#endif
 
 #include <iostream>
 
@@ -128,11 +135,23 @@ int main(int argc, char *argv[])
 
     ADatabase db;
     ADatabase noTransactionDB;
+#if defined(DRIVER_POSTGRES)
     if (conn.startsWith(u"postgres://") || conn.startsWith(u"postgresql://")) {
         db              = APg::database(conn);
         noTransactionDB = APg::database(conn);
         noTransactionDB.open();
-    } else {
+    }
+#endif
+
+#if defined(DRIVER_SQLITE)
+    if (conn.startsWith(u"sqlite://")) {
+        db              = ASqlite::database(conn);
+        noTransactionDB = ASqlite::database(conn);
+        noTransactionDB.open();
+    }
+#endif
+
+    if (!db.isValid()) {
         std::cerr << qPrintable(
                          QCoreApplication::translate("main", "No driver for uri: %1.").arg(conn))
                   << std::endl;

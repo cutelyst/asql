@@ -7,7 +7,6 @@ project(libasql VERSION 0.99.0 LANGUAGES CXX)
 include(GNUInstallDirs)
 include(GenerateExportHeader)
 
-find_package(PostgreSQL REQUIRED)
 find_package(QT NAMES Qt6 COMPONENTS Core REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} 6.4.0 COMPONENTS Core REQUIRED)
 
@@ -32,10 +31,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 #
 option(ENABLE_MAINTAINER_CFLAGS "Enable maintainer CFlags" OFF)
 option(DRIVER_SQLITE "Enable Sqlite Driver" ON)
-option(DRIVER_POSTGRES "Enable PostgreSql Driver" ON)
-
 if (DRIVER_SQLITE)
-  enable_language(C)
+    enable_language(C)
+endif ()
+
+option(DRIVER_POSTGRES "Enable PostgreSql Driver" ON)
+if (DRIVER_POSTGRES)
+    find_package(PostgreSQL REQUIRED)
 endif ()
 
 # NONE
