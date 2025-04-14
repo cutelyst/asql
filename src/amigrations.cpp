@@ -64,7 +64,7 @@ void AMigrations::load(const ADatabase &db, const QString &name, const ADatabase
     d_ptr->db              = db;
     d_ptr->noTransactionDB = noTransactionDB;
     d_ptr->db.exec(uR"V0G0N(
-CREATE TABLE IF NOT EXISTS public.asql_migrations (
+CREATE TABLE IF NOT EXISTS asql_migrations (
 name text primary key,
 version bigint not null check (version >= 0)
 )
@@ -75,7 +75,7 @@ version bigint not null check (version >= 0)
             qDebug(ASQL_MIG) << "Create migrations table" << result.errorString();
         }
 
-        d_ptr->db.exec(u"SELECT version FROM public.asql_migrations WHERE name=$1",
+        d_ptr->db.exec(u"SELECT version FROM asql_migrations WHERE name=$1",
                        {name},
                        this,
                        [=, this](AResult &result2) {
@@ -244,7 +244,7 @@ void AMigrations::migrate(int targetVersion,
             return;
         }
 
-        d->db.exec(u"SELECT version FROM public.asql_migrations WHERE name=$1 FOR UPDATE",
+        d->db.exec(u"SELECT version FROM asql_migrations WHERE name=$1 FOR UPDATE",
                    {d->name},
                    this,
                    [=, this](AResult &result) mutable {
@@ -343,7 +343,7 @@ AMigrationsPrivate::MigQuery AMigrationsPrivate::nextQuery(int versionFrom, int 
     AMigrationsPrivate::MigQuery ret;
 
     QString query = uR"V0G0N(
-INSERT INTO public.asql_migrations VALUES ('%1', %2)
+INSERT INTO asql_migrations VALUES ('%1', %2)
 ON CONFLICT (name) DO UPDATE
 SET version=EXCLUDED.version
 RETURNING version;
