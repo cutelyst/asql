@@ -16,7 +16,7 @@ using namespace Qt::StringLiterals;
 class AResultInvalid : public AResultPrivate
 {
 public:
-    bool lastResulSet() const final { return true; }
+    bool lastResultSet() const final { return true; }
     bool hasError() const final { return true; }
     QString errorString() const { return {}; }
 

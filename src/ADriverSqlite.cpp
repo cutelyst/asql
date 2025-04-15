@@ -259,10 +259,12 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
     QMetaObject::invokeMethod(
-        &m_worker, &ASqliteThread::query, Qt::QueuedConnection, std::move(data));
+        &m_worker, &ASqliteThread::queryPrepared, Qt::QueuedConnection, std::move(data));
 #else
-    QMetaObject::invokeMethod(
-        &m_worker, "query", Qt::QueuedConnection, Q_ARG(ASql::QueryPromise, std::move(data)));
+    QMetaObject::invokeMethod(&m_worker,
+                              "queryPrepared",
+                              Qt::QueuedConnection,
+                              Q_ARG(ASql::QueryPromise, std::move(data)));
 #endif
 }
 
@@ -364,273 +366,335 @@ void ASqliteThread::open(OpenPromise promise)
     Q_EMIT openned(promise);
 }
 
-void ASqliteThread::query(QueryPromise promise)
+QStringList fillColumns(sqlite3_stmt *stmt)
 {
-    auto _ = qScopeGuard([&] {
-        if (promise.preparedQuery.has_value()) {
-            // Make the statement ready to be used later
-            if (sqlite3_reset(promise.stmt.get()) != SQLITE_OK) {
-                m_preparedQueries.remove(promise.preparedQuery->identification());
+    QStringList columns;
+    const int columnsCount = sqlite3_column_count(stmt);
+    for (int i = 0; i < columnsCount; ++i) {
+        columns << QString::fromUtf8(sqlite3_column_name(stmt, i));
+    }
+    return columns;
+}
 
-                const char *sqliteError = sqlite3_errmsg(m_db);
-                qWarning(ASQL_SQLITE) << u"Failed to reset prepared statement: '%1'"_s.arg(
-                    sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
-                return;
-            }
+void fillRow(sqlite3_stmt *stmt, int columnsCount, QVariantList &rows)
+{
+    const int currentRow = rows.size();
+    rows.resize(rows.size() + columnsCount);
 
-            if (sqlite3_clear_bindings(promise.stmt.get()) != SQLITE_OK) {
-                m_preparedQueries.remove(promise.preparedQuery->identification());
-
-                const char *sqliteError = sqlite3_errmsg(m_db);
-                qWarning(ASQL_SQLITE) << u"Failed to reset prepared statement bindings: '%1'"_s.arg(
-                    sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
-                return;
-            }
+    for (int i = 0; i < columnsCount; i++) {
+        switch (sqlite3_column_type(stmt, i)) {
+        case SQLITE_BLOB:
+            rows[currentRow + i] =
+                QByteArray(static_cast<const char *>(sqlite3_column_blob(stmt, i)),
+                           sqlite3_column_bytes(stmt, i));
+            break;
+        case SQLITE_INTEGER:
+            rows[currentRow + i] = sqlite3_column_int64(stmt, i);
+            break;
+        case SQLITE_FLOAT:
+            rows[currentRow + i] = sqlite3_column_double(stmt, i);
+            break;
+            break;
+        case SQLITE_NULL:
+            rows[currentRow + i] = QVariant(QMetaType::fromType<QString>());
+            break;
+        default:
+            rows[currentRow + i] =
+                QString(reinterpret_cast<const QChar *>(sqlite3_column_text16(stmt, i)),
+                        sqlite3_column_bytes16(stmt, i) / sizeof(QChar));
+            break;
         }
-        Q_EMIT queryFinished(std::move(promise));
-    });
+    }
+}
 
+std::optional<QString> bindValues(sqlite3 *db, sqlite3_stmt *stmt, const QVariantList &params)
+{
     int res = SQLITE_OK;
-    if (promise.preparedQuery.has_value()) {
-        auto it = m_preparedQueries.constFind(promise.preparedQuery->identification());
-        if (it != m_preparedQueries.constEnd()) {
-            promise.stmt = it.value();
-        } else {
-            res = prepare(promise, SQLITE_PREPARE_PERSISTENT);
-
-            if (res == SQLITE_OK) {
-                m_preparedQueries.insert(promise.preparedQuery->identification(), promise.stmt);
-            }
-        }
-    } else {
-        res = prepare(promise, 0x0);
-    }
-
-    if (res != SQLITE_OK) {
-        return;
-    }
-
-    const auto params = promise.result->m_queryArgs;
     for (int i = 0; i < params.size(); ++i) {
         const QVariant &value = params.at(i);
         if (value.isNull()) {
-            res = sqlite3_bind_null(promise.stmt.get(), i + 1);
+            res = sqlite3_bind_null(stmt, i + 1);
         } else {
             switch (value.userType()) {
             case QMetaType::QByteArray:
             {
                 const QByteArray *ba = static_cast<const QByteArray *>(value.constData());
-                res                  = sqlite3_bind_blob(
-                    promise.stmt.get(), i + 1, ba->constData(), ba->size(), SQLITE_STATIC);
+                res = sqlite3_bind_blob(stmt, i + 1, ba->constData(), ba->size(), SQLITE_STATIC);
                 break;
             }
             case QMetaType::Int:
             case QMetaType::Bool:
-                res = sqlite3_bind_int(promise.stmt.get(), i + 1, value.toInt());
+                res = sqlite3_bind_int(stmt, i + 1, value.toInt());
                 break;
             case QMetaType::Double:
-                res = sqlite3_bind_double(promise.stmt.get(), i + 1, value.toDouble());
+                res = sqlite3_bind_double(stmt, i + 1, value.toDouble());
                 break;
             case QMetaType::UInt:
             case QMetaType::LongLong:
-                res = sqlite3_bind_int64(promise.stmt.get(), i + 1, value.toLongLong());
+                res = sqlite3_bind_int64(stmt, i + 1, value.toLongLong());
                 break;
             case QMetaType::QDateTime:
             {
                 const QDateTime dateTime = value.toDateTime();
                 const QString str        = dateTime.toString(Qt::ISODateWithMs);
-                res                      = sqlite3_bind_text16(promise.stmt.get(),
-                                          i + 1,
-                                          str.data(),
-                                          int(str.size() * sizeof(ushort)),
-                                          SQLITE_TRANSIENT);
+                res                      = sqlite3_bind_text16(
+                    stmt, i + 1, str.data(), int(str.size() * sizeof(ushort)), SQLITE_TRANSIENT);
                 break;
             }
             case QMetaType::QTime:
             {
                 const QTime time  = value.toTime();
                 const QString str = time.toString(u"hh:mm:ss.zzz");
-                res               = sqlite3_bind_text16(promise.stmt.get(),
-                                          i + 1,
-                                          str.data(),
-                                          int(str.size() * sizeof(ushort)),
-                                          SQLITE_TRANSIENT);
+                res               = sqlite3_bind_text16(
+                    stmt, i + 1, str.data(), int(str.size() * sizeof(ushort)), SQLITE_TRANSIENT);
                 break;
             }
             case QMetaType::QString:
             {
                 // lifetime of string == lifetime of its qvariant
                 const QString *str = static_cast<const QString *>(value.constData());
-                res                = sqlite3_bind_text16(promise.stmt.get(),
-                                          i + 1,
-                                          str->unicode(),
-                                          int(str->size()) * sizeof(QChar),
-                                          SQLITE_STATIC);
+                res                = sqlite3_bind_text16(
+                    stmt, i + 1, str->unicode(), int(str->size()) * sizeof(QChar), SQLITE_STATIC);
                 break;
             }
             default:
             {
                 const QString str = value.toString();
                 // SQLITE_TRANSIENT makes sure that sqlite buffers the data
-                res = sqlite3_bind_text16(promise.stmt.get(),
-                                          i + 1,
-                                          str.data(),
-                                          int(str.size()) * sizeof(QChar),
-                                          SQLITE_TRANSIENT);
+                res = sqlite3_bind_text16(
+                    stmt, i + 1, str.data(), int(str.size()) * sizeof(QChar), SQLITE_TRANSIENT);
                 break;
             }
             }
         }
 
         if (res != SQLITE_OK) {
-            promise.result->m_error = true;
-            const char *sqliteError = sqlite3_errmsg(m_db);
-            promise.result->m_errorString =
-                u"Failed to bind parameter: %1 '%2'"_s.arg(value.toString())
-                    .arg(sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
-            return;
+            const char *sqliteError = sqlite3_errmsg(db);
+            return u"Failed to bind parameter %1 '%2': '%3'"_s.arg(QString::number(i))
+                .arg(value.toString())
+                .arg(value.toString())
+                .arg(sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
         }
     }
+    return {};
+}
 
-    QStringList columns;
-    const int num_cols = sqlite3_column_count(promise.stmt.get());
-    for (int i = 0; i < num_cols; ++i) {
-        columns << QString::fromUtf8(sqlite3_column_name(promise.stmt.get(), i));
+void ASqliteThread::query(QueryPromise promise)
+{
+    auto _ = qScopeGuard([&] { Q_EMIT queryFinished(std::move(promise)); });
+
+    auto stmt = prepare(promise, 0x0);
+    if (!stmt) {
+        return;
     }
-    promise.result->m_fields = columns;
+
+    auto bindError = bindValues(m_db, stmt.get(), promise.result->m_queryArgs);
+    if (bindError.has_value()) {
+        promise.result->m_error = bindError;
+        return;
+    }
+
+    promise.result->m_fields = fillColumns(stmt.get());
 
     QVariantList rows;
     do {
         if (QThread::currentThread()->isInterruptionRequested()) {
-            promise.result->m_error       = true;
-            promise.result->m_errorString = u"Interrupt requested"_s;
+            promise.result->m_error = u"Interrupt requested"_s;
             return;
         }
 
-        res = sqlite3_step(promise.stmt.get());
+        int res = sqlite3_step(stmt.get());
         if (res != SQLITE_ROW) {
             if (res != SQLITE_DONE) {
-                promise.result->m_error       = true;
-                const char *sqliteError       = sqlite3_errmsg(m_db);
-                promise.result->m_errorString = u"Failed to execute query: '%2'"_s.arg(
+                const char *sqliteError = sqlite3_errmsg(m_db);
+                promise.result->m_error = u"Failed to execute query: '%2'"_s.arg(
                     sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
                 return;
             }
             break;
         }
 
-        const int currentRow = rows.size();
-        rows.resize(rows.size() + num_cols);
+        fillRow(stmt.get(), promise.result->m_fields.size(), rows);
+    } while (true);
 
-        for (int i = 0; i < num_cols; i++) {
-            switch (sqlite3_column_type(promise.stmt.get(), i)) {
-            case SQLITE_BLOB:
-                rows[currentRow + i] = QByteArray(
-                    static_cast<const char *>(sqlite3_column_blob(promise.stmt.get(), i)),
-                    sqlite3_column_bytes(promise.stmt.get(), i));
-                break;
-            case SQLITE_INTEGER:
-                rows[currentRow + i] = sqlite3_column_int64(promise.stmt.get(), i);
-                break;
-            case SQLITE_FLOAT:
-                rows[currentRow + i] = sqlite3_column_double(promise.stmt.get(), i);
-                break;
-                break;
-            case SQLITE_NULL:
-                rows[currentRow + i] = QVariant(QMetaType::fromType<QString>());
-                break;
-            default:
-                rows[currentRow + i] = QString(
-                    reinterpret_cast<const QChar *>(sqlite3_column_text16(promise.stmt.get(), i)),
-                    sqlite3_column_bytes16(promise.stmt.get(), i) / sizeof(QChar));
-                break;
-            }
+    promise.result->m_rows = rows;
+}
+
+void ASqliteThread::queryPrepared(QueryPromise promise)
+{
+    std::shared_ptr<sqlite3_stmt> stmt;
+
+    const auto queryId = promise.preparedQuery->identification();
+    auto _             = qScopeGuard([&] {
+        // Make the statement ready to be used later
+        if (sqlite3_reset(stmt.get()) != SQLITE_OK) {
+            m_preparedQueries.remove(queryId);
+
+            const char *sqliteError = sqlite3_errmsg(m_db);
+            qWarning(ASQL_SQLITE) << u"Failed to reset prepared statement: '%1'"_s.arg(
+                sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
+            return;
         }
+
+        if (sqlite3_clear_bindings(stmt.get()) != SQLITE_OK) {
+            m_preparedQueries.remove(queryId);
+
+            const char *sqliteError = sqlite3_errmsg(m_db);
+            qWarning(ASQL_SQLITE) << u"Failed to reset prepared statement bindings: '%1'"_s.arg(
+                sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
+            return;
+        }
+        Q_EMIT queryFinished(std::move(promise));
+    });
+
+    auto it = m_preparedQueries.constFind(queryId);
+    if (it != m_preparedQueries.constEnd()) {
+        stmt = it.value();
+    } else {
+        stmt = prepare(promise, SQLITE_PREPARE_PERSISTENT);
+        if (stmt) {
+            m_preparedQueries.insert(queryId, stmt);
+        } else {
+            return;
+        }
+    }
+
+    auto bindError = bindValues(m_db, stmt.get(), promise.result->m_queryArgs);
+    if (bindError.has_value()) {
+        promise.result->m_error = bindError;
+        return;
+    }
+
+    promise.result->m_fields = fillColumns(stmt.get());
+
+    QVariantList rows;
+    do {
+        if (QThread::currentThread()->isInterruptionRequested()) {
+            promise.result->m_error = u"Interrupt requested"_s;
+            return;
+        }
+
+        int res = sqlite3_step(stmt.get());
+        if (res != SQLITE_ROW) {
+            if (res != SQLITE_DONE) {
+                const char *sqliteError = sqlite3_errmsg(m_db);
+                promise.result->m_error = u"Failed to execute query: '%2'"_s.arg(
+                    sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
+                return;
+            }
+            break;
+        }
+
+        fillRow(stmt.get(), promise.result->m_fields.size(), rows);
     } while (true);
 
     promise.result->m_rows = rows;
 }
 
 /**
- * This method uses sqlite3_exec() interface which allows for
+ * This method mimics sqlite3_exec() method which allows for
  * more than one query to be processed at the same time, which
  * we use for migrations and for non prepared statements, it
- * also doesn't allod for parameters which is fine for this use case.
+ * also doesn't allows for parameters which is fine for this use case.
  */
 void ASqliteThread::queryExec(QueryPromise promise)
 {
     auto _ = qScopeGuard([&] { Q_EMIT queryFinished(std::move(promise)); });
 
-    auto callback = [](void *data, int argc, char **argv, char **azColName) -> int {
-        auto result = static_cast<QueryPromise *>(data)->result;
+    int res          = SQLITE_OK;
+    QByteArray query = promise.result->m_query;
+    const char *zSql = query.data();
+    while (res == SQLITE_OK && zSql[0]) {
+        const char *zLeftover; /* Tail of unprocessed SQL */
 
-        // Store column names (if needed, for the first row)
-        if (result->m_rows.empty()) {
-            for (int i = 0; i < argc; ++i) {
-                result->m_fields.append(QString::fromUtf8(azColName[i]));
+        std::shared_ptr<sqlite3_stmt> stmt;
+        {
+            sqlite3_stmt *pStmt = nullptr;
+            res                 = sqlite3_prepare_v2(m_db, zSql, -1, &pStmt, &zLeftover);
+            if (res != SQLITE_OK) {
+                continue;
             }
+
+            if (!pStmt) {
+                /* this happens for a comment or white-space */
+                zSql = zLeftover;
+                continue;
+            }
+            stmt = std::shared_ptr<sqlite3_stmt>(
+                pStmt, [](sqlite3_stmt *stmt) { sqlite3_finalize(stmt); });
         }
 
-        // Store row data
-        QStringList row;
-        for (int i = 0; i < argc; ++i) {
-            row.append(argv[i] ? QString::fromUtf8(argv[i]) : QString{});
+        if (!promise.result->m_fields.empty()) {
+            promise.result->m_lastResultSet = false;
+            Q_EMIT queryFinished(promise);
+
+            promise.result          = std::make_shared<AResultSqlite>();
+            promise.result->m_query = query;
         }
-        result->m_rows.append(row);
 
-        return QThread::currentThread()->isInterruptionRequested() ? -1 : 0;
-    };
+        promise.result->m_fields = fillColumns(stmt.get());
 
-    char *errormsg = nullptr;
-    auto res =
-        sqlite3_exec(m_db, promise.result->m_query.constData(), callback, &promise, &errormsg);
-    if (res != SQLITE_OK) {
-        promise.result->m_error       = true;
-        promise.result->m_errorString = u"Failed to exec: '%1'"_s.arg(
-            errormsg ? QString::fromUtf8(errormsg) : u"Unknown error"_s);
+        QVariantList rows;
+        do {
+            if (QThread::currentThread()->isInterruptionRequested()) {
+                promise.result->m_error = u"Interrupt requested"_s;
+                return;
+            }
+
+            res = sqlite3_step(stmt.get());
+            if (res != SQLITE_ROW) {
+                if (res != SQLITE_DONE) {
+                    const char *sqliteError = sqlite3_errmsg(m_db);
+                    promise.result->m_error = u"Failed to execute query: '%2'"_s.arg(
+                        sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
+                    return;
+                }
+                break;
+            }
+
+            fillRow(stmt.get(), promise.result->m_fields.size(), rows);
+        } while (true);
+
+        promise.result->m_rows = rows;
+
+        zSql = zLeftover;
+        while (std::isspace(zSql[0])) {
+            zSql++;
+        }
+        res = SQLITE_OK;
     }
 }
 
-int ASqliteThread::prepare(QueryPromise &promise, int flags)
+std::shared_ptr<sqlite3_stmt> ASqliteThread::prepare(QueryPromise &promise, int flags)
 {
     const auto size = promise.result->m_query.size() + 1;
 
-    int res;
     sqlite3_stmt *stmt = nullptr;
-    if (promise.result->m_utf16) {
-        res = sqlite3_prepare16_v3(
-            m_db, promise.result->m_query.constData(), size, flags, &stmt, nullptr);
-    } else {
-        res = sqlite3_prepare_v3(
-            m_db, promise.result->m_query.constData(), size, flags, &stmt, nullptr);
-    }
-
-    promise.stmt =
-        std::shared_ptr<sqlite3_stmt>(stmt, [](sqlite3_stmt *stmt) { sqlite3_finalize(stmt); });
-
+    int res =
+        sqlite3_prepare_v3(m_db, promise.result->m_query.constData(), size, flags, &stmt, nullptr);
     if (res != SQLITE_OK) {
-        promise.result->m_error       = true;
-        const char *sqliteError       = sqlite3_errmsg(m_db);
-        promise.result->m_errorString = u"Failed to prepare statement: %1"_s.arg(
+        const char *sqliteError = sqlite3_errmsg(m_db);
+        promise.result->m_error = u"Failed to prepare statement: %1"_s.arg(
             sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
+        return {};
     }
 
-    return res;
+    return std::shared_ptr<sqlite3_stmt>(stmt, [](sqlite3_stmt *stmt) { sqlite3_finalize(stmt); });
 }
 
-bool AResultSqlite::lastResulSet() const
+bool AResultSqlite::lastResultSet() const
 {
     return m_lastResultSet;
 }
 
 bool AResultSqlite::hasError() const
 {
-    return m_error;
+    return m_error.has_value();
 }
 
 QString AResultSqlite::errorString() const
 {
-    return m_errorString;
+    return m_error.value();
 }
 
 QByteArray AResultSqlite::query() const

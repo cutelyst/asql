@@ -21,7 +21,7 @@ public:
     AResultSqlite()          = default;
     virtual ~AResultSqlite() = default;
 
-    bool lastResulSet() const override;
+    bool lastResultSet() const override;
     bool hasError() const override;
     QString errorString() const override;
 
@@ -56,10 +56,8 @@ public:
     QByteArray m_query;
     QVariantList m_queryArgs;
     QVariantList m_rows;
-    QString m_errorString;
+    std::optional<QString> m_error;
     QStringList m_fields;
-    bool m_utf16         = false;
-    bool m_error         = false;
     bool m_lastResultSet = true;
 };
 
@@ -77,7 +75,6 @@ struct QueryPromise {
     std::optional<APreparedQuery> preparedQuery;
     AResultFn cb;
     std::shared_ptr<AResultSqlite> result;
-    std::shared_ptr<sqlite3_stmt> stmt;
     QPointer<QObject> receiver;
     bool checkReceiver;
 };
@@ -92,6 +89,7 @@ public:
 public Q_SLOTS:
     void open(ASql::OpenPromise promise);
     void query(ASql::QueryPromise promise);
+    void queryPrepared(ASql::QueryPromise promise);
     void queryExec(ASql::QueryPromise promise);
 
 Q_SIGNALS:
@@ -99,7 +97,7 @@ Q_SIGNALS:
     void queryFinished(ASql::QueryPromise promise);
 
 private:
-    int prepare(QueryPromise &promise, int flags);
+    std::shared_ptr<sqlite3_stmt> prepare(QueryPromise &promise, int flags);
 
     QHash<QByteArray, std::shared_ptr<sqlite3_stmt>> m_preparedQueries;
     QString m_uri;

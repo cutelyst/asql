@@ -23,9 +23,9 @@ AResult::AResult(const AResult &other)
 
 AResult::~AResult() = default;
 
-bool AResult::lastResulSet() const
+bool AResult::lastResultSet() const
 {
-    return d->lastResulSet();
+    return d->lastResultSet();
 }
 
 bool AResult::hasError() const

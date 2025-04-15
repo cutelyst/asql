@@ -30,6 +30,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Options
 #
 option(ENABLE_MAINTAINER_CFLAGS "Enable maintainer CFlags" OFF)
+option(BUILD_TESTS "Build tests" ON)
 option(DRIVER_SQLITE "Enable Sqlite Driver" ON)
 if (DRIVER_SQLITE)
     enable_language(C)
@@ -105,5 +106,10 @@ add_subdirectory(src)
 if (BUILD_DEMOS)
     add_subdirectory(demos)
 endif ()
+
+if (BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
 include(CPackConfig)

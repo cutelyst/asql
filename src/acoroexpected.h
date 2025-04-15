@@ -33,7 +33,10 @@ public:
         return !await_ready();
     }
 
-    std::expected<T, QString> await_resume() { return m_result; }
+    std::expected<T, QString> await_resume()
+    {
+        return std::exchange(m_result, std::unexpected(QString{}));
+    }
 
     ACoroExpected(QObject *receiver)
         : m_receiver(receiver)

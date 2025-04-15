@@ -27,7 +27,7 @@ public:
 
     ExecStatusType status() const;
 
-    bool lastResulSet() const override;
+    bool lastResultSet() const override;
     bool hasError() const override;
     QString errorString() const override;
 

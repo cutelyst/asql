@@ -324,7 +324,7 @@ ACoroTerminator AMigrations::migrate(int targetVersion,
         if (cb) {
             cb(true, result.error());
         }
-    } else if (result->lastResulSet()) {
+    } else if (result->lastResultSet()) {
         if (migration.noTransaction || !dryRun) {
             result = co_await t->coCommit(this);
             if (!result) {

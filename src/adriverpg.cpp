@@ -942,7 +942,7 @@ ExecStatusType AResultPg::status() const
     return PQresultStatus(m_result);
 }
 
-bool AResultPg::lastResulSet() const
+bool AResultPg::lastResultSet() const
 {
     return m_lastResultSet;
 }

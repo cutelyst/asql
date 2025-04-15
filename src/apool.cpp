@@ -270,7 +270,7 @@ AExpectedResult APool::exec(QStringView query, QObject *receiver, QStringView po
 
     database(receiver, [cb, query, receiver](ADatabase db) {
         if (db.isValid()) {
-            db.exec(query, {}, receiver, cb);
+            db.exec(query, receiver, cb);
             return;
         }
 
@@ -288,7 +288,7 @@ AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringVie
 
     database(receiver, [cb, query, receiver](ADatabase db) {
         if (db.isValid()) {
-            db.exec(query, {}, receiver, cb);
+            db.exec(query, receiver, cb);
             return;
         }
 
@@ -306,7 +306,7 @@ AExpectedResult APool::exec(const APreparedQuery &query, QObject *receiver, QStr
 
     database(receiver, [cb, query, receiver](ADatabase db) {
         if (db.isValid()) {
-            db.exec(query, {}, receiver, cb);
+            db.exec(query, receiver, cb);
             return;
         }
 

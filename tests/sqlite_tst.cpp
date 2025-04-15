@@ -1,0 +1,133 @@
+#ifndef SQLITE_TST_H
+#define SQLITE_TST_H
+
+#include "ASqlite.hpp"
+#include "CoverageObject.hpp"
+#include "acoroexpected.h"
+#include "adatabase.h"
+#include "apool.h"
+#include "apreparedquery.h"
+
+#include <QJsonObject>
+#include <QObject>
+#include <QTest>
+
+using namespace ASql;
+using namespace Qt::Literals::StringLiterals;
+
+class TestSqlite : public CoverageObject
+{
+    Q_OBJECT
+private Q_SLOTS:
+    void testQueries();
+};
+
+void TestSqlite::testQueries()
+{
+    APool::create(ASqlite::factory(u"sqlite://?MEMORY"_s));
+    APool::setMaxIdleConnections(10);
+
+    QEventLoop loop;
+    {
+        auto finished = std::make_shared<QObject>();
+        connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
+
+        auto multipleQueries = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "multipleQueries exited" << finished.use_count(); });
+
+            QStringList columns = {
+                u"a"_s,
+                u"b"_s,
+                u"c"_s,
+            };
+            int count = 0;
+
+            bool last      = true;
+            auto awaitable = APool::exec(u"SELECT 'a' a, 1; SELECT 'b' b, 2; SELECT 'c' c, 3"_s);
+            do {
+                auto result = co_await awaitable;
+                AVERIFY(result);
+                ++count;
+
+                last = result->lastResultSet();
+
+                auto column  = columns.takeFirst();
+                QString col1 = result->columnNames()[0];
+                QString col2 = result->columnNames()[1];
+                ACOMPARE_EQ(column, col1);
+                ACOMPARE_EQ(QString::number(count), col2);
+
+                ACOMPARE_EQ((*result)[0][0].toString(), column);
+                ACOMPARE_EQ((*result)[0][1].toInt(), count);
+            } while (!last);
+
+            AVERIFY(columns.isEmpty());
+        };
+        multipleQueries();
+
+        auto singleQuery = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "singleQuery exited" << finished.use_count(); });
+
+            auto result = co_await APool::exec(u"SELECT 'a' a, 1"_s);
+            AVERIFY(result);
+
+            QString col1 = result->columnNames()[0];
+            QString col2 = result->columnNames()[1];
+            ACOMPARE_EQ(u"a"_s, col1);
+            ACOMPARE_EQ(u"1"_s, col2);
+
+            ACOMPARE_EQ((*result)[0][0].toString(), u"a"_s);
+            ACOMPARE_EQ((*result)[0][1].toInt(), 1);
+        };
+        singleQuery();
+
+        auto queryParams = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "queryParams exited" << finished.use_count(); });
+
+            auto result = co_await APool::exec(u"SELECT ?, ? second"_s,
+                                               {
+                                                   1,
+                                                   true,
+                                               });
+            AVERIFY(result);
+            AVERIFY(result->columnNames().size() == 2);
+
+            QString col1 = result->columnNames()[0];
+            QString col2 = result->columnNames()[1];
+            ACOMPARE_EQ(u"?"_s, col1);
+            ACOMPARE_EQ(u"second"_s, col2);
+
+            ACOMPARE_EQ((*result)[0][0].toInt(), 1);
+            ACOMPARE_EQ((*result)[0][1].toBool(), true);
+        };
+        queryParams();
+
+        auto queryPrepared = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "queryPrepared exited" << finished.use_count(); });
+
+            auto db = co_await APool::coDatabase(); // Must be the same db
+            AVERIFY(db);
+
+            for (int i = 0; i < 5; ++i) {
+                auto result = co_await db->coExec(APreparedQueryLiteral(u"SELECT ?"_s),
+                                                  {
+                                                      i,
+                                                  });
+                AVERIFY(result);
+                ACOMPARE_EQ((*result)[0][0].toInt(), i);
+            }
+        };
+        queryPrepared();
+    }
+
+    loop.exec();
+}
+
+QTEST_MAIN(TestSqlite)
+#include "sqlite_tst.moc"
+
+#endif // SQLITE_TST_H

@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
         callTerminatorEarly();
     }
 
-    if (true) {
+    if (false) {
         auto callTerminatorEarly = []() -> ACoroTerminator {
             auto _ = qScopeGuard([] { qDebug() << "coro exited"; });
             qDebug() << "coro started prepared queries";
@@ -131,6 +131,40 @@ int main(int argc, char *argv[])
             qApp->quit();
         };
         callTerminatorEarly();
+    }
+
+    if (true) {
+        auto multipleQueries = []() -> ACoroTerminator {
+            auto _ = qScopeGuard([] { qDebug() << "coro exited"; });
+            qDebug() << "coro started prepared queries";
+
+            bool last      = true;
+            auto awaitable = APool::exec(u"SELECT date(); SELECT 123; SELECT 456"_s);
+            do {
+                auto result = co_await awaitable;
+                if (result) {
+                    qDebug() << "coro result has value" << result->columnNames()
+                             << result->toJsonObject();
+                    last = result->lastResultSet();
+                } else {
+                    qDebug() << "coro result error" << result.error();
+                    break;
+                }
+            } while (!last);
+
+            qApp->quit();
+        };
+
+        // auto db = APool::database();
+        // db.exec(u"SELECT date(); SELECT 123; SELECT 456"_s, nullptr, [](AResult &result) {
+        //     qDebug() << "1result" << result.query();
+        //     qDebug() << "2result" << result.lastResultSet();
+        //     qDebug() << "3result" << result.toJsonObject();
+        //     if (result.lastResultSet()) {
+        //         qApp->quit();
+        //     }
+        // });
+        multipleQueries();
     }
 
     app.exec();

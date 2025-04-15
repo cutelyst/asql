@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
                 nullptr,
                 [&series](AResult &result) mutable {
             qDebug() << "=====iterator single row" << result.errorString() << result.size()
-                     << "last" << result.lastResulSet() << "mutable" << series.size();
+                     << "last" << result.lastResultSet() << "mutable" << series.size();
             if (result.hasError()) {
                 qDebug() << "Error" << result.errorString();
             }
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
                 nullptr,
                 [&series](AResult &result) mutable {
             qDebug() << "=====iterator" << result.errorString() << result.size() << "last"
-                     << result.lastResulSet() << "mutable" << series.size();
+                     << result.lastResultSet() << "mutable" << series.size();
             if (result.hasError()) {
                 qDebug() << "Error" << result.errorString();
             }
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
                            nullptr,
                            [&series](AResult &result) mutable {
         qDebug() << "=====iterator JSON" << result.errorString() << result.size() << "last"
-                 << result.lastResulSet() << "mutable" << series.size();
+                 << result.lastResultSet() << "mutable" << series.size();
         if (result.hasError()) {
             qDebug() << "Error" << result.errorString();
         }

@@ -16,7 +16,7 @@ class ASQL_EXPORT AResultPrivate
 public:
     virtual ~AResultPrivate();
 
-    virtual bool lastResulSet() const   = 0;
+    virtual bool lastResultSet() const  = 0;
     virtual bool hasError() const       = 0;
     virtual QString errorString() const = 0;
 
@@ -58,7 +58,7 @@ public:
     AResult(const AResult &other);
     virtual ~AResult();
 
-    [[nodiscard]] bool lastResulSet() const;
+    [[nodiscard]] bool lastResultSet() const;
     [[nodiscard]] bool hasError() const;
     [[nodiscard]] QString errorString() const;
 
