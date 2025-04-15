@@ -30,7 +30,7 @@ public:
 
     int size() const override;
     int fields() const override;
-    int numRowsAffected() const override;
+    qint64 numRowsAffected() const override;
 
     int indexOfField(QLatin1String name) const override;
     QString fieldName(int column) const override;
@@ -58,7 +58,8 @@ public:
     QVariantList m_rows;
     std::optional<QString> m_error;
     QStringList m_fields;
-    bool m_lastResultSet = true;
+    qint64 m_numRowsAffected = -1;
+    bool m_lastResultSet     = true;
 };
 
 struct OpenPromise {

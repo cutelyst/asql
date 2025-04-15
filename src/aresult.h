@@ -23,9 +23,9 @@ public:
     virtual QByteArray query() const       = 0;
     virtual QVariantList queryArgs() const = 0;
 
-    virtual int size() const            = 0;
-    virtual int fields() const          = 0;
-    virtual int numRowsAffected() const = 0;
+    virtual int size() const               = 0;
+    virtual int fields() const             = 0;
+    virtual qint64 numRowsAffected() const = 0;
 
     virtual int indexOfField(const QString &name) const;
     virtual int indexOfField(QStringView name) const;

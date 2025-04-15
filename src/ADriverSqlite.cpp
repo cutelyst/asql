@@ -517,7 +517,8 @@ void ASqliteThread::query(QueryPromise promise)
         fillRow(stmt.get(), promise.result->m_fields.size(), rows);
     } while (true);
 
-    promise.result->m_rows = rows;
+    promise.result->m_numRowsAffected = sqlite3_changes64(m_db);
+    promise.result->m_rows            = rows;
 }
 
 void ASqliteThread::queryPrepared(QueryPromise promise)
@@ -588,7 +589,8 @@ void ASqliteThread::queryPrepared(QueryPromise promise)
         fillRow(stmt.get(), promise.result->m_fields.size(), rows);
     } while (true);
 
-    promise.result->m_rows = rows;
+    promise.result->m_numRowsAffected = sqlite3_changes64(m_db);
+    promise.result->m_rows            = rows;
 }
 
 /**
@@ -603,6 +605,7 @@ void ASqliteThread::queryExec(QueryPromise promise)
 
     int res          = SQLITE_OK;
     QByteArray query = promise.result->m_query;
+
     const char *zSql = query.data();
     while (res == SQLITE_OK && zSql[0]) {
         const char *zLeftover; /* Tail of unprocessed SQL */
@@ -612,7 +615,10 @@ void ASqliteThread::queryExec(QueryPromise promise)
             sqlite3_stmt *pStmt = nullptr;
             res                 = sqlite3_prepare_v2(m_db, zSql, -1, &pStmt, &zLeftover);
             if (res != SQLITE_OK) {
-                continue;
+                const char *sqliteError = sqlite3_errmsg(m_db);
+                promise.result->m_error = u"Failed to execute query: '%2'"_s.arg(
+                    sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
+                return;
             }
 
             if (!pStmt) {
@@ -642,6 +648,7 @@ void ASqliteThread::queryExec(QueryPromise promise)
             }
 
             res = sqlite3_step(stmt.get());
+
             if (res != SQLITE_ROW) {
                 if (res != SQLITE_DONE) {
                     const char *sqliteError = sqlite3_errmsg(m_db);
@@ -655,7 +662,8 @@ void ASqliteThread::queryExec(QueryPromise promise)
             fillRow(stmt.get(), promise.result->m_fields.size(), rows);
         } while (true);
 
-        promise.result->m_rows = rows;
+        promise.result->m_numRowsAffected = sqlite3_changes64(m_db);
+        promise.result->m_rows            = rows;
 
         zSql = zLeftover;
         while (std::isspace(zSql[0])) {
@@ -717,9 +725,9 @@ int AResultSqlite::fields() const
     return m_fields.size();
 }
 
-int AResultSqlite::numRowsAffected() const
+qint64 AResultSqlite::numRowsAffected() const
 {
-    return -1;
+    return m_numRowsAffected;
 }
 
 int AResultSqlite::indexOfField(QLatin1String name) const

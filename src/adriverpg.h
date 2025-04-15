@@ -36,7 +36,7 @@ public:
 
     int size() const override;
     int fields() const override;
-    int numRowsAffected() const override;
+    qint64 numRowsAffected() const override;
 
     int indexOfField(QLatin1String name) const override;
     QString fieldName(int column) const override;

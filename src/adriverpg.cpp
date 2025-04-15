@@ -977,9 +977,9 @@ int AResultPg::fields() const
     return PQnfields(m_result);
 }
 
-int AResultPg::numRowsAffected() const
+qint64 AResultPg::numRowsAffected() const
 {
-    return QString::fromLatin1(PQcmdTuples(m_result)).toInt();
+    return QString::fromLatin1(PQcmdTuples(m_result)).toLongLong();
 }
 
 int AResultPg::indexOfField(QLatin1String name) const

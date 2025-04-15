@@ -122,6 +122,47 @@ void TestSqlite::testQueries()
             }
         };
         queryPrepared();
+
+        auto rowsAffected = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "rowsAffected exited" << finished.use_count(); });
+
+            auto db = co_await APool::coDatabase(); // Must be the same memory db
+            AVERIFY(db);
+
+            auto create = co_await db->coExec(u"CREATE TABLE temp (name TEXT)"_s);
+            AVERIFY(create);
+
+            auto result =
+                co_await db->coExec(u"INSERT INTO temp (name) VALUES ('foo'),('bar'),('baz')"_s);
+            AVERIFY(result);
+            ACOMPARE_EQ(result->numRowsAffected(), 3);
+
+            result = co_await db->coExec(u"INSERT INTO temp (name) VALUES (?),(?)"_s,
+                                         {
+                                             4,
+                                             5,
+                                         });
+            AVERIFY(result);
+            ACOMPARE_EQ(result->numRowsAffected(), 2);
+
+            result =
+                co_await db->coExec(APreparedQueryLiteral(u"INSERT INTO temp (name) VALUES (?)"_s),
+                                    {
+                                        6,
+                                    });
+            AVERIFY(result);
+            ACOMPARE_EQ(result->numRowsAffected(), 1);
+
+            result = co_await db->coExec(u"UPDATE temp SET name = null"_s);
+            AVERIFY(result);
+            ACOMPARE_EQ(result->numRowsAffected(), 6);
+
+            result = co_await db->coExec(u"DELETE FROM temp"_s);
+            AVERIFY(result);
+            ACOMPARE_EQ(result->numRowsAffected(), 6);
+        };
+        rowsAffected();
     }
 
     loop.exec();

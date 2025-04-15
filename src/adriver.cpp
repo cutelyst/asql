@@ -25,7 +25,7 @@ public:
 
     int size() const final { return 0; }
     int fields() const final { return 0; }
-    int numRowsAffected() const final { return 0; }
+    qint64 numRowsAffected() const final { return 0; }
 
     QString fieldName(int column) const final { return {}; }
     QVariant value(int row, int column) const final { return {}; }
