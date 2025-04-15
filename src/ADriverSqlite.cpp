@@ -638,6 +638,7 @@ void ASqliteThread::queryExec(QueryPromise promise)
             promise.result->m_query = query;
         }
 
+        promise.result->m_query.setRawData(zSql, zLeftover - zSql);
         promise.result->m_fields = fillColumns(stmt.get());
 
         QVariantList rows;

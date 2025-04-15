@@ -41,6 +41,11 @@ void TestSqlite::testQueries()
                 u"b"_s,
                 u"c"_s,
             };
+            QByteArrayList queries = {
+                "SELECT 'a' a, 1;"_ba,
+                "SELECT 'b' b, 2;"_ba,
+                "SELECT 'c' c, 3"_ba,
+            };
             int count = 0;
 
             bool last      = true;
@@ -60,6 +65,9 @@ void TestSqlite::testQueries()
 
                 ACOMPARE_EQ((*result)[0][0].toString(), column);
                 ACOMPARE_EQ((*result)[0][1].toInt(), count);
+
+                auto query = queries.takeFirst();
+                ACOMPARE_EQ(query, result->query());
             } while (!last);
 
             AVERIFY(columns.isEmpty());
@@ -130,11 +138,12 @@ void TestSqlite::testQueries()
             auto db = co_await APool::coDatabase(); // Must be the same memory db
             AVERIFY(db);
 
-            auto create = co_await db->coExec(u"CREATE TABLE temp (name TEXT)"_s);
+            auto create = co_await db->coExec(u"CREATE TABLE temp (name TEXT)");
             AVERIFY(create);
+            ACOMPARE_EQ(create->numRowsAffected(), 0);
 
             auto result =
-                co_await db->coExec(u"INSERT INTO temp (name) VALUES ('foo'),('bar'),('baz')"_s);
+                co_await db->coExec(u8"INSERT INTO temp (name) VALUES ('foo'),('bar'),('baz')");
             AVERIFY(result);
             ACOMPARE_EQ(result->numRowsAffected(), 3);
 
@@ -147,18 +156,18 @@ void TestSqlite::testQueries()
             ACOMPARE_EQ(result->numRowsAffected(), 2);
 
             result =
-                co_await db->coExec(APreparedQueryLiteral(u"INSERT INTO temp (name) VALUES (?)"_s),
+                co_await db->coExec(APreparedQueryLiteral(u8"INSERT INTO temp (name) VALUES (?)"),
                                     {
                                         6,
                                     });
             AVERIFY(result);
             ACOMPARE_EQ(result->numRowsAffected(), 1);
 
-            result = co_await db->coExec(u"UPDATE temp SET name = null"_s);
+            result = co_await db->coExec(u8"UPDATE temp SET name = null");
             AVERIFY(result);
             ACOMPARE_EQ(result->numRowsAffected(), 6);
 
-            result = co_await db->coExec(u"DELETE FROM temp"_s);
+            result = co_await db->coExec(u8"DELETE FROM temp");
             AVERIFY(result);
             ACOMPARE_EQ(result->numRowsAffected(), 6);
         };
