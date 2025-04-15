@@ -603,8 +603,8 @@ void ASqliteThread::queryExec(QueryPromise promise)
 {
     auto _ = qScopeGuard([&] { Q_EMIT queryFinished(std::move(promise)); });
 
-    int res          = SQLITE_OK;
-    QByteArray query = promise.result->m_query;
+    int res                = SQLITE_OK;
+    const QByteArray query = promise.result->m_query;
 
     const char *zSql = query.data();
     while (res == SQLITE_OK && zSql[0]) {
@@ -638,7 +638,9 @@ void ASqliteThread::queryExec(QueryPromise promise)
             promise.result->m_query = query;
         }
 
-        promise.result->m_query.setRawData(zSql, zLeftover - zSql);
+        // We must copy this here because query object is likely the only
+        // reference to the query data and it's going out of scope
+        promise.result->m_query  = QByteArray{zSql, zLeftover - zSql};
         promise.result->m_fields = fillColumns(stmt.get());
 
         QVariantList rows;
