@@ -10,6 +10,7 @@
 
 #include <QJsonObject>
 #include <QObject>
+#include <QStandardPaths>
 #include <QTest>
 
 using namespace ASql;
@@ -24,6 +25,11 @@ private Q_SLOTS:
 
 void TestSqlite::testQueries()
 {
+    const QString tmpDb =
+        QStandardPaths::writableLocation(QStandardPaths::TempLocation) + u"/tmp.db"_s;
+    APool::create(ASqlite::factory(u"sqlite://"_s + tmpDb), u"file"_s);
+    APool::setMaxIdleConnections(10, u"file");
+
     APool::create(ASqlite::factory(u"sqlite://?MEMORY"_s));
     APool::setMaxIdleConnections(10);
 
@@ -100,6 +106,21 @@ void TestSqlite::testQueries()
             AVERIFY(queries.isEmpty());
         };
         multipleCreateQueries();
+
+        auto multipleCreateQueriesTransaction = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "multipleQueries exited" << finished.use_count(); });
+
+            auto t = co_await APool::begin(nullptr);
+            AVERIFY(t);
+
+            // This test checks if we do not crash by not consuming all results
+            auto result = co_await t->database().coExec(
+                u"CREATE TABLE a (a TEXT);CREATE TABLE b (b TEXT);CREATE TABLE c (c TEXT)"_s);
+            AVERIFY(result);
+            ACOMPARE_EQ(result->lastResultSet(), false);
+        };
+        multipleCreateQueriesTransaction();
 
         auto singleQuery = [finished]() -> ACoroTerminator {
             auto _ = qScopeGuard(

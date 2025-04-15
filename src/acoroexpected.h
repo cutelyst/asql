@@ -35,6 +35,9 @@ public:
 
     std::expected<T, QString> await_resume()
     {
+        // When we resume we should clear the handle to prevent resuming
+        // if the coroutine finished without waiting for more results
+        m_handle = nullptr;
         return std::exchange(m_result, std::unexpected(QString{}));
     }
 
@@ -99,7 +102,11 @@ public:
         return !await_ready();
     }
 
-    std::expected<ADatabase, QString> await_resume() { return m_result; }
+    std::expected<ADatabase, QString> await_resume()
+    {
+        m_handle = nullptr;
+        return m_result;
+    }
 
     AExpectedDatabase(QObject *receiver)
         : m_receiver(receiver)
