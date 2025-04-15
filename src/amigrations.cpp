@@ -313,39 +313,46 @@ ACoroTerminator AMigrations::migrate(int targetVersion,
         }
     }
 
-    ADatabase db = migration.noTransaction ? d->noTransactionDB : d->db;
-    result       = co_await db.coExec(
+    ADatabase db   = migration.noTransaction ? d->noTransactionDB : d->db;
+    auto awaitable = db.coExec(
         migration.noTransaction ? migration.query : migration.versionQuery + migration.query, this);
-    if (!result) {
-        qCritical(ASQL_MIG) << "Failed to migrate"
-                            << (active < migration.version ? migration.version
-                                                           : migration.version + 1)
-                            << (active < migration.version ? "up" : "down");
-        if (cb) {
-            cb(true, result.error());
-        }
-    } else if (result->lastResultSet()) {
-        if (migration.noTransaction || !dryRun) {
-            result = co_await t->coCommit(this);
-            if (!result) {
+    while (true) {
+        result = co_await awaitable;
+        if (!result) {
+            qCritical(ASQL_MIG) << "Failed to migrate"
+                                << (active < migration.version ? migration.version
+                                                               : migration.version + 1)
+                                << (active < migration.version ? "up" : "down");
+            if (cb) {
+                cb(true, result.error());
+            }
+
+            co_return;
+        } else if (result->lastResultSet()) {
+            if (migration.noTransaction || !dryRun) {
+                result = co_await t->coCommit(this);
+                if (!result) {
+                    if (cb) {
+                        cb(true, result.error());
+                    }
+                }
+
+                qInfo(ASQL_MIG) << "Migrated from" << active << "to" << migration.version << "in"
+                                << elapsed.elapsed() << "ms";
+                if (dryRun) {
+                    if (cb) {
+                        cb(false, u"Done."_s);
+                    }
+                } else {
+                    migrate(targetVersion, cb, dryRun);
+                }
+            } else {
                 if (cb) {
-                    cb(true, result.error());
+                    cb(true, u"Rolling back"_s);
                 }
             }
 
-            qInfo(ASQL_MIG) << "Migrated from" << active << "to" << migration.version << "in"
-                            << elapsed.elapsed() << "ms";
-            if (dryRun) {
-                if (cb) {
-                    cb(false, u"Done."_s);
-                }
-            } else {
-                migrate(targetVersion, cb, dryRun);
-            }
-        } else {
-            if (cb) {
-                cb(true, u"Rolling back"_s);
-            }
+            co_return;
         }
     }
 }

@@ -606,6 +606,7 @@ void ASqliteThread::queryExec(QueryPromise promise)
     int res                = SQLITE_OK;
     const QByteArray query = promise.result->m_query;
 
+    bool emitQuery   = false;
     const char *zSql = query.data();
     while (res == SQLITE_OK && zSql[0]) {
         const char *zLeftover; /* Tail of unprocessed SQL */
@@ -630,13 +631,14 @@ void ASqliteThread::queryExec(QueryPromise promise)
                 pStmt, [](sqlite3_stmt *stmt) { sqlite3_finalize(stmt); });
         }
 
-        if (!promise.result->m_fields.empty()) {
+        if (emitQuery) {
             promise.result->m_lastResultSet = false;
             Q_EMIT queryFinished(promise);
 
             promise.result          = std::make_shared<AResultSqlite>();
             promise.result->m_query = query;
         }
+        emitQuery = true;
 
         // We must copy this here because query object is likely the only
         // reference to the query data and it's going out of scope

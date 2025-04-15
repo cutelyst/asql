@@ -74,6 +74,33 @@ void TestSqlite::testQueries()
         };
         multipleQueries();
 
+        auto multipleCreateQueries = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "multipleQueries exited" << finished.use_count(); });
+
+            QByteArrayList queries = {
+                "CREATE TABLE a (a TEXT);"_ba,
+                "CREATE TABLE b (b TEXT);"_ba,
+                "CREATE TABLE c (c TEXT)"_ba,
+            };
+
+            bool last      = true;
+            auto awaitable = APool::exec(
+                u"CREATE TABLE a (a TEXT);CREATE TABLE b (b TEXT);CREATE TABLE c (c TEXT)"_s);
+            do {
+                auto result = co_await awaitable;
+                AVERIFY(result);
+
+                last = result->lastResultSet();
+
+                auto query = queries.takeFirst();
+                ACOMPARE_EQ(query, result->query());
+            } while (!last);
+
+            AVERIFY(queries.isEmpty());
+        };
+        multipleCreateQueries();
+
         auto singleQuery = [finished]() -> ACoroTerminator {
             auto _ = qScopeGuard(
                 [finished] { qDebug() << "singleQuery exited" << finished.use_count(); });
