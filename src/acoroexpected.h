@@ -154,6 +154,16 @@ public:
         std::coroutine_handle<promise_type> handle;
         std::vector<QMetaObject::Connection> connections;
 
+        promise_type() = default; // required for lambdas
+
+        template <typename... ArgTypes>
+        promise_type(QObject &obj, ArgTypes &&...)
+        {
+            yield_value(&obj);
+        }
+
+        ~promise_type() { clean(); }
+
         void clean()
         {
             for (auto &conn : connections) {
@@ -187,8 +197,6 @@ public:
             connections.emplace_back(std::move(conn));
             return {};
         }
-
-        ~promise_type() { clean(); }
     };
 };
 
