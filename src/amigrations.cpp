@@ -59,12 +59,14 @@ AMigrations::~AMigrations()
 }
 
 ACoroTerminator
-    AMigrations::load(const ADatabase &db, const QString &name, const ADatabase &noTransactionDB)
+    AMigrations::load(ADatabase db, QString name, ADatabase noTransactionDB)
 {
-    d_ptr->name            = name;
-    d_ptr->db              = db;
-    d_ptr->noTransactionDB = noTransactionDB;
-    auto result            = co_await d_ptr->db.coExec(uR"V0G0N(
+    Q_D(AMigrations);
+    d->name            = name;
+    d->db              = db;
+    d->noTransactionDB = noTransactionDB;
+
+    auto result            = co_await d->db.coExec(uR"V0G0N(
 CREATE TABLE IF NOT EXISTS asql_migrations (
 name text primary key,
 version bigint not null check (version >= 0)
@@ -75,7 +77,7 @@ version bigint not null check (version >= 0)
         qDebug(ASQL_MIG) << "Create migrations table" << result.error();
     }
 
-    const QString query = [db = d_ptr->db] {
+    const QString query = [db] {
         if (db.driverName() == u"sqlite") {
             return u"SELECT version FROM asql_migrations WHERE name = ?"_s;
         }
@@ -83,7 +85,7 @@ version bigint not null check (version >= 0)
         return u"SELECT version FROM asql_migrations WHERE name = $1"_s;
     }();
 
-    result = co_await d_ptr->db.coExec(query,
+    result = co_await d->db.coExec(query,
                                        {
                                            name,
                                        },
@@ -95,9 +97,9 @@ version bigint not null check (version >= 0)
 
     auto row = result->begin();
     if (row != result->end()) {
-        d_ptr->active = row.value(0).toInt();
+        d->active = row.value(0).toInt();
     } else {
-        d_ptr->active = 0;
+        d->active = 0;
     }
     Q_EMIT ready(false, QString{});
 }
@@ -136,9 +138,9 @@ void AMigrations::fromString(const QString &text)
     int latest         = -1;
     bool upWay         = true;
     bool noTransaction = false;
-    d_ptr->data        = text;
+    d->data        = text;
 
-    QTextStream stream(&d_ptr->data);
+    QTextStream stream(&d->data);
     static QRegularExpression re(u"^\\s*--\\s*(\\d+)\\s*(up|down)\\s*(no-transaction)?"_s,
                                  QRegularExpression::CaseInsensitiveOption);
     QString line;

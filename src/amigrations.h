@@ -27,7 +27,7 @@ public:
      * noTransactionDB a database object in case some script must run outside a transaction block
      */
     ACoroTerminator
-        load(const ADatabase &db, const QString &name, const ADatabase &noTransactionDB = {});
+        load(ADatabase db, QString name, ADatabase noTransactionDB = {});
 
     /*!
      * \brief active version of this migration, only valid after ready has been emitted

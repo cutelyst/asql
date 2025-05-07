@@ -79,7 +79,7 @@ void ADatabase::onStateChanged(QObject *receiver,
 bool ADatabase::isOpen() const
 {
     Q_ASSERT(d);
-    return d && d->isOpen();
+    return d != nullptr && d->isOpen();
 }
 
 void ADatabase::begin(QObject *receiver, AResultFn cb)
