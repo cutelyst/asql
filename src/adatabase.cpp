@@ -49,8 +49,7 @@ QString ADatabase::driverName() const
     return d ? d->driverName() : u"INVALID_DRIVER"_s;
 }
 
-void ADatabase::open(QObject *receiver,
-                     std::function<void(bool error, const QString &errorString)> cb)
+void ADatabase::open(QObject *receiver, ADatabaseOpenFn cb)
 {
     if (!d) {
         d = std::make_shared<ADriver>();
@@ -69,8 +68,7 @@ ADatabase::State ADatabase::state() const
     return ADatabase::State::Disconnected;
 }
 
-void ADatabase::onStateChanged(QObject *receiver,
-                               std::function<void(ADatabase::State, const QString &)> cb)
+void ADatabase::onStateChanged(QObject *receiver, StateChangedFn cb)
 {
     Q_ASSERT(d);
     d->onStateChanged(receiver, cb);

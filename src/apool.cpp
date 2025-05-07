@@ -138,8 +138,9 @@ ADatabase APool::database(QStringView poolName)
                 iPool.reuseCb(db);
             }
         } else {
-            db.open(nullptr, [setupCb = iPool.setupCb, db](bool error, const QString &errorString) {
-                if (!error && setupCb) {
+            db.open(nullptr,
+                    [setupCb = iPool.setupCb, db](bool isOpen, const QString &errorString) {
+                if (isOpen && setupCb) {
                     setupCb(db);
                 }
             });
@@ -198,8 +199,8 @@ void APool::database(QObject *receiver, ADatabaseFn cb, QStringView poolName)
             }
         } else {
             db.open(receiver,
-                    [setupCb = iPool.setupCb, db, cb](bool error, const QString &errorString) {
-                if (!error && setupCb) {
+                    [setupCb = iPool.setupCb, db, cb](bool isOpen, const QString &errorString) {
+                if (isOpen && setupCb) {
                     setupCb(db);
                 }
 

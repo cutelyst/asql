@@ -153,7 +153,7 @@ bool ADriverPg::isValid() const
     return true;
 }
 
-void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &)> cb)
+void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, ADatabaseOpenFn cb)
 {
     qDebug(ASQL_PG) << "Open" << connectionInfo();
     m_conn = std::make_unique<APgConn>(connectionInfo());
@@ -183,9 +183,9 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                 case PGRES_POLLING_OK:
                     qDebug(ASQL_PG) << "PGRES_POLLING_OK 1" << type << m_writeNotify->isEnabled();
                     m_writeNotify->setEnabled(false);
-                    setState(ADatabase::State::Connected, QString());
+                    setState(ADatabase::State::Connected, {});
                     if ((!receiver || receiverPtr.isNull()) && cb) {
-                        cb(true, QString());
+                        cb(true, {});
                     }
 
                     // see if we have queue queries

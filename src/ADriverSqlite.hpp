@@ -64,7 +64,7 @@ public:
 
 struct OpenPromise {
     std::shared_ptr<ADriver> driver;
-    OpenFn cb;
+    ADatabaseOpenFn cb;
     QPointer<QObject> receiver;
     QString error;
     bool isOpen;

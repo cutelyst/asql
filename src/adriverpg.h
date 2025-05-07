@@ -140,8 +140,9 @@ public:
     QString driverName() const override;
 
     bool isValid() const override;
-    void open(QObject *receiver,
-              std::function<void(bool isOpen, const QString &error)> cb) override;
+    void open(const std::shared_ptr<ADriver> &driver,
+              QObject *receiver,
+              ADatabaseOpenFn cb) override;
     bool isOpen() const override;
 
     void setState(ADatabase::State state, const QString &status);

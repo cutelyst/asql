@@ -68,9 +68,7 @@ bool ADriver::isValid() const
     return false;
 }
 
-void ADriver::open(const std::shared_ptr<ADriver> &driver,
-                   QObject *receiver,
-                   std::function<void(bool, const QString &)> cb)
+void ADriver::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, ADatabaseOpenFn cb)
 {
     Q_UNUSED(driver);
     Q_UNUSED(receiver);
@@ -84,8 +82,7 @@ ADatabase::State ADriver::state() const
     return ADatabase::State::Disconnected;
 }
 
-void ADriver::onStateChanged(QObject *receiver,
-                             std::function<void(ADatabase::State, const QString &)> cb)
+void ADriver::onStateChanged(QObject *receiver, ADatabase::StateChangedFn cb)
 {
     Q_UNUSED(receiver);
     Q_UNUSED(cb);

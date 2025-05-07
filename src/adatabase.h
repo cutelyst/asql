@@ -27,8 +27,9 @@ public:
     bool self;
 };
 
-using AResultFn       = std::function<void(AResult &result)>;
+using ADatabaseOpenFn = std::function<void(bool isOpen, const QString &error)>;
 using ANotificationFn = std::function<void(const ADatabaseNotification &payload)>;
+using AResultFn       = std::function<void(AResult &result)>;
 
 template <typename T>
 class ACoroExpected;
@@ -43,6 +44,8 @@ class ASQL_EXPORT ADatabase
 public:
     enum class State { Disconnected, Connecting, Connected };
     Q_ENUM(State)
+
+    using StateChangedFn = std::function<void(ADatabase::State state, const QString &status)>;
 
     /*!
      * \brief ADatabase contructs an invalid database object
@@ -99,8 +102,7 @@ public:
      *
      * \param cb
      */
-    void open(QObject *receiver                                         = nullptr,
-              std::function<void(bool isOpen, const QString &error)> cb = {});
+    void open(QObject *receiver = nullptr, ADatabaseOpenFn cb = {});
 
     /*!
      * \brief state
@@ -115,8 +117,7 @@ public:
      *
      * \param cb
      */
-    void onStateChanged(QObject *receiver,
-                        std::function<void(State state, const QString &status)> cb);
+    void onStateChanged(QObject *receiver, StateChangedFn cb);
 
     /*!
      * \brief isOpen returns if the database connection is open.
