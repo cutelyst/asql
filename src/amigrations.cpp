@@ -58,21 +58,20 @@ AMigrations::~AMigrations()
     delete d_ptr;
 }
 
-ACoroTerminator
-    AMigrations::load(ADatabase db, QString name, ADatabase noTransactionDB)
+ACoroTerminator AMigrations::load(ADatabase db, QString name, ADatabase noTransactionDB)
 {
     Q_D(AMigrations);
     d->name            = name;
     d->db              = db;
     d->noTransactionDB = noTransactionDB;
 
-    auto result            = co_await d->db.coExec(uR"V0G0N(
+    auto result = co_await d->db.coExec(uR"V0G0N(
 CREATE TABLE IF NOT EXISTS asql_migrations (
 name text primary key,
 version bigint not null check (version >= 0)
 )
 )V0G0N",
-                                            this);
+                                        this);
     if (!result) {
         qDebug(ASQL_MIG) << "Create migrations table" << result.error();
     }
@@ -86,10 +85,10 @@ version bigint not null check (version >= 0)
     }();
 
     result = co_await d->db.coExec(query,
-                                       {
-                                           name,
-                                       },
-                                       this);
+                                   {
+                                       name,
+                                   },
+                                   this);
     if (!result) {
         Q_EMIT ready(true, result.error());
         co_return;
@@ -138,7 +137,7 @@ void AMigrations::fromString(const QString &text)
     int latest         = -1;
     bool upWay         = true;
     bool noTransaction = false;
-    d->data        = text;
+    d->data            = text;
 
     QTextStream stream(&d->data);
     static QRegularExpression re(u"^\\s*--\\s*(\\d+)\\s*(up|down)\\s*(no-transaction)?"_s,

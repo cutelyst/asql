@@ -26,8 +26,7 @@ public:
      * migration \p name. \param db a valid dabase option \param name of the migration \param
      * noTransactionDB a database object in case some script must run outside a transaction block
      */
-    ACoroTerminator
-        load(ADatabase db, QString name, ADatabase noTransactionDB = {});
+    ACoroTerminator load(ADatabase db, QString name, ADatabase noTransactionDB = {});
 
     /*!
      * \brief active version of this migration, only valid after ready has been emitted
