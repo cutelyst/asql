@@ -56,6 +56,11 @@ namespace {
 
 #define VARHDRSZ 4
 
+QByteArray preparedQueryStringId(int id)
+{
+    return "asql_" + QByteArray::number(id, 16);
+}
+
 inline QMetaType qDecodePSQLType(int t)
 {
     int type = QMetaType::UnknownType;
@@ -278,9 +283,10 @@ void ADriverPg::open(QObject *receiver, std::function<void(bool, const QString &
                                     } else {
                                         pgQuery.result.reset();
 
+                                        const auto id    = pgQuery.preparedQuery->identification();
+                                        const auto idStr = preparedQueryStringId(id);
                                         // Query prepared
-                                        m_preparedQueries.insert(
-                                            pgQuery.preparedQuery->identification());
+                                        m_preparedQueries.insert(id, idStr);
                                         pgQuery.preparing = false;
                                         nextQuery();
                                     }
@@ -694,25 +700,26 @@ int ADriverPg::doExec(APGQuery &pgQuery)
 {
     int ret;
     if (pgQuery.preparedQuery) {
-        bool isPrepared = m_preparedQueries.contains(pgQuery.preparedQuery->identification());
-        if (!isPrepared) {
-            ret = PQsendPrepare(m_conn->conn(),
-                                pgQuery.preparedQuery->identification().constData(),
+        auto prepared = m_preparedQueries.find(pgQuery.preparedQuery->identification());
+        if (prepared == m_preparedQueries.end()) {
+            const auto preparedId = preparedQueryStringId(pgQuery.preparedQuery->identification());
+            ret                   = PQsendPrepare(m_conn->conn(),
+                                preparedId.constData(),
                                 pgQuery.preparedQuery->query().constData(),
                                 0,
                                 nullptr); // perhaps later use binary results
 
             if (ret == 1 && pipelineStatus() == ADatabase::PipelineStatus::On) {
                 // pretend that it was prepared otherwise it can't be used in in the pipeline
-                m_preparedQueries.insert(pgQuery.preparedQuery->identification());
-                isPrepared = true;
+                prepared =
+                    m_preparedQueries.insert(pgQuery.preparedQuery->identification(), preparedId);
             }
             pgQuery.preparing = true;
         }
 
-        if (isPrepared) {
+        if (prepared != m_preparedQueries.end()) {
             ret = PQsendQueryPrepared(m_conn->conn(),
-                                      pgQuery.preparedQuery->identification().constData(),
+                                      prepared.value().constData(),
                                       0,
                                       nullptr,
                                       nullptr,
@@ -864,25 +871,26 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
 
     int ret;
     if (pgQuery.preparedQuery) {
-        bool isPrepared = m_preparedQueries.contains(pgQuery.preparedQuery->identification());
-        if (!isPrepared) {
-            ret = PQsendPrepare(m_conn->conn(),
-                                pgQuery.preparedQuery->identification().constData(),
+        auto prepared = m_preparedQueries.find(pgQuery.preparedQuery->identification());
+        if (prepared == m_preparedQueries.end()) {
+            const auto preparedId = preparedQueryStringId(pgQuery.preparedQuery->identification());
+            ret                   = PQsendPrepare(m_conn->conn(),
+                                preparedId.constData(),
                                 pgQuery.preparedQuery->query().constData(),
                                 params.size(),
                                 paramTypes.get());
 
             if (ret == 1 && pipelineStatus() == ADatabase::PipelineStatus::On) {
                 // pretend that it was prepared otherwise it can't be used in in the pipeline
-                m_preparedQueries.insert(pgQuery.preparedQuery->identification());
-                isPrepared = true;
+                prepared =
+                    m_preparedQueries.insert(pgQuery.preparedQuery->identification(), preparedId);
             }
             pgQuery.preparing = true;
         }
 
-        if (isPrepared) {
+        if (prepared != m_preparedQueries.end()) {
             ret = PQsendQueryPrepared(m_conn->conn(),
-                                      pgQuery.preparedQuery->identification().constData(),
+                                      prepared.value().constData(),
                                       params.size(),
                                       paramValues.get(),
                                       paramLengths.get(),

@@ -100,7 +100,7 @@ Q_SIGNALS:
 private:
     std::shared_ptr<sqlite3_stmt> prepare(QueryPromise &promise, int flags);
 
-    QHash<QByteArray, std::shared_ptr<sqlite3_stmt>> m_preparedQueries;
+    QHash<int, std::shared_ptr<sqlite3_stmt>> m_preparedQueries;
     QString m_uri;
     sqlite3 *m_db = nullptr;
 };

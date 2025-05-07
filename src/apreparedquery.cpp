@@ -13,14 +13,18 @@ using namespace ASql;
 
 APreparedQuery::APreparedQuery() = default;
 
-static QByteArray identificationCounter()
+namespace {
+
+int identificationCounter()
 {
-    QByteArray ret;
+    int ret;
     static QBasicAtomicInt qPreparedStmtCount = Q_BASIC_ATOMIC_INITIALIZER(0);
-    ret = "asql_" + QByteArray::number(qPreparedStmtCount.fetchAndAddRelaxed(1) + 1, 16);
+    ret                                       = qPreparedStmtCount.fetchAndAddRelaxed(1) + 1;
     qDebug(ASQL_PQ) << "Created prepared query identifier" << ret;
     return ret;
 }
+
+} // namespace
 
 APreparedQuery::APreparedQuery(QStringView query)
     : m_query(query.toUtf8())
@@ -34,15 +38,15 @@ APreparedQuery::APreparedQuery(QUtf8StringView query)
 {
 }
 
-APreparedQuery::APreparedQuery(QStringView query, QStringView identification)
+APreparedQuery::APreparedQuery(QStringView query, int identification)
     : m_query(query.toUtf8())
-    , m_identification(identification.toUtf8())
+    , m_identification(identification)
 {
 }
 
-APreparedQuery::APreparedQuery(QUtf8StringView query, QUtf8StringView identification)
+APreparedQuery::APreparedQuery(QUtf8StringView query, int identification)
     : m_query(query.data(), query.size())
-    , m_identification(identification.data(), identification.size())
+    , m_identification(identification)
 {
 }
 
@@ -51,7 +55,7 @@ QByteArray APreparedQuery::query() const
     return m_query;
 }
 
-QByteArray APreparedQuery::identification() const
+int APreparedQuery::identification() const
 {
     return m_identification;
 }

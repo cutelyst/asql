@@ -56,22 +56,24 @@ public:
 
     /*!
      * \brief APreparedQuery constructs a prepared \p query with a manual \p identification
+     * \note \p identification should be used for debugging purposes, use negative values.
      * \param query
      */
-    APreparedQuery(QStringView query, QStringView identification);
+    APreparedQuery(QStringView query, int identification);
 
     /*!
      * \brief APreparedQuery constructs a prepared \p query with a manual \p identification from
      * UTF-8 \param query
+     * \note \p identification should be used for debugging purposes, use negative values.
      */
-    APreparedQuery(QUtf8StringView query, QUtf8StringView identification);
+    APreparedQuery(QUtf8StringView query, int identification);
 
     QByteArray query() const;
-    QByteArray identification() const;
+    int identification() const;
 
 private:
     QByteArray m_query;
-    QByteArray m_identification;
+    int m_identification;
 };
 
 } // namespace ASql
