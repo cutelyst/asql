@@ -30,7 +30,7 @@ ADriverSqlite::ADriverSqlite(const QString &connInfo)
 
         if (!promisse.checkReceiver || !promisse.receiver.isNull()) {
             if (promisse.cb) {
-                promisse.cb(promisse.isOpen, promisse.error);
+                promisse.cb(!promisse.isOpen, promisse.error);
             }
         }
     });
