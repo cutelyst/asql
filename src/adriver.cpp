@@ -68,8 +68,11 @@ bool ADriver::isValid() const
     return false;
 }
 
-void ADriver::open(QObject *receiver, std::function<void(bool, const QString &)> cb)
+void ADriver::open(const std::shared_ptr<ADriver> &driver,
+                   QObject *receiver,
+                   std::function<void(bool, const QString &)> cb)
 {
+    Q_UNUSED(driver);
     Q_UNUSED(receiver);
     if (cb) {
         cb(false, u"INVALID DATABASE DRIVER"_s);

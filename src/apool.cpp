@@ -125,25 +125,29 @@ ADatabase APool::database(QStringView poolName)
                                   << driver;
                 db.d = std::shared_ptr<ADriver>(
                     driver, [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); });
-
-                if (iPool.setupCb) {
-                    iPool.setupCb(db);
-                }
             }
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << poolName;
             ADriver *driver = iPool.pool.takeLast();
             db.d            = std::shared_ptr<ADriver>(
                 driver, [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); });
+        }
 
+        if (db.isOpen()) {
             if (iPool.reuseCb) {
                 iPool.reuseCb(db);
             }
+        } else {
+            db.open(nullptr, [setupCb = iPool.setupCb, db](bool error, const QString &errorString) {
+                if (!error && setupCb) {
+                    setupCb(db);
+                }
+            });
         }
     } else {
         qCritical(ASQL_POOL) << "Database pool NOT FOUND" << poolName;
+        db.open();
     }
-    db.open();
     return db;
 }
 
@@ -158,6 +162,7 @@ int APool::currentConnections(QStringView poolName)
 
 void APool::database(QObject *receiver, ADatabaseFn cb, QStringView poolName)
 {
+    ADatabase db;
     auto it = m_connectionPool.find(poolName);
     if (it != m_connectionPool.end()) {
         APoolInternal &iPool = it.value();
@@ -174,39 +179,39 @@ void APool::database(QObject *receiver, ADatabaseFn cb, QStringView poolName)
             }
             ++iPool.connectionCount;
             qDebug(ASQL_POOL) << "Creating a database connection for pool" << poolName;
-            ADatabase db{std::shared_ptr<ADriver>(
+            db.d = std::shared_ptr<ADriver>(
                 iPool.driverFactory->createRawDriver(),
-                [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); })};
+                [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); });
+        } else {
+            qDebug(ASQL_POOL) << "Reusing a database connection from pool" << poolName;
+            ADriver *priv = iPool.pool.takeLast();
+            db.d          = std::shared_ptr<ADriver>(
+                priv, [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); });
+        }
 
-            if (iPool.setupCb) {
-                iPool.setupCb(db);
+        if (db.isOpen()) {
+            if (iPool.reuseCb) {
+                iPool.reuseCb(db);
             }
-
-            db.open();
             if (cb) {
                 cb(std::move(db));
             }
         } else {
-            qDebug(ASQL_POOL) << "Reusing a database connection from pool" << poolName;
-            ADriver *priv = iPool.pool.takeLast();
-            ADatabase db{std::shared_ptr<ADriver>(
-                priv, [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); })};
+            db.open(receiver,
+                    [setupCb = iPool.setupCb, db, cb](bool error, const QString &errorString) {
+                if (!error && setupCb) {
+                    setupCb(db);
+                }
 
-            if (iPool.reuseCb) {
-                iPool.reuseCb(db);
-            }
-
-            db.open();
-            if (cb) {
-                cb(std::move(db));
-            }
+                if (cb) {
+                    cb(std::move(db));
+                }
+            });
         }
     } else {
         qCritical(ASQL_POOL) << "Database pool NOT FOUND" << poolName;
-
-        ADatabase db;
-        db.open();
         if (cb) {
+            db.open();
             cb(std::move(db));
         }
     }

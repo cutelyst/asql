@@ -72,11 +72,14 @@ bool ADriverSqlite::isValid() const
     return true;
 }
 
-void ADriverSqlite::open(QObject *receiver, std::function<void(bool, const QString &)> cb)
+void ADriverSqlite::open(const std::shared_ptr<ADriver> &driver,
+                         QObject *receiver,
+                         std::function<void(bool, const QString &)> cb)
 {
     setState(ADatabase::State::Connecting, {});
 
     OpenPromise data{
+        .driver        = driver,
         .cb            = cb,
         .receiver      = receiver,
         .checkReceiver = static_cast<bool>(receiver),

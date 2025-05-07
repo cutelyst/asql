@@ -57,7 +57,7 @@ void ADatabase::open(QObject *receiver,
     }
 
     if (d->state() == ADatabase::State::Disconnected) {
-        d->open(receiver, cb);
+        d->open(d, receiver, cb);
     }
 }
 

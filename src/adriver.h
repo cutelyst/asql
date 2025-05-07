@@ -30,7 +30,7 @@ public:
     virtual QString driverName() const;
 
     virtual bool isValid() const;
-    virtual void open(QObject *receiver, OpenFn cb);
+    virtual void open(const std::shared_ptr<ADriver> &driver, QObject *receiver, OpenFn cb);
 
     virtual ADatabase::State state() const;
     virtual void onStateChanged(QObject *receiver, StateChangedFn cb);
