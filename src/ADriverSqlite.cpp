@@ -58,8 +58,8 @@ ADriverSqlite::ADriverSqlite(const QString &connInfo)
 ADriverSqlite::~ADriverSqlite()
 {
     m_thread.requestInterruption();
-    m_thread.wait();
     m_thread.quit();
+    m_thread.wait();
 }
 
 QString ADriverSqlite::driverName() const
