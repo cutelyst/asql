@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020-2021 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2025 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
@@ -18,7 +18,7 @@
 #include <QPointer>
 #include <queue>
 
-Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool" /*, QtInfoMsg*/)
+Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
 
 using namespace ASql;
 
