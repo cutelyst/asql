@@ -78,7 +78,8 @@ public:
     [[nodiscard]] bool isActive() const;
 
 protected:
-    friend class ACoroExpected<ATransaction>;
+    template <typename T>
+    friend class ACoroExpected;
     ATransaction(const ADatabase &db, bool started);
 
 private:
