@@ -13,9 +13,13 @@ public:
     explicit CoverageObject(QObject *parent = nullptr);
     virtual void initTest();
     virtual void cleanupTest();
+
 protected Q_SLOTS:
     void init();
     void cleanup();
+
+private Q_SLOTS:
+    void testPool();
 
 private:
     void saveCoverageData();

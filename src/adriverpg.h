@@ -213,6 +213,21 @@ private:
     inline void cmdFlush();
     inline bool isConnected() const;
 
+    struct OpenCaller {
+        std::shared_ptr<ADriver> driver;
+        ADatabaseOpenFn cb;
+        QPointer<QObject> receiverPtr;
+        bool checkReceiver = false;
+
+        void emit(bool isOpen, const QString &error)
+        {
+            if ((!checkReceiver || receiverPtr.isNull()) && cb) {
+                cb(isOpen, error);
+            }
+        }
+    };
+    std::unique_ptr<OpenCaller> m_openCaller;
+
     QPointer<QObject> m_stateChangedReceiver;
     std::function<void(ADatabase::State, const QString &)> m_stateChangedCb;
     QHash<QString, ANotificationFn> m_subscribedNotifications;

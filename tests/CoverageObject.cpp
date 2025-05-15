@@ -1,6 +1,11 @@
 #include "CoverageObject.hpp"
 
+#include "acoroexpected.h"
+#include "apool.h"
+
 #include <QTest>
+
+using namespace ASql;
 
 CoverageObject::CoverageObject(QObject *parent)
     : QObject(parent)
@@ -55,6 +60,43 @@ void CoverageObject::cleanup()
 {
     cleanupTest();
     saveCoverageData();
+}
+
+void CoverageObject::testPool()
+{
+    APool::setMaxConnections(2);
+
+    QEventLoop loop;
+    {
+        auto finished = std::make_shared<QObject>();
+        connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
+
+        auto testPool = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "rowsAffected exited" << finished.use_count(); });
+
+            {
+                auto db1 = co_await APool::coDatabase();
+                AVERIFY(db1);
+                AVERIFY(db1->isOpen());
+                ACOMPARE_EQ(APool::currentConnections(), 1);
+
+                auto db2 = co_await APool::coDatabase();
+                AVERIFY(db2);
+                ACOMPARE_EQ(APool::currentConnections(), 2);
+            }
+
+            auto db3 = co_await APool::coDatabase();
+            AVERIFY(db3);
+            ACOMPARE_EQ(APool::currentConnections(), 2);
+
+            auto db4 = co_await APool::coDatabase();
+            AVERIFY(db4);
+            ACOMPARE_EQ(APool::currentConnections(), 2);
+        };
+        testPool();
+    }
+    loop.exec();
 }
 
 #include "moc_CoverageObject.cpp"

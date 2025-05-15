@@ -158,7 +158,12 @@ void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, 
     qDebug(ASQL_PG) << "Open" << connectionInfo();
     m_conn = std::make_unique<APgConn>(connectionInfo());
     if (m_conn->conn()) {
-        QPointer<QObject> receiverPtr(receiver);
+        m_openCaller                = std::make_unique<OpenCaller>();
+        m_openCaller->driver        = driver;
+        m_openCaller->cb            = cb;
+        m_openCaller->receiverPtr   = receiver;
+        m_openCaller->checkReceiver = static_cast<bool>(receiver);
+
         const auto socket = m_conn->socket();
         if (socket > 0) {
             m_writeNotify = std::make_unique<QSocketNotifier>(socket, QSocketNotifier::Write);
@@ -167,7 +172,7 @@ void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, 
             const QString error = m_conn->errorMessage();
             setState(ADatabase::State::Connecting, error);
 
-            auto connFn = [=, this] {
+            auto connFn = [this] {
                 PostgresPollingStatusType type = m_conn->connectPoll();
                 //                qDebug(ASQL_PG) << "poll" << type << "status" <<
                 //                connectionStatus(PQstatus(m_conn));
@@ -184,8 +189,9 @@ void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, 
                     qDebug(ASQL_PG) << "PGRES_POLLING_OK 1" << type << m_writeNotify->isEnabled();
                     m_writeNotify->setEnabled(false);
                     setState(ADatabase::State::Connected, {});
-                    if ((!receiver || receiverPtr.isNull()) && cb) {
-                        cb(true, {});
+                    if (m_openCaller) {
+                        m_openCaller->emit(true, {});
+                        m_openCaller.reset();
                     }
 
                     // see if we have queue queries
@@ -196,8 +202,9 @@ void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, 
                     const QString error = m_conn->errorMessage();
                     qDebug(ASQL_PG) << "PGRES_POLLING_FAILED" << type << error;
 
-                    if ((!receiver || receiverPtr.isNull()) && cb) {
-                        cb(false, error);
+                    if (m_openCaller) {
+                        m_openCaller->emit(false, error);
+                        m_openCaller.reset();
                     }
 
                     finishConnection(error);

@@ -33,9 +33,13 @@ int main(int argc, char *argv[])
     APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setMaxIdleConnections(10);
 
+    APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s), u"pool"_s);
+    APool::setMaxIdleConnections(2, u"pool");
+    APool::setMaxConnections(3, u"pool");
+
     AResultFn resultFn;
     QElapsedTimer t;
-    if (true) {
+    if (false) {
         auto coroBench = [&t, &resultFn]() -> ACoroTerminator {
             auto db      = APool::database();
             auto counter = std::make_shared<int>(0);
@@ -448,6 +452,29 @@ int main(int argc, char *argv[])
         };
 
         callJsonBegin();
+    }
+
+    if (true) {
+        auto testPoolSync = []() {
+            {
+                auto db1 = APool::database(u"pool");
+                qDebug() << db1.isValid();
+                qDebug() << APool::currentConnections(u"pool");
+
+                auto db2 = APool::database(u"pool");
+                qDebug() << db2.isValid();
+                qDebug() << APool::currentConnections(u"pool");
+
+                auto db3 = APool::database(u"pool");
+                qDebug() << db3.isValid();
+                qDebug() << APool::currentConnections(u"pool");
+            }
+
+            auto db4 = APool::database(u"pool");
+            qDebug() << db4.isValid();
+            qDebug() << APool::currentConnections(u"pool");
+        };
+        testPoolSync();
     }
 
     app.exec();

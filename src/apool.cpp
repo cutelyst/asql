@@ -18,7 +18,7 @@
 #include <QPointer>
 #include <queue>
 
-Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
+Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool" /*, QtInfoMsg*/)
 
 using namespace ASql;
 
@@ -123,14 +123,16 @@ ADatabase APool::database(QStringView poolName)
                 auto driver = iPool.driverFactory->createRawDriver();
                 qDebug(ASQL_POOL) << "Creating a database connection for pool" << poolName
                                   << driver;
-                db.d = std::shared_ptr<ADriver>(
-                    driver, [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); });
+                db.d = std::shared_ptr<ADriver>(driver, [poolName = iPool.name](ADriver *driver) {
+                    pushDatabaseBack(poolName, driver);
+                });
             }
         } else {
             qDebug(ASQL_POOL) << "Reusing a database connection from pool" << poolName;
             ADriver *driver = iPool.pool.takeLast();
-            db.d            = std::shared_ptr<ADriver>(
-                driver, [poolName](ADriver *driver) { pushDatabaseBack(poolName, driver); });
+            db.d = std::shared_ptr<ADriver>(driver, [poolName = iPool.name](ADriver *driver) {
+                pushDatabaseBack(poolName, driver);
+            });
         }
 
         if (db.isOpen()) {

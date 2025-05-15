@@ -19,20 +19,40 @@ using namespace Qt::Literals::StringLiterals;
 class TestSqlite : public CoverageObject
 {
     Q_OBJECT
+public:
+    void initTest() override;
+    void cleanupTest() override;
+
 private Q_SLOTS:
     void testQueries();
 };
 
-void TestSqlite::testQueries()
+void TestSqlite::initTest()
 {
     const QString tmpDb =
         QStandardPaths::writableLocation(QStandardPaths::TempLocation) + u"/tmp.db"_s;
+
+    APool::create(ASqlite::factory(u"sqlite://?MEMORY"_s));
+    APool::setMaxIdleConnections(5);
+    APool::setMaxConnections(10);
+
     APool::create(ASqlite::factory(u"sqlite://"_s + tmpDb), u"file"_s);
     APool::setMaxIdleConnections(10, u"file");
 
-    APool::create(ASqlite::factory(u"sqlite://?MEMORY"_s));
-    APool::setMaxIdleConnections(10);
+    APool::create(ASqlite::factory(u"sqlite://?MEMORY"_s), u"pool"_s);
+    APool::setMaxIdleConnections(5, u"pool"_s);
+    APool::setMaxConnections(3, u"pool"_s);
+}
 
+void TestSqlite::cleanupTest()
+{
+    APool::remove();
+    APool::remove(u"file"_s);
+    APool::remove(u"pool"_s);
+}
+
+void TestSqlite::testQueries()
+{
     QEventLoop loop;
     {
         auto finished = std::make_shared<QObject>();
