@@ -2,7 +2,6 @@
 
 #include <adatabase.h>
 #include <aresult.h>
-#include <asql_export.h>
 #include <atransaction.h>
 #include <coroutine>
 #include <expected>
@@ -12,7 +11,7 @@
 namespace ASql {
 
 template <typename T>
-class ASQL_EXPORT ACoroExpected
+class ACoroExpected
 {
 public:
     bool await_ready() const noexcept
@@ -79,7 +78,7 @@ private:
     std::coroutine_handle<> m_handle;
 };
 
-class ASQL_EXPORT AExpectedDatabase
+class AExpectedDatabase
 {
 public:
     bool await_ready() const noexcept

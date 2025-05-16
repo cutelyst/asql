@@ -193,9 +193,7 @@ private:
 
 } // namespace ASql
 
-#if QT_VERSION < QT_VERSION_CHECK(6, 7, 0)
-Q_DECLARE_METATYPE(ASql::OpenPromise);
-Q_DECLARE_METATYPE(ASql::QueryPromise);
-#endif
+Q_DECLARE_METATYPE(ASql::OpenPromise)
+Q_DECLARE_METATYPE(ASql::QueryPromise)
 
 #endif // ADRIVERSQLITE_HPP

@@ -137,7 +137,8 @@ void TestSqlite::testQueries()
 
         // auto multipleCreateQueriesTransaction = [finished]() -> ACoroTerminator {
         //     auto _ = qScopeGuard(
-        //         [finished] { qDebug() << "multipleCreateQueriesTransaction exited" << finished.use_count(); });
+        //         [finished] { qDebug() << "multipleCreateQueriesTransaction exited" <<
+        //         finished.use_count(); });
 
         //     auto t = co_await APool::begin(nullptr);
         //     AVERIFY(t);
