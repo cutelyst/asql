@@ -73,7 +73,7 @@ void APool::pushDatabaseBack(QStringView connectionName, ADriver *driver)
         APoolInternal &iPool = it.value();
         if (driver->state() == ADatabase::State::Disconnected) {
             qDebug(ASQL_POOL) << "Deleting database connection as is not open" << driver->isOpen();
-            delete driver;
+            driver->deleteLater();
             --iPool.connectionCount;
             return;
         }
@@ -96,7 +96,7 @@ void APool::pushDatabaseBack(QStringView connectionName, ADriver *driver)
         if (iPool.pool.size() >= iPool.maxIdleConnections) {
             qDebug(ASQL_POOL) << "Deleting database connection due max idle connections"
                               << iPool.maxIdleConnections << iPool.pool.size();
-            delete driver;
+            driver->deleteLater();
             --iPool.connectionCount;
         } else {
             qDebug(ASQL_POOL) << "Returning database connection to pool" << connectionName
