@@ -160,6 +160,14 @@ public:
                                               QObject *receiver    = nullptr,
                                               QStringView poolName = defaultPool);
 
+    [[nodiscard]] static AExpectedMultiResult execMulti(QStringView query,
+                                                        QObject *receiver    = nullptr,
+                                                        QStringView poolName = defaultPool);
+
+    [[nodiscard]] static AExpectedMultiResult execMulti(QUtf8StringView query,
+                                                        QObject *receiver    = nullptr,
+                                                        QStringView poolName = defaultPool);
+
     [[nodiscard]] static AExpectedResult exec(const APreparedQuery &query,
                                               QObject *receiver    = nullptr,
                                               QStringView poolName = defaultPool);

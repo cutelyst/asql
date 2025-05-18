@@ -74,8 +74,9 @@ void TestSqlite::testQueries()
             };
             int count = 0;
 
-            bool last      = true;
-            auto awaitable = APool::exec(u"SELECT 'a' a, 1; SELECT 'b' b, 2; SELECT 'c' c, 3"_s);
+            bool last = true;
+            auto awaitable =
+                APool::execMulti(u"SELECT 'a' a, 1; SELECT 'b' b, 2; SELECT 'c' c, 3"_s);
             do {
                 auto result = co_await awaitable;
                 AVERIFY(result);
@@ -111,7 +112,7 @@ void TestSqlite::testQueries()
             };
 
             bool last      = true;
-            auto awaitable = APool::exec(
+            auto awaitable = APool::execMulti(
                 u"CREATE TABLE a (a TEXT);CREATE TABLE b (b TEXT);CREATE TABLE c (c TEXT)"_s);
             do {
                 auto result = co_await awaitable;
@@ -135,7 +136,7 @@ void TestSqlite::testQueries()
             AVERIFY(t);
 
             // This test checks if we do not crash by not consuming all results
-            auto result = co_await t->database().coExec(
+            auto result = co_await t->database().execMulti(
                 u"CREATE TABLE a (a TEXT);CREATE TABLE b (b TEXT);CREATE TABLE c (c TEXT)"_s);
             AVERIFY(result);
             ACOMPARE_EQ(result->lastResultSet(), false);

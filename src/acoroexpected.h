@@ -17,6 +17,98 @@ class ACoroExpected
 public:
     bool await_ready() const noexcept
     {
+        return *m_status == Done; // skips suspension
+    }
+
+    bool await_suspend(std::coroutine_handle<> h) noexcept
+    {
+        if (await_ready()) {
+            return false;
+        }
+
+        m_handle  = h;
+        *m_status = Suspended;
+        return true;
+    }
+
+    std::expected<T, QString> await_resume() { return m_result; }
+
+    ACoroExpected(QObject *receiver)
+        : m_receiver(receiver)
+        , m_status{std::make_shared<Status>(Waiting)}
+    {
+        callback = [this, status = m_status](AResult &result) {
+            const auto currentState = *status;
+            if (currentState == Done || currentState == Finished) {
+                return;
+            }
+
+            if (result.hasError()) {
+                m_result = std::unexpected(result.errorString());
+            } else {
+                if constexpr (std::is_same_v<T, ATransaction>) {
+                    m_result = ATransaction(database, true);
+                } else {
+                    m_result = result;
+                }
+            }
+
+            *status = Done;
+
+            if (currentState == Suspended && m_handle) {
+                m_handle.resume();
+            }
+        };
+
+        if (receiver) {
+            m_destroyConn =
+                QObject::connect(receiver, &QObject::destroyed, [this, status = m_status] {
+                if (*status == Finished) {
+                    return;
+                }
+
+                m_result = std::unexpected(QStringLiteral("QObject receiver* destroyed"));
+                if (m_handle) {
+                    m_handle.resume();
+                }
+            });
+        }
+    }
+
+    ~ACoroExpected()
+    {
+        *m_status = Finished;
+        QObject::disconnect(m_destroyConn);
+    }
+
+protected:
+    friend class ADatabase;
+    friend class ACache;
+    friend class ATransaction;
+    friend class APool;
+    std::function<void(AResult &result)> callback;
+    ADatabase database;
+
+private:
+    enum Status {
+        Waiting,
+        Suspended,
+        Done,
+        Finished,
+    };
+    QMetaObject::Connection m_destroyConn;
+    QPointer<QObject> m_receiver;
+    std::expected<T, QString> m_result;
+    std::shared_ptr<Status> m_status;
+    std::coroutine_handle<> m_handle;
+};
+
+template <typename T>
+class ACoroMultiExpected
+{
+public:
+    bool await_ready() const noexcept
+    {
         return !m_results.isEmpty() || *m_status == Done; // skips suspension
     }
 
@@ -37,7 +129,7 @@ public:
                                   : std::unexpected(QStringLiteral("no results available"));
     }
 
-    ACoroExpected(QObject *receiver)
+    ACoroMultiExpected(QObject *receiver)
         : m_receiver(receiver)
         , m_status{std::make_shared<Status>(Waiting)}
     {
@@ -84,7 +176,7 @@ public:
         }
     }
 
-    ~ACoroExpected()
+    ~ACoroMultiExpected()
     {
         *m_status = Finished;
         QObject::disconnect(m_destroyConn);

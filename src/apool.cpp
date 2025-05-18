@@ -307,6 +307,43 @@ AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringVie
     return coro;
 }
 
+AExpectedMultiResult APool::execMulti(QStringView query, QObject *receiver, QStringView poolName)
+{
+    AExpectedMultiResult coro(receiver);
+    auto cb = coro.callback;
+
+    database(receiver, [cb, query, receiver](ADatabase db) {
+        if (db.isValid()) {
+            db.exec(query, receiver, cb);
+            return;
+        }
+
+        AResult result;
+        cb(result);
+    }, poolName);
+
+    return coro;
+}
+
+AExpectedMultiResult
+    APool::execMulti(QUtf8StringView query, QObject *receiver, QStringView poolName)
+{
+    AExpectedMultiResult coro(receiver);
+    auto cb = coro.callback;
+
+    database(receiver, [cb, query, receiver](ADatabase db) {
+        if (db.isValid()) {
+            db.exec(query, receiver, cb);
+            return;
+        }
+
+        AResult result;
+        cb(result);
+    }, poolName);
+
+    return coro;
+}
+
 AExpectedResult APool::exec(const APreparedQuery &query, QObject *receiver, QStringView poolName)
 {
     AExpectedResult coro(receiver);

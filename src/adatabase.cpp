@@ -123,6 +123,22 @@ AExpectedResult ADatabase::coExec(QStringView query, const QVariantList &params,
     return coro;
 }
 
+AExpectedMultiResult ADatabase::execMulti(QStringView query, QObject *receiver)
+{
+    Q_ASSERT(d);
+    AExpectedMultiResult coro(receiver);
+    d->exec(d, query, receiver, coro.callback);
+    return coro;
+}
+
+AExpectedMultiResult ADatabase::execMulti(QUtf8StringView query, QObject *receiver)
+{
+    Q_ASSERT(d);
+    AExpectedMultiResult coro(receiver);
+    d->exec(d, query, receiver, coro.callback);
+    return coro;
+}
+
 AExpectedResult ADatabase::coExec(QUtf8StringView query, QObject *receiver)
 {
     Q_ASSERT(d);

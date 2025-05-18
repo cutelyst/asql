@@ -34,7 +34,12 @@ using AResultFn       = std::function<void(AResult &result)>;
 template <typename T>
 class ACoroExpected;
 
+template <typename T>
+class ACoroMultiExpected;
+
 using AExpectedResult      = ACoroExpected<AResult>;
+using AExpectedMultiResult = ACoroMultiExpected<AResult>;
+
 using AExpectedTransaction = ACoroExpected<ATransaction>;
 
 class APreparedQuery;
@@ -155,6 +160,11 @@ public:
 
     [[nodiscard]] AExpectedResult
         coExec(QStringView query, const QVariantList &params, QObject *receiver = nullptr);
+
+    [[nodiscard]] AExpectedMultiResult execMulti(QStringView query, QObject *receiver = nullptr);
+
+    [[nodiscard]] AExpectedMultiResult execMulti(QUtf8StringView query,
+                                                 QObject *receiver = nullptr);
 
     [[nodiscard]] AExpectedResult coExec(QUtf8StringView query, QObject *receiver = nullptr);
 

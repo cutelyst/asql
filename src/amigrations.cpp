@@ -315,7 +315,7 @@ ACoroTerminator AMigrations::migrate(int targetVersion,
     }
 
     ADatabase db   = migration.noTransaction ? d->noTransactionDB : d->db;
-    auto awaitable = db.coExec(
+    auto awaitable = db.execMulti(
         migration.noTransaction ? migration.query : migration.versionQuery + migration.query, this);
     while (true) {
         result = co_await awaitable;
@@ -369,7 +369,7 @@ VALUES
     ('%1', %2)
 ON CONFLICT (name) DO UPDATE
 SET version = EXCLUDED.version
-RETURNING version;
+RETURNING version
 )V0G0N"_s;
 
     if (versionFrom < versionTo) {
