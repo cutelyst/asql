@@ -67,7 +67,7 @@ set_target_properties(ASqlQt${QT_VERSION_MAJOR} PROPERTIES
 
 target_link_libraries(ASqlQt${QT_VERSION_MAJOR}
     PUBLIC
-        Qt${QT_VERSION_MAJOR}::Core
+        Qt::Core
 )
 
 set_property(TARGET ASqlQt${QT_VERSION_MAJOR} PROPERTY PUBLIC_HEADER ${asql_HEADERS})

@@ -56,10 +56,7 @@ void TestSqlite::testQueries()
     QEventLoop loop;
     {
         auto finished = std::make_shared<QObject>();
-        connect(finished.get(), &QObject::destroyed, &loop, [&] {
-            qDebug("testQueries finished");
-            loop.quit();
-        });
+        connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
 
         auto multipleQueries = [finished]() -> ACoroTerminator {
             auto _ = qScopeGuard(
@@ -105,7 +102,7 @@ void TestSqlite::testQueries()
 
         auto multipleCreateQueries = [finished]() -> ACoroTerminator {
             auto _ = qScopeGuard(
-                [finished] { qDebug() << "multipleCreateQueries exited" << finished.use_count(); });
+                [finished] { qDebug() << "multipleQueries exited" << finished.use_count(); });
 
             QByteArrayList queries = {
                 "CREATE TABLE a (a TEXT);"_ba,
@@ -130,27 +127,20 @@ void TestSqlite::testQueries()
         };
         multipleCreateQueries();
 
-        // FIXME THIS test crash because the driver holds
-        // a callback to the awaitable that is going out of scope
-        // This is not a problem for single queries as long as we
-        // co_await the awaitable object.
+        auto multipleCreateQueriesTransaction = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "multipleQueries exited" << finished.use_count(); });
 
-        // auto multipleCreateQueriesTransaction = [finished]() -> ACoroTerminator {
-        //     auto _ = qScopeGuard(
-        //         [finished] { qDebug() << "multipleCreateQueriesTransaction exited" <<
-        //         finished.use_count(); });
+            auto t = co_await APool::begin(nullptr);
+            AVERIFY(t);
 
-        //     auto t = co_await APool::begin(nullptr);
-        //     AVERIFY(t);
-
-        //     // This test checks if we do not crash by not consuming all results
-        //     auto result = co_await t->database().coExec(
-        //         u"CREATE TABLE a (a TEXT);CREATE TABLE b (b TEXT);CREATE TABLE c (c TEXT)"_s);
-        //     qDebug() << "multipleCreateQueriesTransaction result.error" << result.has_value();
-        //     AVERIFY(result);
-        //     ACOMPARE_EQ(result->lastResultSet(), false);
-        // };
-        // multipleCreateQueriesTransaction();
+            // This test checks if we do not crash by not consuming all results
+            auto result = co_await t->database().coExec(
+                u"CREATE TABLE a (a TEXT);CREATE TABLE b (b TEXT);CREATE TABLE c (c TEXT)"_s);
+            AVERIFY(result);
+            ACOMPARE_EQ(result->lastResultSet(), false);
+        };
+        multipleCreateQueriesTransaction();
 
         auto singleQuery = [finished]() -> ACoroTerminator {
             auto _ = qScopeGuard(
@@ -168,6 +158,17 @@ void TestSqlite::testQueries()
             ACOMPARE_EQ((*result)[0][1].toInt(), 1);
         };
         singleQuery();
+
+        auto singleQuery2 = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "singleQuery2 exited" << finished.use_count(); });
+
+            qDebug() << Q_FUNC_INFO << 1;
+            std::ignore = APool::coDatabase();
+            qDebug() << Q_FUNC_INFO << 2;
+            co_return;
+        };
+        singleQuery2();
 
         auto queryParams = [finished]() -> ACoroTerminator {
             auto _ = qScopeGuard(

@@ -19,44 +19,33 @@ ADriverSqlite::ADriverSqlite(const QString &connInfo)
     : ADriver{connInfo}
     , m_worker{connInfo}
 {
+    m_thread.setObjectName(connInfo);
     m_worker.moveToThread(&m_thread);
 
-    connect(&m_worker, &ASqliteThread::openned, this, [this](OpenPromise promisse) {
-        if (promisse.isOpen) {
-            setState(ADatabase::State::Connected, {});
-        } else {
-            setState(ADatabase::State::Disconnected, promisse.error);
-        }
-
-        if (!promisse.checkReceiver || !promisse.receiver.isNull()) {
-            if (promisse.cb) {
-                promisse.cb(promisse.isOpen, promisse.error);
-            }
-        }
-    });
-
     connect(&m_worker, &ASqliteThread::queryFinished, this, [this](QueryPromise promisse) {
-        if (--m_queueSize == 0) {
-            // This might not be needed if we only use coroutines
-            // since db object won't go out of scope when we are waiting for a reply
-            // unless ofc the user forget to co_await, in which case we
-            // should try to do some cleanup or prevent it if possible.
-            selfDriver.reset();
-        }
-
         if (!promisse.checkReceiver || !promisse.receiver.isNull()) {
             if (promisse.cb) {
                 AResult result{promisse.result};
                 promisse.cb(result);
             }
         }
-    });
+
+        if (promisse.result->m_lastResultSet && --m_queueSize == 0) {
+            // This might not be needed if we only use coroutines
+            // since db object won't go out of scope when we are waiting for a reply
+            // unless ofc the user forget to co_await, in which case we
+            // should try to do some cleanup or prevent it if possible.
+            selfDriver.reset();
+        }
+    }, Qt::QueuedConnection);
 
     m_thread.start();
 }
 
 ADriverSqlite::~ADriverSqlite()
 {
+    Q_ASSERT(m_thread.thread() == QThread::currentThread());
+
     m_thread.requestInterruption();
     m_thread.quit();
     m_thread.wait();
@@ -76,21 +65,49 @@ void ADriverSqlite::open(const std::shared_ptr<ADriver> &driver,
                          QObject *receiver,
                          std::function<void(bool, const QString &)> cb)
 {
-    setState(ADatabase::State::Connecting, {});
+    if (m_state == ADatabase::State::Connected) {
+        if (cb) {
+            cb(true, {});
+        }
+        return;
+    }
 
-    OpenPromise data{
-        .driver        = driver,
+    setState(ADatabase::State::Connecting, {});
+    ++m_queueSize;
+    selfDriver = driver;
+
+    OpenPromise promise{
         .cb            = cb,
         .receiver      = receiver,
         .checkReceiver = static_cast<bool>(receiver),
     };
 
+    connect(&m_worker, &ASqliteThread::openned, this, [this, promise](bool isOpen, QString error) {
+        if (isOpen) {
+            setState(ADatabase::State::Connected, {});
+        } else {
+            setState(ADatabase::State::Disconnected, error);
+        }
+
+        if (!promise.checkReceiver || !promise.receiver.isNull()) {
+            if (promise.cb) {
+                promise.cb(isOpen, error);
+            }
+        }
+
+        if (--m_queueSize == 0) {
+            // This might not be needed if we only use coroutines
+            // since db object won't go out of scope when we are waiting for a reply
+            // unless ofc the user forget to co_await, in which case we
+            // should try to do some cleanup or prevent it if possible.
+            selfDriver.reset();
+        }
+    }, Qt::SingleShotConnection);
+
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
-    QMetaObject::invokeMethod(
-        &m_worker, &ASqliteThread::open, Qt::QueuedConnection, std::move(data));
+    QMetaObject::invokeMethod(&m_worker, &ASqliteThread::open, Qt::QueuedConnection);
 #else
-    QMetaObject::invokeMethod(
-        &m_worker, "open", Qt::QueuedConnection, Q_ARG(ASql::OpenPromise, std::move(data)));
+    QMetaObject::invokeMethod(&m_worker, "open", Qt::QueuedConnection);
 #endif
 }
 
@@ -144,7 +161,6 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
     selfDriver = db;
 
     QueryPromise data{
-        .driver        = db,
         .cb            = cb,
         .result        = std::make_shared<AResultSqlite>(),
         .receiver      = receiver,
@@ -167,9 +183,9 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          AResultFn cb)
 {
     ++m_queueSize;
+    selfDriver = db;
 
     QueryPromise data{
-        .driver        = db,
         .cb            = cb,
         .result        = std::make_shared<AResultSqlite>(),
         .receiver      = receiver,
@@ -196,7 +212,6 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
     selfDriver = db;
 
     QueryPromise data{
-        .driver        = db,
         .cb            = cb,
         .result        = std::make_shared<AResultSqlite>(),
         .receiver      = receiver,
@@ -221,9 +236,9 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          AResultFn cb)
 {
     ++m_queueSize;
+    selfDriver = db;
 
     QueryPromise data{
-        .driver        = db,
         .cb            = cb,
         .result        = std::make_shared<AResultSqlite>(),
         .receiver      = receiver,
@@ -248,9 +263,9 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          AResultFn cb)
 {
     ++m_queueSize;
+    selfDriver = db;
 
     QueryPromise data{
-        .driver        = db,
         .preparedQuery = query,
         .cb            = cb,
         .result        = std::make_shared<AResultSqlite>(),
@@ -327,7 +342,7 @@ ASqliteThread::~ASqliteThread()
     sqlite3_close_v2(m_db);
 }
 
-void ASqliteThread::open(OpenPromise promise)
+void ASqliteThread::open()
 {
     QUrl uri{m_uri};
     uri.setScheme(u"file"_s);
@@ -357,16 +372,16 @@ void ASqliteThread::open(OpenPromise promise)
 
     const int res = sqlite3_open_v2(filename.toUtf8().constData(), &m_db, openMode, NULL);
     if (res == SQLITE_OK) {
-        promise.isOpen = true;
+        Q_EMIT openned(true, {});
     } else {
         const char *sqliteError = sqlite3_errmsg(m_db);
-        promise.error           = u"Failed to open database: %1"_s.arg(
+        const QString error     = u"Failed to open database: %1"_s.arg(
             sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
         sqlite3_close_v2(m_db);
         m_db = nullptr;
-    }
 
-    Q_EMIT openned(promise);
+        Q_EMIT openned(false, error);
+    }
 }
 
 QStringList fillColumns(sqlite3_stmt *stmt)
@@ -530,6 +545,8 @@ void ASqliteThread::queryPrepared(QueryPromise promise)
 
     const auto queryId = promise.preparedQuery->identification();
     auto _             = qScopeGuard([&] {
+        Q_EMIT queryFinished(std::move(promise));
+
         // Make the statement ready to be used later
         if (sqlite3_reset(stmt.get()) != SQLITE_OK) {
             m_preparedQueries.remove(queryId);
@@ -537,7 +554,6 @@ void ASqliteThread::queryPrepared(QueryPromise promise)
             const char *sqliteError = sqlite3_errmsg(m_db);
             qWarning(ASQL_SQLITE) << u"Failed to reset prepared statement: '%1'"_s.arg(
                 sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
-            return;
         }
 
         if (sqlite3_clear_bindings(stmt.get()) != SQLITE_OK) {
@@ -546,9 +562,7 @@ void ASqliteThread::queryPrepared(QueryPromise promise)
             const char *sqliteError = sqlite3_errmsg(m_db);
             qWarning(ASQL_SQLITE) << u"Failed to reset prepared statement bindings: '%1'"_s.arg(
                 sqliteError ? QString::fromUtf8(sqliteError) : u"Unknown error"_s);
-            return;
         }
-        Q_EMIT queryFinished(std::move(promise));
     });
 
     auto it = m_preparedQueries.constFind(queryId);

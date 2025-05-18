@@ -455,24 +455,64 @@ int main(int argc, char *argv[])
     }
 
     if (true) {
-        auto testPoolSync = []() {
+        auto testPoolSync = []() -> ACoroTerminator {
             {
-                auto db1 = APool::database(u"pool");
-                qDebug() << db1.isValid();
+                auto db1 = co_await APool::coDatabase(nullptr, u"pool");
+                qDebug() << db1->isValid();
                 qDebug() << APool::currentConnections(u"pool");
 
-                auto db2 = APool::database(u"pool");
-                qDebug() << db2.isValid();
+                auto db2 = co_await APool::coDatabase(nullptr, u"pool");
+                qDebug() << db2->isValid();
                 qDebug() << APool::currentConnections(u"pool");
 
-                auto db3 = APool::database(u"pool");
-                qDebug() << db3.isValid();
+                auto db3 = co_await APool::coDatabase(nullptr, u"pool");
+                qDebug() << db3->isValid();
                 qDebug() << APool::currentConnections(u"pool");
             }
 
-            auto db4 = APool::database(u"pool");
-            qDebug() << db4.isValid();
-            qDebug() << APool::currentConnections(u"pool");
+            auto awaiter = APool::exec(u8"SELECT 1, now(), pg_sleep(1);SELECT 2, now(), "
+                                       u8"pg_sleep(1);SELECT 3, now(), pg_sleep(1)",
+                                       nullptr);
+            if (awaiter.await_ready()) {
+                qDebug() << "Awaiter ready";
+            }
+
+            auto result = co_await awaiter;
+            if (result.has_value()) {
+                qDebug() << "awaiter result has value" << result->lastResultSet()
+                         << result->toJsonObject();
+            } else {
+                qDebug() << "awaiter result error" << result.error();
+            }
+
+            result = co_await awaiter;
+            if (result.has_value()) {
+                qDebug() << "awaiter result has value" << result->lastResultSet()
+                         << result->toJsonObject();
+            } else {
+                qDebug() << "awaiter result error" << result.error();
+            }
+
+            result = co_await awaiter;
+            if (result.has_value()) {
+                qDebug() << "awaiter result has value" << result->lastResultSet()
+                         << result->toJsonObject();
+            } else {
+                qDebug() << "awaiter result error" << result.error();
+            }
+
+            qDebug() << "calling finished awaiter ";
+            result = co_await awaiter;
+            if (result.has_value()) {
+                qDebug() << "awaiter result has value" << result->toJsonObject();
+            } else {
+                qDebug() << "awaiter result error" << result.error();
+            }
+            qDebug() << "awaiter finished";
+
+            // auto db4 = APool::database(u"pool");
+            // qDebug() << db4.isValid();
+            // qDebug() << APool::currentConnections(u"pool");
         };
         testPoolSync();
     }

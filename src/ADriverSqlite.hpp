@@ -63,16 +63,12 @@ public:
 };
 
 struct OpenPromise {
-    std::shared_ptr<ADriver> driver;
     ADatabaseOpenFn cb;
     QPointer<QObject> receiver;
-    QString error;
-    bool isOpen;
     bool checkReceiver;
 };
 
 struct QueryPromise {
-    std::shared_ptr<ADriver> driver;
     std::optional<APreparedQuery> preparedQuery;
     AResultFn cb;
     std::shared_ptr<AResultSqlite> result;
@@ -88,13 +84,13 @@ public:
     ~ASqliteThread();
 
 public Q_SLOTS:
-    void open(ASql::OpenPromise promise);
+    void open();
     void query(ASql::QueryPromise promise);
     void queryPrepared(ASql::QueryPromise promise);
     void queryExec(ASql::QueryPromise promise);
 
 Q_SIGNALS:
-    void openned(ASql::OpenPromise promise);
+    void openned(bool isOpen, QString error);
     void queryFinished(ASql::QueryPromise promise);
 
 private:
