@@ -6,6 +6,7 @@
 #include <QJsonObject>
 #include <QLoggingCategory>
 #include <QMetaMethod>
+#include <QMutexLocker>
 #include <QUrl>
 #include <QUrlQuery>
 
@@ -22,20 +23,24 @@ ADriverSqlite::ADriverSqlite(const QString &connInfo)
     m_thread.setObjectName(connInfo);
     m_worker.moveToThread(&m_thread);
 
-    connect(&m_worker, &ASqliteThread::queryFinished, this, [this](QueryPromise promisse) {
-        if (!promisse.checkReceiver || !promisse.receiver.isNull()) {
-            if (promisse.cb) {
-                AResult result{promisse.result};
-                promisse.cb(result);
+    connect(&m_worker, &ASqliteThread::queryReady, this, [this] {
+        QMutexLocker _(&m_worker.m_promisesMutex);
+        while (!m_worker.m_promisesReady.isEmpty()) {
+            QueryPromise promise = m_worker.m_promisesReady.dequeue();
+            if (!promise.checkReceiver || !promise.receiver.isNull()) {
+                if (promise.cb) {
+                    AResult result{promise.result};
+                    promise.cb(result);
+                }
             }
-        }
 
-        if (promisse.result->m_lastResultSet && --m_queueSize == 0) {
-            // This might not be needed if we only use coroutines
-            // since db object won't go out of scope when we are waiting for a reply
-            // unless ofc the user forget to co_await, in which case we
-            // should try to do some cleanup or prevent it if possible.
-            selfDriver.reset();
+            if (promise.result->m_lastResultSet && --m_queueSize == 0) {
+                // This might not be needed if we only use coroutines
+                // since db object won't go out of scope when we are waiting for a reply
+                // unless ofc the user forget to co_await, in which case we
+                // should try to do some cleanup or prevent it if possible.
+                selfDriver.reset();
+            }
         }
     }, Qt::QueuedConnection);
 
@@ -499,7 +504,13 @@ std::optional<QString> bindValues(sqlite3 *db, sqlite3_stmt *stmt, const QVarian
 
 void ASqliteThread::query(QueryPromise promise)
 {
-    auto _ = qScopeGuard([&] { Q_EMIT queryFinished(std::move(promise)); });
+    auto _ = qScopeGuard([&] {
+        {
+            QMutexLocker _(&m_promisesMutex);
+            m_promisesReady.enqueue(std::move(promise));
+        }
+        Q_EMIT queryReady();
+    });
 
     auto stmt = prepare(promise, 0x0);
     if (!stmt) {
@@ -545,7 +556,11 @@ void ASqliteThread::queryPrepared(QueryPromise promise)
 
     const auto queryId = promise.preparedQuery->identification();
     auto _             = qScopeGuard([&] {
-        Q_EMIT queryFinished(std::move(promise));
+        {
+            QMutexLocker _(&m_promisesMutex);
+            m_promisesReady.enqueue(std::move(promise));
+        }
+        Q_EMIT queryReady();
 
         // Make the statement ready to be used later
         if (sqlite3_reset(stmt.get()) != SQLITE_OK) {
@@ -618,7 +633,13 @@ void ASqliteThread::queryPrepared(QueryPromise promise)
  */
 void ASqliteThread::queryExec(QueryPromise promise)
 {
-    auto _ = qScopeGuard([&] { Q_EMIT queryFinished(std::move(promise)); });
+    auto _ = qScopeGuard([&] {
+        {
+            QMutexLocker _(&m_promisesMutex);
+            m_promisesReady.enqueue(std::move(promise));
+        }
+        Q_EMIT queryReady();
+    });
 
     int res                = SQLITE_OK;
     const QByteArray query = promise.result->m_query;
@@ -650,7 +671,11 @@ void ASqliteThread::queryExec(QueryPromise promise)
 
         if (emitQuery) {
             promise.result->m_lastResultSet = false;
-            Q_EMIT queryFinished(promise);
+            {
+                QMutexLocker _(&m_promisesMutex);
+                m_promisesReady.enqueue(promise);
+            }
+            Q_EMIT queryReady();
 
             promise.result          = std::make_shared<AResultSqlite>();
             promise.result->m_query = query;

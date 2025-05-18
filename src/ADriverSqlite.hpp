@@ -9,9 +9,10 @@
 #include <optional>
 
 #include <QHash>
+#include <QMutex>
 #include <QPointer>
+#include <QQueue>
 #include <QThread>
-#include <queue>
 
 namespace ASql {
 
@@ -83,15 +84,26 @@ public:
     ASqliteThread(const QString &connInfo);
     ~ASqliteThread();
 
+    QMutex m_promisesMutex;
+    QQueue<ASql::QueryPromise> m_promisesReady;
+
 public Q_SLOTS:
     void open();
+    // This is likely safe because we move our
+    // results to m_promisesReady queue,
+    // which are consumed from the main thread.
+
+    // The issue we used to face is that the promisse.cb
+    // sometimes hold the last reference to the cb,
+    // meaning the cb dtor was called on the worker thread
+    // thus lambdas captures were wrongly deleted here.
     void query(ASql::QueryPromise promise);
     void queryPrepared(ASql::QueryPromise promise);
     void queryExec(ASql::QueryPromise promise);
 
 Q_SIGNALS:
     void openned(bool isOpen, QString error);
-    void queryFinished(ASql::QueryPromise promise);
+    void queryReady();
 
 private:
     std::shared_ptr<sqlite3_stmt> prepare(QueryPromise &promise, int flags);
