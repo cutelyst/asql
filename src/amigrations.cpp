@@ -369,7 +369,7 @@ VALUES
     ('%1', %2)
 ON CONFLICT (name) DO UPDATE
 SET version = EXCLUDED.version
-RETURNING version
+RETURNING version;
 )V0G0N"_s;
 
     if (versionFrom < versionTo) {
