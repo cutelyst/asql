@@ -6,6 +6,7 @@
 #include "aresult.h"
 #include "sqlite/sqlite3.h"
 
+#include <chrono>
 #include <optional>
 
 #include <QHash>
@@ -13,6 +14,8 @@
 #include <QPointer>
 #include <QQueue>
 #include <QThread>
+
+using namespace std::chrono_literals;
 
 namespace ASql {
 
@@ -107,10 +110,13 @@ Q_SIGNALS:
 
 private:
     std::shared_ptr<sqlite3_stmt> prepare(QueryPromise &promise, int flags);
+    static int busyHandler(void *data, int retry_count);
 
     QHash<int, std::shared_ptr<sqlite3_stmt>> m_preparedQueries;
     QString m_uri;
-    sqlite3 *m_db = nullptr;
+    sqlite3 *m_db                              = nullptr;
+    std::chrono::milliseconds m_busyRetrySleep = 100ms;
+    int m_busyRetries                          = 1;
 };
 
 class ADriverSqlite final : public ADriver

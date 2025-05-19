@@ -347,6 +347,16 @@ ASqliteThread::~ASqliteThread()
     sqlite3_close_v2(m_db);
 }
 
+int ASqliteThread::busyHandler(void *data, int retry_count)
+{
+    auto worker = static_cast<ASqliteThread *>(data);
+    if (retry_count >= worker->m_busyRetries) {
+        return 0; // Stop retrying
+    }
+    usleep(worker->m_busyRetrySleep.count()); // Wait 100ms
+    return 1;                                 // Continue retrying
+}
+
 void ASqliteThread::open()
 {
     QUrl uri{m_uri};
@@ -378,6 +388,16 @@ void ASqliteThread::open()
     const int res = sqlite3_open_v2(filename.toUtf8().constData(), &m_db, openMode, NULL);
     if (res == SQLITE_OK) {
         Q_EMIT openned(true, {});
+
+        if (query.hasQueryItem(u"BUSY_RETRIES"_s)) {
+            m_busyRetries = query.queryItemValue(u"BUSY_RETRIES"_s).toInt();
+        }
+        if (query.hasQueryItem(u"BUSY_SLEEP"_s)) {
+            m_busyRetrySleep =
+                std::chrono::milliseconds{query.queryItemValue(u"BUSY_SLEEP"_s).toInt()};
+        }
+
+        sqlite3_busy_handler(m_db, busyHandler, this);
     } else {
         const char *sqliteError = sqlite3_errmsg(m_db);
         const QString error     = u"Failed to open database: %1"_s.arg(
