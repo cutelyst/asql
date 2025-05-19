@@ -35,7 +35,6 @@ endif()
 # Options
 #
 option(ENABLE_MAINTAINER_CFLAGS "Enable maintainer CFlags" OFF)
-option(BUILD_TESTS "Build tests" ON)
 option(DRIVER_SQLITE "Enable Sqlite Driver" ON)
 if (DRIVER_SQLITE)
     enable_language(C)
@@ -112,8 +111,8 @@ if (BUILD_DEMOS)
     add_subdirectory(demos)
 endif ()
 
-if (BUILD_TESTS)
-    enable_testing()
+include(CTest)
+if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
