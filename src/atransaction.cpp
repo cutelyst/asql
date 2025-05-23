@@ -23,7 +23,7 @@ public:
     ~ATransactionPrivate()
     {
         if (running && db.isValid()) {
-            qInfo(ASQL_TRANSACTION, "Rolling back transaction");
+            qDebug(ASQL_TRANSACTION, "Rolling back transaction");
             db.rollback();
         }
     }
