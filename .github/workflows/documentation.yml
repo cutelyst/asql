@@ -47,7 +47,6 @@ jobs:
       - name: Configure project
         run: >
           cmake -S . -B ./build
-          -DBUILD_ALL=ON
           -DDOCS_QTDOCSDIR:PATH="${{ runner.workspace }}/Qt/Docs/Qt-6.6.0"
 
       - name: Create docs
