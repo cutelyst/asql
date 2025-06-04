@@ -221,7 +221,7 @@ private:
 
         void emit(bool isOpen, const QString &error)
         {
-            if ((!checkReceiver || receiverPtr.isNull()) && cb) {
+            if (cb && (!checkReceiver || !receiverPtr.isNull())) {
                 cb(isOpen, error);
             }
         }
