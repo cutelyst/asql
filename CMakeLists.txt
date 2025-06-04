@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: (C) 2020-2025 Daniel Nicoletti <dantti12@gmail.com>
 # SPDX-License-Identifier: MIT
 
-cmake_minimum_required(VERSION 3.16)
-project(libasql VERSION 0.100.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.26)
+project(libasql VERSION 0.101.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(GenerateExportHeader)

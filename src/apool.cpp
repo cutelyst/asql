@@ -68,8 +68,11 @@ void APool::remove(QStringView poolName)
 
 QStringList APool::pools()
 {
-    auto keys = m_connectionPool.keys();
-    return QStringList{keys.begin(), keys.end()};
+    QStringList keys;
+    for (const auto &conn : m_connectionPool) {
+        keys << conn.name;
+    }
+    return keys;
 }
 
 void APool::pushDatabaseBack(QStringView connectionName, ADriver *driver)
