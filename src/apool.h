@@ -57,6 +57,11 @@ public:
     static void remove(QStringView poolName = defaultPool);
 
     /*!
+     * \brief Returns the available pools
+     */
+    static QStringList pools();
+
+    /*!
      * \brief database
      *
      * This method returns a new database object, unless an idle connection
@@ -104,6 +109,11 @@ public:
     static void setMaxIdleConnections(int max, QStringView poolName = defaultPool);
 
     /*!
+     * \brief Returns maximum number of idle connections of the pool
+     */
+    static int maxIdleConnections(QStringView poolName = defaultPool);
+
+    /*!
      * \brief setMaxConnections maximum number of connections of the pool
      *
      * The default value is 0, which means ilimited, if a limit is set the \sa database method
@@ -115,6 +125,11 @@ public:
      * \param poolName
      */
     static void setMaxConnections(int max, QStringView poolName = defaultPool);
+
+    /*!
+     * \brief Returns maximum number of connections of the pool
+     */
+    static int maxConnections(QStringView poolName = defaultPool);
 
     /*!
      * \brief setSetupCallback setup a connection before being used for the first time

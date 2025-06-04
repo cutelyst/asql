@@ -66,6 +66,12 @@ void APool::remove(QStringView poolName)
     m_connectionPool.remove(poolName);
 }
 
+QStringList APool::pools()
+{
+    auto keys = m_connectionPool.keys();
+    return QStringList{keys.begin(), keys.end()};
+}
+
 void APool::pushDatabaseBack(QStringView connectionName, ADriver *driver)
 {
     auto it = m_connectionPool.find(connectionName);
@@ -238,6 +244,11 @@ void APool::setMaxIdleConnections(int max, QStringView poolName)
     }
 }
 
+int APool::maxIdleConnections(QStringView poolName)
+{
+    return m_connectionPool.value(poolName).maxIdleConnections;
+}
+
 void APool::setMaxConnections(int max, QStringView poolName)
 {
     auto it = m_connectionPool.find(poolName);
@@ -247,6 +258,11 @@ void APool::setMaxConnections(int max, QStringView poolName)
         qCritical(ASQL_POOL) << "Failed to set maximum connections: Database pool NOT FOUND"
                              << poolName;
     }
+}
+
+int APool::maxConnections(QStringView poolName)
+{
+    return m_connectionPool.value(poolName).maximuConnections;
 }
 
 void APool::setSetupCallback(ADatabaseFn cb, QStringView poolName)
