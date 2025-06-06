@@ -69,7 +69,7 @@ public:
 
                 m_result = std::unexpected(QStringLiteral("QObject receiver* destroyed"));
                 if (m_handle) {
-                    m_handle.resume();
+                    m_handle.destroy();
                 }
             });
         }
@@ -170,7 +170,7 @@ public:
                 m_results.clear();
                 m_results.enqueue(std::unexpected(QStringLiteral("QObject receiver* destroyed")));
                 if (m_handle) {
-                    m_handle.resume();
+                    m_handle.destroy();
                 }
             });
         }
@@ -219,7 +219,7 @@ public:
             m_destroyConn = QObject::connect(m_receiver, &QObject::destroyed, [this] {
                 m_result = std::unexpected(QStringLiteral("QObject receiver* destroyed"));
                 if (m_handle) {
-                    m_handle.resume();
+                    m_handle.destroy();
                 }
             });
         }

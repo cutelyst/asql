@@ -332,8 +332,8 @@ int main(int argc, char *argv[])
 
     if (false) {
         auto callPool = []() -> ACoroTerminator {
-            auto _ = qScopeGuard([] { qDebug() << "coro pool exited"; });
-            qDebug() << "coro exec pool started";
+            auto _ = qScopeGuard([] { qDebug() << "callPool exited"; });
+            qDebug() << "callPool started";
 
             auto result = co_await APool::exec(u8"SELECT now()", nullptr, u"invalid");
             if (result.has_value()) {
@@ -365,6 +365,30 @@ int main(int argc, char *argv[])
         };
 
         callPool();
+    }
+
+    if (true) {
+        auto destroyedLambda = []() -> ACoroTerminator {
+            auto _ = qScopeGuard([] { qDebug() << "destroyedLambda exited"; });
+            qDebug() << "destroyedLambda started";
+
+            auto obj = new QObject;
+            QTimer::singleShot(500, obj, [obj] {
+                qDebug() << "Delete Obj later";
+                delete obj;
+            });
+            // Do NOT yield obj here, as obj is a cancelator,
+            // and it should prevent this coroutine to resume
+
+            auto result = co_await APool::exec(u8"SELECT now(), pg_sleep(1)", obj);
+            if (result.has_value()) {
+                qDebug() << "destroyedLambda exec result has value" << result->toJsonObject();
+            } else {
+                qDebug() << "destroyedLambda exec result error" << result.error();
+            }
+        };
+
+        destroyedLambda();
     }
 
     if (false) {
@@ -454,7 +478,7 @@ int main(int argc, char *argv[])
         callJsonBegin();
     }
 
-    if (true) {
+    if (false) {
         auto testPoolSync = []() -> ACoroTerminator {
             {
                 auto db1 = co_await APool::coDatabase(nullptr, u"pool");

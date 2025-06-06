@@ -65,6 +65,25 @@ ACoroTerminator AMigrations::load(ADatabase db, QString name, ADatabase noTransa
     d->db              = db;
     d->noTransactionDB = noTransactionDB;
 
+    if (db.driverName() == u"postgres") {
+        auto result = co_await d->db.coExec(u"SET search_path TO public", this);
+        if (!result) {
+            qDebug(ASQL_MIG) << "Failed to set search_path to public" << result.error();
+            Q_EMIT ready(true, result.error());
+            co_return;
+        }
+
+        if (d->noTransactionDB.isValid()) {
+            result = co_await d->noTransactionDB.coExec(u"SET search_path TO public", this);
+            if (!result) {
+                qDebug(ASQL_MIG) << "Failed to set search_path to public on no-transaction db"
+                                 << result.error();
+                Q_EMIT ready(true, result.error());
+                co_return;
+            }
+        }
+    }
+
     auto result = co_await d->db.coExec(uR"V0G0N(
 CREATE TABLE IF NOT EXISTS asql_migrations (
 name text primary key,

@@ -252,6 +252,30 @@ void TestSqlite::testQueries()
             ACOMPARE_EQ(result->numRowsAffected(), 6);
         };
         rowsAffected();
+
+        auto cancelator = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "cancelator exited" << finished.use_count(); });
+
+            auto cancelator = new QObject;
+            cancelator->deleteLater();
+            auto result = co_await APool::exec("SELECT 1", cancelator);
+            Q_ASSERT_X(true, "cancelator", "Coroutine must not be called");
+        };
+        cancelator();
+
+        auto cancelatorYielded = [finished]() -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "cancelatorYielded exited" << finished.use_count(); });
+
+            auto cancelator = new QObject;
+            co_yield cancelator;
+
+            cancelator->deleteLater();
+            auto result = co_await APool::exec("SELECT 1", cancelator);
+            Q_ASSERT_X(true, "cancelatorYielded", "Coroutine must not be called");
+        };
+        cancelatorYielded();
     }
 
     loop.exec();
