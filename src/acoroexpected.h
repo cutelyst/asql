@@ -142,11 +142,7 @@ public:
             if (result.hasError()) {
                 m_results.enqueue(std::unexpected(result.errorString()));
             } else {
-                if constexpr (std::is_same_v<T, ATransaction>) {
-                    m_results.enqueue(ATransaction(database, true));
-                } else {
-                    m_results.enqueue(result);
-                }
+                m_results.enqueue(result);
             }
 
             if (result.lastResultSet()) {
@@ -185,7 +181,6 @@ public:
 protected:
     friend class ADatabase;
     friend class ACache;
-    friend class ATransaction;
     friend class APool;
     std::function<void(AResult &result)> callback;
     ADatabase database;
