@@ -158,11 +158,12 @@ void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, 
     qDebug(ASQL_PG) << "Open" << connectionInfo();
     m_conn = std::make_unique<APgConn>(connectionInfo());
     if (m_conn->conn()) {
-        m_openCaller                = std::make_unique<OpenCaller>();
-        m_openCaller->driver        = driver;
-        m_openCaller->cb            = cb;
-        m_openCaller->receiverPtr   = receiver;
-        m_openCaller->checkReceiver = static_cast<bool>(receiver);
+        m_openCaller         = std::make_unique<OpenCaller>();
+        m_openCaller->driver = driver;
+        m_openCaller->cb     = cb;
+        if (receiver) {
+            m_openCaller->receiverPtr = receiver;
+        }
 
         const auto socket = m_conn->socket();
         if (socket > 0) {
@@ -383,7 +384,8 @@ bool ADriverPg::isOpen() const
 void ADriverPg::setState(ADatabase::State state, const QString &status)
 {
     m_state = state;
-    if (m_stateChangedCb && (!m_stateChangedReceiverSet || !m_stateChangedReceiver.isNull())) {
+    if (m_stateChangedCb &&
+        (!m_stateChangedReceiver.has_value() || !m_stateChangedReceiver->isNull())) {
         m_stateChangedCb(state, status);
     }
 }
@@ -396,9 +398,10 @@ ADatabase::State ADriverPg::state() const
 void ADriverPg::onStateChanged(QObject *receiver,
                                std::function<void(ADatabase::State, const QString &)> cb)
 {
-    m_stateChangedCb          = cb;
-    m_stateChangedReceiver    = receiver;
-    m_stateChangedReceiverSet = receiver;
+    m_stateChangedCb = cb;
+    if (receiver) {
+        m_stateChangedReceiver = receiver;
+    }
 }
 
 void ADriverPg::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)

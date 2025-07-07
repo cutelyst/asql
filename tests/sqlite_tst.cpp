@@ -53,8 +53,10 @@ void TestSqlite::cleanupTest()
 
 void TestSqlite::testQueries()
 {
+
     QEventLoop loop;
     {
+        // CP.51 this only works because qScopeGuard increases the finished ref count.
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
 

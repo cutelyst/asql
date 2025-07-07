@@ -68,16 +68,14 @@ public:
 
 struct OpenPromise {
     ADatabaseOpenFn cb;
-    QPointer<QObject> receiver;
-    bool checkReceiver;
+    std::optional<QPointer<QObject>> receiver;
 };
 
 struct QueryPromise {
     std::optional<APreparedQuery> preparedQuery;
     AResultFn cb;
     std::shared_ptr<AResultSqlite> result;
-    QPointer<QObject> receiver;
-    bool checkReceiver;
+    std::optional<QPointer<QObject>> receiver;
 };
 
 class ASqliteThread final : public QThread
@@ -191,18 +189,17 @@ public:
                                      const QString &name) override;
 
 private:
-    QPointer<QObject> m_stateChangedReceiver;
+    std::optional<QPointer<QObject>> m_stateChangedReceiver;
     std::function<void(ADatabase::State, const QString &)> m_stateChangedCb;
     std::shared_ptr<ADriver> selfDriver;
     ASqliteThread m_worker;
     QThread m_thread;
-    ADatabase::State m_state       = ADatabase::State::Disconnected;
-    int m_pipelineSync             = 0;
-    int m_queueSize                = 0;
-    bool m_stateChangedReceiverSet = false;
-    bool m_flush                   = false;
-    bool m_queryRunning            = false;
-    bool m_notificationPtrSet      = false;
+    ADatabase::State m_state  = ADatabase::State::Disconnected;
+    int m_pipelineSync        = 0;
+    int m_queueSize           = 0;
+    bool m_flush              = false;
+    bool m_queryRunning       = false;
+    bool m_notificationPtrSet = false;
 };
 
 } // namespace ASql

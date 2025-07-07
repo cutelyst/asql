@@ -216,19 +216,18 @@ private:
     struct OpenCaller {
         std::shared_ptr<ADriver> driver;
         ADatabaseOpenFn cb;
-        QPointer<QObject> receiverPtr;
-        bool checkReceiver = false;
+        std::optional<QPointer<QObject>> receiverPtr;
 
         void emit(bool isOpen, const QString &error)
         {
-            if (cb && (!checkReceiver || !receiverPtr.isNull())) {
+            if (cb && (!receiverPtr.has_value() || !receiverPtr->isNull())) {
                 cb(isOpen, error);
             }
         }
     };
     std::unique_ptr<OpenCaller> m_openCaller;
 
-    QPointer<QObject> m_stateChangedReceiver;
+    std::optional<QPointer<QObject>> m_stateChangedReceiver;
     std::function<void(ADatabase::State, const QString &)> m_stateChangedCb;
     QHash<QString, ANotificationFn> m_subscribedNotifications;
     std::queue<APGQuery> m_queuedQueries;
@@ -238,12 +237,11 @@ private:
     std::unique_ptr<QSocketNotifier> m_readNotify;
     std::unique_ptr<QTimer> m_autoSyncTimer;
     std::unique_ptr<APgConn> m_conn;
-    ADatabase::State m_state       = ADatabase::State::Disconnected;
-    int m_pipelineSync             = 0;
-    bool m_stateChangedReceiverSet = false;
-    bool m_flush                   = false;
-    bool m_queryRunning            = false;
-    bool m_notificationPtrSet      = false;
+    ADatabase::State m_state  = ADatabase::State::Disconnected;
+    int m_pipelineSync        = 0;
+    bool m_flush              = false;
+    bool m_queryRunning       = false;
+    bool m_notificationPtrSet = false;
 };
 
 } // namespace ASql

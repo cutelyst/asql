@@ -27,7 +27,7 @@ ADriverSqlite::ADriverSqlite(const QString &connInfo)
         QMutexLocker _(&m_worker.m_promisesMutex);
         while (!m_worker.m_promisesReady.isEmpty()) {
             QueryPromise promise = m_worker.m_promisesReady.dequeue();
-            if (!promise.checkReceiver || !promise.receiver.isNull()) {
+            if (!promise.receiver.has_value() || !promise.receiver->isNull()) {
                 if (promise.cb) {
                     AResult result{promise.result};
                     promise.cb(result);
@@ -82,10 +82,12 @@ void ADriverSqlite::open(const std::shared_ptr<ADriver> &driver,
     selfDriver = driver;
 
     OpenPromise promise{
-        .cb            = cb,
-        .receiver      = receiver,
-        .checkReceiver = static_cast<bool>(receiver),
+        .cb = cb,
     };
+
+    if (receiver) {
+        promise.receiver = receiver;
+    }
 
     connect(&m_worker, &ASqliteThread::openned, this, [this, promise](bool isOpen, QString error) {
         if (isOpen) {
@@ -94,7 +96,7 @@ void ADriverSqlite::open(const std::shared_ptr<ADriver> &driver,
             setState(ADatabase::State::Disconnected, error);
         }
 
-        if (!promise.checkReceiver || !promise.receiver.isNull()) {
+        if (!promise.receiver.has_value() || !promise.receiver->isNull()) {
             if (promise.cb) {
                 promise.cb(isOpen, error);
             }
@@ -124,7 +126,8 @@ bool ADriverSqlite::isOpen() const
 void ADriverSqlite::setState(ADatabase::State state, const QString &status)
 {
     m_state = state;
-    if (m_stateChangedCb && (!m_stateChangedReceiverSet || !m_stateChangedReceiver.isNull())) {
+    if (m_stateChangedCb &&
+        (!m_stateChangedReceiver.has_value() || !m_stateChangedReceiver->isNull())) {
         m_stateChangedCb(state, status);
     }
 }
@@ -137,9 +140,10 @@ ADatabase::State ADriverSqlite::state() const
 void ADriverSqlite::onStateChanged(QObject *receiver,
                                    std::function<void(ADatabase::State, const QString &)> cb)
 {
-    m_stateChangedCb          = cb;
-    m_stateChangedReceiver    = receiver;
-    m_stateChangedReceiverSet = receiver;
+    m_stateChangedCb = cb;
+    if (receiver) {
+        m_stateChangedReceiver = receiver;
+    }
 }
 
 void ADriverSqlite::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
@@ -166,11 +170,12 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
     selfDriver = db;
 
     QueryPromise data{
-        .cb            = cb,
-        .result        = std::make_shared<AResultSqlite>(),
-        .receiver      = receiver,
-        .checkReceiver = static_cast<bool>(receiver),
+        .cb     = cb,
+        .result = std::make_shared<AResultSqlite>(),
     };
+    if (receiver) {
+        data.receiver = receiver;
+    }
     data.result->m_query.setRawData(query.data(), query.size());
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
@@ -191,11 +196,12 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
     selfDriver = db;
 
     QueryPromise data{
-        .cb            = cb,
-        .result        = std::make_shared<AResultSqlite>(),
-        .receiver      = receiver,
-        .checkReceiver = static_cast<bool>(receiver),
+        .cb     = cb,
+        .result = std::make_shared<AResultSqlite>(),
     };
+    if (receiver) {
+        data.receiver = receiver;
+    }
     data.result->m_query = query.toUtf8();
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
@@ -217,11 +223,12 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
     selfDriver = db;
 
     QueryPromise data{
-        .cb            = cb,
-        .result        = std::make_shared<AResultSqlite>(),
-        .receiver      = receiver,
-        .checkReceiver = static_cast<bool>(receiver),
+        .cb     = cb,
+        .result = std::make_shared<AResultSqlite>(),
     };
+    if (receiver) {
+        data.receiver = receiver;
+    }
     data.result->m_query.setRawData(query.data(), query.size());
     data.result->m_queryArgs = params;
 
@@ -244,11 +251,12 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
     selfDriver = db;
 
     QueryPromise data{
-        .cb            = cb,
-        .result        = std::make_shared<AResultSqlite>(),
-        .receiver      = receiver,
-        .checkReceiver = static_cast<bool>(receiver),
+        .cb     = cb,
+        .result = std::make_shared<AResultSqlite>(),
     };
+    if (receiver) {
+        data.receiver = receiver;
+    }
     data.result->m_query     = query.toUtf8();
     data.result->m_queryArgs = params;
 
@@ -274,9 +282,10 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
         .preparedQuery = query,
         .cb            = cb,
         .result        = std::make_shared<AResultSqlite>(),
-        .receiver      = receiver,
-        .checkReceiver = static_cast<bool>(receiver),
     };
+    if (receiver) {
+        data.receiver = receiver;
+    }
     data.result->m_query     = query.query();
     data.result->m_queryArgs = params;
 
