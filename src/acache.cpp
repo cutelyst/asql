@@ -26,7 +26,8 @@ struct ACacheReceiverCb {
     QPointer<QObject> receiver;
     QObject *checkReceiver = nullptr;
 
-    void emitResult(AResult result) const {
+    void emitResult(AResult result) const
+    {
         if (cb && (checkReceiver == nullptr || !receiver.isNull())) {
             cb(result);
         }
@@ -54,10 +55,7 @@ public:
                        const QVariantList &args,
                        QObject *receiver,
                        AResultFn cb);
-    ACoroTerminator requestData(QString query,
-                     QVariantList args,
-                     QObject *receiver,
-                     AResultFn cb);
+    ACoroTerminator requestData(QString query, QVariantList args, QObject *receiver, AResultFn cb);
 
     QObject *q_ptr;
     QString poolName;
@@ -113,10 +111,8 @@ bool ACachePrivate::searchOrQueue(const QString &query,
     return false;
 }
 
-ACoroTerminator ACachePrivate::requestData(QString query,
-                                QVariantList args,
-                                QObject *receiver,
-                                AResultFn cb)
+ACoroTerminator
+    ACachePrivate::requestData(QString query, QVariantList args, QObject *receiver, AResultFn cb)
 {
     qCDebug(ASQL_CACHE) << "Requesting data" << query.left(15) << args << int(dbSource);
     co_yield q_ptr;
@@ -152,14 +148,14 @@ ACoroTerminator ACachePrivate::requestData(QString query,
     }
 
     ACacheValue cacheValue;
-    cacheValue.args  = args;
+    cacheValue.args = args;
     cacheValue.receivers.emplace_back(cacheReceiver);
 
     cache.emplace(query, std::move(cacheValue));
 
     auto result = co_await localDb.coExec(query, args, q_ptr);
-    bool found = false;
-    auto it = cache.constFind(query);
+    bool found  = false;
+    auto it     = cache.constFind(query);
     while (it != cache.constEnd() && it.key() == query) {
         ACacheValue &value = it.value();
         if (value.args == args) {
@@ -170,10 +166,11 @@ ACoroTerminator ACachePrivate::requestData(QString query,
             std::vector<ACacheReceiverCb> receivers = std::move(value.receivers);
             value.receivers.clear();
 
-            qDebug(ASQL_CACHE) << "Got request data, dispatching to"
-                              << receivers.size() << "receivers" << query.left(15) << args;
+            qDebug(ASQL_CACHE) << "Got request data, dispatching to" << receivers.size()
+                               << "receivers" << query.left(15) << args;
             for (const ACacheReceiverCb &receiverObj : receivers) {
-                qDebug(ASQL_CACHE) << "Dispatching to receiver" << receiverObj.checkReceiver << query.left(15) << args;
+                qDebug(ASQL_CACHE) << "Dispatching to receiver" << receiverObj.checkReceiver
+                                   << query.left(15) << args;
                 receiverObj.emitResult(*result);
             }
             found = true;
@@ -234,7 +231,9 @@ bool ACache::clear(const QString &query, const QVariantList &params)
     return false;
 }
 
-bool ACache::expire(std::chrono::milliseconds maxAge, const QString &query, const QVariantList &params)
+bool ACache::expire(std::chrono::milliseconds maxAge,
+                    const QString &query,
+                    const QVariantList &params)
 {
     Q_D(ACache);
     int ret           = false;
@@ -294,8 +293,9 @@ AExpectedResult ACache::coExec(const QString &query, const QVariantList &args, Q
     return coro;
 }
 
-AExpectedResult
-    ACache::coExecExpiring(const QString &query, std::chrono::milliseconds maxAge, QObject *receiver)
+AExpectedResult ACache::coExecExpiring(const QString &query,
+                                       std::chrono::milliseconds maxAge,
+                                       QObject *receiver)
 {
     AExpectedResult coro(receiver);
     execExpiring(query, maxAge, {}, receiver, coro.callback);
