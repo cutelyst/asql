@@ -136,9 +136,15 @@ public:
      *
      * \param cb
      */
-    void begin(QObject *receiver = nullptr, AResultFn cb = {});
+    [[nodiscard]] AExpectedResult begin(QObject *receiver = nullptr);
 
-    [[nodiscard]] AExpectedTransaction coBegin(QObject *receiver = nullptr);
+    /*!
+     * \brief begin a transaction with a RAII object, this operation usually succeeds,
+     * but one can hook up a callback to check it's result.
+     *
+     * \param cb
+     */
+    [[nodiscard]] AExpectedTransaction beginTransaction(QObject *receiver = nullptr);
 
     /*!
      * \brief commit a transaction, this operation usually succeeds,

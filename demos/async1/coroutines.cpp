@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
             auto db = co_await APool::coDatabase();
 
-            auto transaction = co_await db->coBegin();
+            auto transaction = co_await db->beginTransaction();
             qDebug() << "transaction started";
 
             auto result = co_await db->exec(u8"SELECT now()");

@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 
     []() -> ACoroTerminator {
         auto db = APool::database();
-        auto t  = co_await db.coBegin();
+        auto t  = co_await db.beginTransaction();
         if (t) {
 #if 0
             db.exec(u"SELECT now()"_s, nullptr);
@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
     }();
 
     {
+#if 0
         ATransaction t(APool::database());
         t.begin(nullptr, [t](AResult &result) {
             if (result.hasError()) {
@@ -59,7 +60,6 @@ int main(int argc, char *argv[])
                 return;
             }
 
-#if 0
             t.database().exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
                 if (result.hasError()) {
                     qDebug() << "SELECT error" << result.errorString();
@@ -70,11 +70,12 @@ int main(int argc, char *argv[])
                     qDebug() << "SELECT value" << result.begin().value(0);
                 }
             });
-#endif
         });
+#endif
     }
 
     {
+#if 0
         ATransaction t(APool::database());
         t.begin(nullptr, [t](AResult &result) {
             if (result.hasError()) {
@@ -82,7 +83,6 @@ int main(int argc, char *argv[])
                 return;
             }
 
-#if 0
             for (int i = 0; i < 5; ++i) {
                 t.database().exec(u"SELECT $1"_s,
                                   {
@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
                     });
                 });
             }
-#endif
         });
+#endif
     }
 
     app.exec();

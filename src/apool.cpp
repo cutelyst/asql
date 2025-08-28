@@ -491,16 +491,18 @@ AExpectedTransaction APool::begin(QObject *receiver, QStringView poolName)
     auto cb = coro.callback;
 
     // TODO fix me &coro will crash
-    database(receiver, [cb, receiver, &coro](ADatabase db) {
-        if (db.isValid()) {
-            coro.database = db;
-            db.begin(receiver, cb);
-            return;
+    [&coro](AResultFn cb, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+        auto db = co_await coDatabase(receiver, poolName);
+        if (db) {
+            auto result = co_await db->begin(receiver);
+            if (result) {
+                cb(*result);
+            }
         }
 
         AResult result;
         cb(result);
-    }, poolName);
+    }(cb, receiver, poolName);
 
     return coro;
 }

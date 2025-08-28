@@ -72,15 +72,17 @@ ATransaction &ATransaction::operator=(const ATransaction &copy)
     return *this;
 }
 
-void ATransaction::begin(QObject *receiver, AResultFn cb)
+AExpectedResult ATransaction::begin(QObject *receiver)
 {
     Q_ASSERT(d);
     if (!d->running) {
         d->running = true;
-        d->db.begin(receiver, cb);
+        return d->db.begin(receiver);
     } else {
         qWarning(ASQL_TRANSACTION, "Transaction already started");
     }
+
+    return {receiver};
 }
 
 AExpectedResult ATransaction::commit(QObject *receiver)

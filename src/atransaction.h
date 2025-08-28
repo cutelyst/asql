@@ -43,7 +43,7 @@ public:
      *
      * \param cb
      */
-    void begin(QObject *receiver = nullptr, AResultFn cb = {});
+    [[nodiscard]] AExpectedResult begin(QObject *receiver = nullptr);
 
     /*!
      * \brief commit a transaction only if our usage count equals 1
