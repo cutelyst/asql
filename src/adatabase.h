@@ -154,7 +154,7 @@ public:
      *
      * \param cb
      */
-    void rollback(QObject *receiver = nullptr, AResultFn cb = {});
+    [[nodiscard]] AExpectedResult rollback(QObject *receiver = nullptr);
 
     /*!
      * \brief exec excutes a \param query against this database connection,

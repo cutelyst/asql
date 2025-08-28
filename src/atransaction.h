@@ -69,9 +69,7 @@ public:
      *
      * \param cb
      */
-    void rollback(QObject *receiver = nullptr, AResultFn cb = {});
-
-    [[nodiscard]] AExpectedResult coRollback(QObject *receiver = nullptr);
+    [[nodiscard]] AExpectedResult rollback(QObject *receiver = nullptr);
 
     [[nodiscard]] bool isActive() const;
 

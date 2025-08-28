@@ -98,24 +98,17 @@ AExpectedResult ATransaction::commit(QObject *receiver)
     return {receiver};
 }
 
-void ATransaction::rollback(QObject *receiver, AResultFn cb)
+AExpectedResult ATransaction::rollback(QObject *receiver)
 {
     Q_ASSERT(d);
     if (d->running) {
         d->running = false;
-        d->db.rollback(receiver, cb);
+        return d->db.rollback(receiver);
     } else {
         qWarning(ASQL_TRANSACTION, "Transaction not started");
     }
-}
 
-AExpectedResult ATransaction::coRollback(QObject *receiver)
-{
-    Q_ASSERT(d);
-    d->running = false;
-    AExpectedResult coro(receiver);
-    d->db.rollback(receiver, coro.callback);
-    return coro;
+    return {receiver};
 }
 
 bool ATransaction::isActive() const

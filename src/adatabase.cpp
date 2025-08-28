@@ -103,10 +103,12 @@ AExpectedResult ADatabase::commit(QObject *receiver)
     return coro;
 }
 
-void ADatabase::rollback(QObject *receiver, AResultFn cb)
+AExpectedResult ADatabase::rollback(QObject *receiver)
 {
     Q_ASSERT(d);
-    d->rollback(d, receiver, cb);
+    AExpectedResult coro(receiver);
+    d->rollback(d, receiver, coro.callback);
+    return coro;
 }
 
 AExpectedResult ADatabase::exec(QStringView query, QObject *receiver)
