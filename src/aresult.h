@@ -129,7 +129,7 @@ public:
     [[nodiscard]] QJsonObject toJsonObjectArray() const;
 
     /*!
-     * \brief toJsonObjectArray returns all rows as JSON object with columns as keys and rows as
+     * \brief toJsonObjectIndexed returns all rows as JSON object with columns as keys and rows as
      * arrays
      *
      * This is a more compact representation than \sa toJsonArrayObject.
@@ -138,6 +138,19 @@ public:
      */
     [[nodiscard]] QJsonObject toJsonObjectIndexed(QStringView columnKey = u"columns",
                                                   QStringView rowsKey   = u"rows") const;
+
+    /*!
+     * \brief toJsonFlattened returns all rows into a single "data" array, "columns" with column
+     * names and "rows" with the number of rows.
+     *
+     * This is the most compact representation of the data set, which is also faster
+     * to parse and faster to access the data since it's contiguos.
+     *
+     * The formula to retrive some row:column data is data[row * NUM_COLUMNS + column].
+     *
+     * \return { "columns": ["col1", "col2"], "data": [ 1, "foo", 2, "bar" ], "rows": 2 }
+     */
+    [[nodiscard]] QJsonObject toJsonFlattened() const;
 
     /*!
      * \brief toCborArrayMap returns all rows as an array of Cbor maps.
@@ -157,6 +170,19 @@ public:
      */
     [[nodiscard]] QCborMap toCborMapIndexed(QStringView columnKey = u"columns",
                                             QStringView rowsKey   = u"rows") const;
+
+    /*!
+     * \brief toCBorFlattened returns all rows into a single "data" array, "columns" with column
+     * names and "rows" with the number of rows.
+     *
+     * This is the most compact representation of the data set, which is also faster
+     * to parse and faster to access the data since it's contiguos.
+     *
+     * The formula to retrive some row:column data is data[row * NUM_COLUMNS + column].
+     *
+     * \return { "columns": ["col1", "col2"], "data": [ 1, "foo", 2, "bar" ], "rows": 2 }
+     */
+    [[nodiscard]] QCborMap toCBorFlattened() const;
 
     AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;
