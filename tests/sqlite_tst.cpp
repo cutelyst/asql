@@ -203,10 +203,10 @@ void TestSqlite::testQueries()
             AVERIFY(db);
 
             for (int i = 0; i < 5; ++i) {
-                auto result = co_await db->coExec(APreparedQueryLiteral(u"SELECT ?"_s),
-                                                  {
-                                                      i,
-                                                  });
+                auto result = co_await db->exec(APreparedQueryLiteral(u"SELECT ?"_s),
+                                                {
+                                                    i,
+                                                });
                 AVERIFY(result);
                 ACOMPARE_EQ((*result)[0][0].toInt(), i);
             }
@@ -220,36 +220,36 @@ void TestSqlite::testQueries()
             auto db = co_await APool::coDatabase(); // Must be the same memory db
             AVERIFY(db);
 
-            auto create = co_await db->coExec(u"CREATE TABLE temp (name TEXT)");
+            auto create = co_await db->exec(u"CREATE TABLE temp (name TEXT)");
             AVERIFY(create);
             ACOMPARE_EQ(create->numRowsAffected(), 0);
 
             auto result =
-                co_await db->coExec(u8"INSERT INTO temp (name) VALUES ('foo'),('bar'),('baz')");
+                co_await db->exec(u8"INSERT INTO temp (name) VALUES ('foo'),('bar'),('baz')");
             AVERIFY(result);
             ACOMPARE_EQ(result->numRowsAffected(), 3);
 
-            result = co_await db->coExec(u"INSERT INTO temp (name) VALUES (?),(?)"_s,
-                                         {
-                                             4,
-                                             5,
-                                         });
+            result = co_await db->exec(u"INSERT INTO temp (name) VALUES (?),(?)"_s,
+                                       {
+                                           4,
+                                           5,
+                                       });
             AVERIFY(result);
             ACOMPARE_EQ(result->numRowsAffected(), 2);
 
             result =
-                co_await db->coExec(APreparedQueryLiteral(u8"INSERT INTO temp (name) VALUES (?)"),
-                                    {
-                                        6,
-                                    });
+                co_await db->exec(APreparedQueryLiteral(u8"INSERT INTO temp (name) VALUES (?)"),
+                                  {
+                                      6,
+                                  });
             AVERIFY(result);
             ACOMPARE_EQ(result->numRowsAffected(), 1);
 
-            result = co_await db->coExec(u8"UPDATE temp SET name = null");
+            result = co_await db->exec(u8"UPDATE temp SET name = null");
             AVERIFY(result);
             ACOMPARE_EQ(result->numRowsAffected(), 6);
 
-            result = co_await db->coExec(u8"DELETE FROM temp");
+            result = co_await db->exec(u8"DELETE FROM temp");
             AVERIFY(result);
             ACOMPARE_EQ(result->numRowsAffected(), 6);
         };

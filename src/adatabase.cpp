@@ -107,7 +107,7 @@ void ADatabase::rollback(QObject *receiver, AResultFn cb)
     d->rollback(d, receiver, cb);
 }
 
-AExpectedResult ADatabase::coExec(QStringView query, QObject *receiver)
+AExpectedResult ADatabase::exec(QStringView query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
@@ -115,7 +115,7 @@ AExpectedResult ADatabase::coExec(QStringView query, QObject *receiver)
     return coro;
 }
 
-AExpectedResult ADatabase::coExec(QStringView query, const QVariantList &params, QObject *receiver)
+AExpectedResult ADatabase::exec(QStringView query, const QVariantList &params, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
@@ -139,7 +139,7 @@ AExpectedMultiResult ADatabase::execMulti(QUtf8StringView query, QObject *receiv
     return coro;
 }
 
-AExpectedResult ADatabase::coExec(QUtf8StringView query, QObject *receiver)
+AExpectedResult ADatabase::exec(QUtf8StringView query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
@@ -148,7 +148,7 @@ AExpectedResult ADatabase::coExec(QUtf8StringView query, QObject *receiver)
 }
 
 AExpectedResult
-    ADatabase::coExec(QUtf8StringView query, const QVariantList &params, QObject *receiver)
+    ADatabase::exec(QUtf8StringView query, const QVariantList &params, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
@@ -156,7 +156,7 @@ AExpectedResult
     return coro;
 }
 
-AExpectedResult ADatabase::coExec(const APreparedQuery &query, QObject *receiver)
+AExpectedResult ADatabase::exec(const APreparedQuery &query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
@@ -165,7 +165,7 @@ AExpectedResult ADatabase::coExec(const APreparedQuery &query, QObject *receiver
 }
 
 AExpectedResult
-    ADatabase::coExec(const APreparedQuery &query, const QVariantList &params, QObject *receiver)
+    ADatabase::exec(const APreparedQuery &query, const QVariantList &params, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);

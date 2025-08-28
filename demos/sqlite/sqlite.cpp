@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
             }
 
             for (int i = 0; i < 3; ++i) {
-                auto result = co_await db->coExec(APreparedQueryLiteral(u"SELECT random()"_s));
+                auto result = co_await db->exec(APreparedQueryLiteral(u"SELECT random()"_s));
                 if (result) {
                     qDebug() << i << "coro result has value" << result->toJsonObject();
                 } else {

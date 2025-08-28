@@ -47,14 +47,14 @@ int main(int argc, char *argv[])
             auto transaction = co_await db->coBegin();
             qDebug() << "transaction started";
 
-            auto result = co_await db->coExec(u8"SELECT now()");
+            auto result = co_await db->exec(u8"SELECT now()");
             if (result.has_value()) {
                 qDebug() << "coro result has value" << result->toJsonObject();
             } else {
                 qDebug() << "coro result error" << result.error();
             }
 
-            auto result2 = co_await db->coExec(u8"SELECT now()");
+            auto result2 = co_await db->exec(u8"SELECT now()");
             if (result2.has_value()) {
                 qDebug() << "coro result2 has value" << result2->toJsonObject();
             } else {
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
             qDebug() << "coro db invalid started";
 
             ADatabase db;
-            auto result = co_await db.coExec(u"SELECT now()"_s, nullptr);
+            auto result = co_await db.exec(u"SELECT now()"_s, nullptr);
             if (result.has_value()) {
                 qDebug() << "coro result has value" << result->toJsonObject();
             } else {
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
                     co_return;
                 }
 
-                auto result = co_await db->coExec(u"SELECT now() at time zone 'UTC'"_s, nullptr);
+                auto result = co_await db->exec(u"SELECT now() at time zone 'UTC'"_s, nullptr);
                 if (result.has_value()) {
                     qDebug() << "coro result has value" << result->toJsonArrayObject();
                     for (const auto &row : *result) {
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
             // });
             // co_yield obj; // so that this promise is destroyed if this object is destroyed
 
-            auto result = co_await db->coExec(u"SELECT now(), pg_sleep(1)"_s, obj);
+            auto result = co_await db->exec(u"SELECT now(), pg_sleep(1)"_s, obj);
             if (result.has_value()) {
                 qDebug() << "coro result has value" << result->toJsonObject();
                 co_return result->toJsonObject();
@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 
             auto db = co_await APool::coDatabase();
 
-            auto result = co_await db->coExec(u8"SELECT now(), pg_sleep(2)", obj);
+            auto result = co_await db->exec(u8"SELECT now(), pg_sleep(2)", obj);
             if (result.has_value()) {
                 qDebug() << "coro result has value" << result->toJsonObject();
             } else {
@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
 
             auto db = co_await APool::coDatabase();
 
-            auto result = co_await db->coExec(u8"SELECT now()", obj);
+            auto result = co_await db->exec(u8"SELECT now()", obj);
             if (result.has_value()) {
                 qDebug() << "coro result has value" << result->toJsonObject();
             } else {
@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
                 qDebug() << "coro exec t error" << t.error();
             }
 
-            auto result = co_await t->database().coExec(u8"SELECT now()", nullptr);
+            auto result = co_await t->database().exec(u8"SELECT now()", nullptr);
             if (result.has_value()) {
                 qDebug() << "coro exec result has value" << result->toJsonObject();
             } else {

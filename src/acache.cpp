@@ -153,7 +153,7 @@ ACoroTerminator
 
     cache.emplace(query, std::move(cacheValue));
 
-    auto result = co_await localDb.coExec(query, args, q_ptr);
+    auto result = co_await localDb.exec(query, args, q_ptr);
     bool found  = false;
     auto it     = cache.constFind(query);
     while (it != cache.constEnd() && it.key() == query) {
@@ -259,8 +259,8 @@ int ACache::expireAll(std::chrono::milliseconds maxAge)
     Q_D(ACache);
     int ret           = 0;
     const auto cutAge = steady_clock::now() - maxAge;
-    auto it           = d->cache.constBegin();
-    while (it != d->cache.constEnd()) {
+    auto it           = d->cache.begin();
+    while (it != d->cache.end()) {
         const ACacheValue &value = *it;
         if (value.hasResultTP.has_value() && value.hasResultTP.value() < cutAge) {
             it = d->cache.erase(it);

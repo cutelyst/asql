@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setSetupCallback([](ADatabase db) -> ACoroTerminator {
         qDebug() << "setup db";
-        auto result = co_await db.coExec(u"SET TIME ZONE 'Europe/Rome'", nullptr);
+        auto result = co_await db.exec(u"SET TIME ZONE 'Europe/Rome'", nullptr);
         if (result) {
             qDebug() << "SETUP" << result->toJsonObject();
         }
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
     APool::setReuseCallback([](ADatabase db) -> ACoroTerminator {
         qDebug() << "reuse db";
-        auto result = co_await db.coExec(u"DISCARD ALL", nullptr);
+        auto result = co_await db.exec(u"DISCARD ALL", nullptr);
         if (result) {
             qDebug() << "SETUP" << result->toJsonObject();
         }

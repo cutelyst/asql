@@ -66,7 +66,7 @@ ACoroTerminator AMigrations::load(ADatabase db, QString name, ADatabase noTransa
     d->noTransactionDB = noTransactionDB;
 
     if (db.driverName() == u"postgres") {
-        auto result = co_await d->db.coExec(u"SET search_path TO public", this);
+        auto result = co_await d->db.exec(u"SET search_path TO public", this);
         if (!result) {
             qDebug(ASQL_MIG) << "Failed to set search_path to public" << result.error();
             Q_EMIT ready(true, result.error());
@@ -74,7 +74,7 @@ ACoroTerminator AMigrations::load(ADatabase db, QString name, ADatabase noTransa
         }
 
         if (d->noTransactionDB.isValid()) {
-            result = co_await d->noTransactionDB.coExec(u"SET search_path TO public", this);
+            result = co_await d->noTransactionDB.exec(u"SET search_path TO public", this);
             if (!result) {
                 qDebug(ASQL_MIG) << "Failed to set search_path to public on no-transaction db"
                                  << result.error();
@@ -84,13 +84,13 @@ ACoroTerminator AMigrations::load(ADatabase db, QString name, ADatabase noTransa
         }
     }
 
-    auto result = co_await d->db.coExec(uR"V0G0N(
+    auto result = co_await d->db.exec(uR"V0G0N(
 CREATE TABLE IF NOT EXISTS asql_migrations (
 name text primary key,
 version bigint not null check (version >= 0)
 )
 )V0G0N",
-                                        this);
+                                      this);
     if (!result) {
         qDebug(ASQL_MIG) << "Create migrations table" << result.error();
     }
@@ -103,11 +103,11 @@ version bigint not null check (version >= 0)
         return u"SELECT version FROM asql_migrations WHERE name = $1"_s;
     }();
 
-    result = co_await d->db.coExec(query,
-                                   {
-                                       name,
-                                   },
-                                   this);
+    result = co_await d->db.exec(query,
+                                 {
+                                     name,
+                                 },
+                                 this);
     if (!result) {
         Q_EMIT ready(true, result.error());
         co_return;
@@ -279,11 +279,11 @@ ACoroTerminator AMigrations::migrate(int targetVersion,
         return u"SELECT version FROM asql_migrations WHERE name = $1 FOR UPDATE"_s;
     }();
 
-    auto result = co_await d->db.coExec(query,
-                                        {
-                                            d->name,
-                                        },
-                                        this);
+    auto result = co_await d->db.exec(query,
+                                      {
+                                          d->name,
+                                      },
+                                      this);
     if (!result) {
         cb(true, result.error());
         co_return;
@@ -325,7 +325,7 @@ ACoroTerminator AMigrations::migrate(int targetVersion,
             co_return;
         }
 
-        result = co_await d->db.coExec(migration.versionQuery, this);
+        result = co_await d->db.exec(migration.versionQuery, this);
         if (!result) {
             qCritical(ASQL_MIG) << "Failed to update version" << result.error();
             cb(true, result.error());

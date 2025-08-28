@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
             // TODO need to store a list of awaitables
             for (int i = 0; i < 10; ++i) {
-                auto result = co_await db.coExec(u"SELECT now(), $1", {i}, nullptr);
+                auto result = co_await db.exec(u"SELECT now(), $1", {i}, nullptr);
                 if (!result) {
                     qDebug() << "PIPELINE SELECT error" << i << result.error();
                     co_return;

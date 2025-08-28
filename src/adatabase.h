@@ -167,7 +167,7 @@ public:
      * \param query
      * \param receiver that tracks the lifetime of this query
      */
-    [[nodiscard]] AExpectedResult coExec(QStringView query, QObject *receiver = nullptr);
+    [[nodiscard]] AExpectedResult exec(QStringView query, QObject *receiver = nullptr);
 
     /*!
      * \brief exec excutes a \param query against this database connection,
@@ -183,7 +183,7 @@ public:
      * \param query
      * \param receiver that tracks the lifetime of this query
      */
-    [[nodiscard]] AExpectedResult coExec(QUtf8StringView query, QObject *receiver = nullptr);
+    [[nodiscard]] AExpectedResult exec(QUtf8StringView query, QObject *receiver = nullptr);
 
     /*!
      *
@@ -198,7 +198,7 @@ public:
      * \param receiver that tracks the lifetime of this query
      */
     [[nodiscard]] AExpectedResult
-        coExec(QStringView query, const QVariantList &params, QObject *receiver = nullptr);
+        exec(QStringView query, const QVariantList &params, QObject *receiver = nullptr);
 
     /*!
      *
@@ -216,7 +216,7 @@ public:
      * \param receiver that tracks the lifetime of this query
      */
     [[nodiscard]] AExpectedResult
-        coExec(QUtf8StringView query, const QVariantList &params, QObject *receiver = nullptr);
+        exec(QUtf8StringView query, const QVariantList &params, QObject *receiver = nullptr);
 
     /*!
      * \brief exec executes a prepared \param query against this database connection
@@ -230,7 +230,7 @@ public:
      * \param query
      * \param cb
      */
-    [[nodiscard]] AExpectedResult coExec(const APreparedQuery &query, QObject *receiver = nullptr);
+    [[nodiscard]] AExpectedResult exec(const APreparedQuery &query, QObject *receiver = nullptr);
 
     /*!
      * \brief exec executes a prepared \param query against this database connection
@@ -244,9 +244,8 @@ public:
      * \param query
      * \param cb
      */
-    [[nodiscard]] AExpectedResult coExec(const APreparedQuery &query,
-                                         const QVariantList &params,
-                                         QObject *receiver = nullptr);
+    [[nodiscard]] AExpectedResult
+        exec(const APreparedQuery &query, const QVariantList &params, QObject *receiver = nullptr);
 
     /*!
      * \brief exec excutes a \param query against this database connection,

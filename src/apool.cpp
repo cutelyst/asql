@@ -298,7 +298,7 @@ AExpectedResult APool::exec(QStringView query, QObject *receiver, QStringView po
     [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
-            auto result = co_await db->coExec(query, receiver);
+            auto result = co_await db->exec(query, receiver);
             if (result) {
                 cb(*result);
             }
@@ -319,7 +319,7 @@ AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringVie
     [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
-            auto result = co_await db->coExec(query, receiver);
+            auto result = co_await db->exec(query, receiver);
             if (result) {
                 cb(*result);
             }
@@ -397,7 +397,7 @@ AExpectedResult APool::exec(const APreparedQuery &query, QObject *receiver, QStr
     [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
-            auto result = co_await db->coExec(query, receiver);
+            auto result = co_await db->exec(query, receiver);
             if (result) {
                 cb(*result);
             }
@@ -422,7 +422,7 @@ AExpectedResult APool::exec(QStringView query,
         -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
-            auto result = co_await db->coExec(query, params, receiver);
+            auto result = co_await db->exec(query, params, receiver);
             if (result) {
                 cb(*result);
             }
@@ -447,7 +447,7 @@ AExpectedResult APool::exec(QUtf8StringView query,
         -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
-            auto result = co_await db->coExec(query, params, receiver);
+            auto result = co_await db->exec(query, params, receiver);
             if (result) {
                 cb(*result);
             }
@@ -472,7 +472,7 @@ AExpectedResult APool::exec(const APreparedQuery &query,
         -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
-            auto result = co_await db->coExec(query, params, receiver);
+            auto result = co_await db->exec(query, params, receiver);
             if (result) {
                 cb(*result);
             }
