@@ -156,26 +156,133 @@ public:
      */
     void rollback(QObject *receiver = nullptr, AResultFn cb = {});
 
+    /*!
+     * \brief exec excutes a \param query against this database connection,
+     * once done an AResult object will have the retrieved data if any, always
+     * check for AExpectedResult::error() to see if the query was successful.
+     *
+     * Postgres and SQLite allows for multiple commands to be sent, in this case you are
+     * expected to co_await only once. Use \sa execMulti for such cases.
+     *
+     * \param query
+     * \param receiver that tracks the lifetime of this query
+     */
     [[nodiscard]] AExpectedResult coExec(QStringView query, QObject *receiver = nullptr);
 
+    /*!
+     * \brief exec excutes a \param query against this database connection,
+     * once done an AResult object will have the retrieved data if any, always
+     * check for AExpectedResult::error() to see if the query was successful.
+     *
+     * Postgres and SQLite allows for multiple commands to be sent, in this case you are
+     * expected to co_await only once. Use \sa execMulti for such cases.
+     *
+     * \note Since ASql might queue queries only use this method for strings that can outlive
+     * the query execution, such as string literals.
+     *
+     * \param query
+     * \param receiver that tracks the lifetime of this query
+     */
+    [[nodiscard]] AExpectedResult coExec(QUtf8StringView query, QObject *receiver = nullptr);
+
+    /*!
+     *
+     * \brief exec excutes a \param query against this database connection,
+     * once done an AResult object will have the retrieved data if any, always
+     * check for AExpectedResult::error() to see if the query was successful.
+     *
+     * Postgres and SQLite allows for multiple commands to be sent, in this case you are
+     * expected to co_await only once. Use \sa execMulti for such cases.
+     *
+     * \param query
+     * \param receiver that tracks the lifetime of this query
+     */
     [[nodiscard]] AExpectedResult
         coExec(QStringView query, const QVariantList &params, QObject *receiver = nullptr);
 
-    [[nodiscard]] AExpectedMultiResult execMulti(QStringView query, QObject *receiver = nullptr);
-
-    [[nodiscard]] AExpectedMultiResult execMulti(QUtf8StringView query,
-                                                 QObject *receiver = nullptr);
-
-    [[nodiscard]] AExpectedResult coExec(QUtf8StringView query, QObject *receiver = nullptr);
-
+    /*!
+     *
+     * \brief exec excutes a \param query against this database connection,
+     * once done an AResult object will have the retrieved data if any, always
+     * check for AExpectedResult::error() to see if the query was successful.
+     *
+     * Postgres and SQLite allows for multiple commands to be sent, in this case you are
+     * expected to co_await only once. Use \sa execMulti for such cases.
+     *
+     * \note Since ASql might queue queries only use this method for strings that can outlive
+     * the query execution, such as string literals.
+     *
+     * \param query
+     * \param receiver that tracks the lifetime of this query
+     */
     [[nodiscard]] AExpectedResult
         coExec(QUtf8StringView query, const QVariantList &params, QObject *receiver = nullptr);
 
+    /*!
+     * \brief exec executes a prepared \param query against this database connection
+     * with the following \p params to be bound,
+     * once done AResult object will have the retrieved data if any, always
+     * check for AResult::hasError() to see if the query was successful.
+     *
+     * \note For proper usage of APreparedQuery see it's documentation.
+     * \note Postgres does not allow for multiple commands on prepared queries.
+     *
+     * \param query
+     * \param cb
+     */
     [[nodiscard]] AExpectedResult coExec(const APreparedQuery &query, QObject *receiver = nullptr);
 
+    /*!
+     * \brief exec executes a prepared \param query against this database connection
+     * with the following \p params to be bound,
+     * once done AResult object will have the retrieved data if any, always
+     * check for AResult::hasError() to see if the query was successful.
+     *
+     * \note For proper usage of APreparedQuery see it's documentation.
+     * \note Postgres does not allow for multiple commands on prepared queries.
+     *
+     * \param query
+     * \param cb
+     */
     [[nodiscard]] AExpectedResult coExec(const APreparedQuery &query,
                                          const QVariantList &params,
                                          QObject *receiver = nullptr);
+
+    /*!
+     * \brief exec excutes a \param query against this database connection,
+     * once done an AResult object will have the retrieved data if any, always
+     * check for AExpectedResult::error() to see if the query was successful.
+     *
+     * Postgres allows for multiple commands to be sent, in this case you should co_await
+     * for more results, check for AResult::lastResultSet() before that,
+     * if one of the commands fails the subsequently ones will not be delivered, which
+     * is why checking for AResult::lastResultSet() is important. This feature is
+     * not supported by Postgres on the method that accepts params.
+     *
+     * \param query
+     * \param receiver that tracks the lifetime of this query
+     */
+    [[nodiscard]] AExpectedMultiResult execMulti(QStringView query, QObject *receiver = nullptr);
+
+    /*!
+     * \brief exec excutes a \param query against this database connection,
+     * once done an AResult object will have the retrieved data if any, always
+     * check for AExpectedResult::error() to see if the query was successful.
+     *
+     * Postgres allows for multiple commands to be sent, in this case you should co_await
+     * for more results, check for AResult::lastResultSet() before that,
+     * if one of the commands fails the subsequently ones will not be delivered, which
+     * is why checking for AResult::lastResultSet() is important. This feature is
+     * not supported by Postgres on the method that accepts params.
+     *
+     * \note Since ASql might queue queries only use this method for strings that can outlive
+     * the query execution, such as string literals.
+     *
+     * \param query
+     * \param receiver that tracks the lifetime of this query
+     */
+    [[nodiscard]] AExpectedMultiResult execMulti(QUtf8StringView query,
+                                                 QObject *receiver = nullptr);
 
     /*!
      * \brief exec excutes a \param query against this database connection,
