@@ -95,10 +95,12 @@ AExpectedTransaction ADatabase::coBegin(QObject *receiver)
     return coro;
 }
 
-void ADatabase::commit(QObject *receiver, AResultFn cb)
+AExpectedResult ADatabase::commit(QObject *receiver)
 {
     Q_ASSERT(d);
-    d->commit(d, receiver, cb);
+    AExpectedResult coro(receiver);
+    d->commit(d, receiver, coro.callback);
+    return coro;
 }
 
 void ADatabase::rollback(QObject *receiver, AResultFn cb)

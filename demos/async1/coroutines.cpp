@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
                 qDebug() << "coro result2 error" << result2.error();
             }
 
-            auto commit = co_await transaction->coCommit();
+            auto commit = co_await transaction->commit();
             if (commit.has_value()) {
                 qDebug() << "coro commit has value" << commit->toJsonObject();
             } else {

@@ -57,9 +57,7 @@ public:
      *
      * \param cb
      */
-    void commit(QObject *receiver = nullptr, AResultFn cb = {});
-
-    [[nodiscard]] AExpectedResult coCommit(QObject *receiver = nullptr);
+    [[nodiscard]] AExpectedResult commit(QObject *receiver = nullptr);
 
     /*!
      * \brief rollback a transaction, this operation usually succeeds,
