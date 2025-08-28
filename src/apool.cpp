@@ -69,7 +69,7 @@ void APool::remove(QStringView poolName)
 QStringList APool::pools()
 {
     QStringList keys;
-    for (const auto &conn : m_connectionPool) {
+    for (const auto &conn : std::as_const(m_connectionPool)) {
         keys << conn.name;
     }
     return keys;
