@@ -173,48 +173,6 @@ AExpectedResult
     return coro;
 }
 
-void ADatabase::exec(QStringView query, QObject *receiver, AResultFn cb)
-{
-    Q_ASSERT(d);
-    d->exec(d, query, receiver, cb);
-}
-
-void ADatabase::exec(QUtf8StringView query, QObject *receiver, AResultFn cb)
-{
-    Q_ASSERT(d);
-    d->exec(d, query, receiver, cb);
-}
-
-void ADatabase::exec(const APreparedQuery &query, QObject *receiver, AResultFn cb)
-{
-    Q_ASSERT(d);
-    d->exec(d, query, {}, receiver, cb);
-}
-
-void ADatabase::exec(QStringView query, const QVariantList &params, QObject *receiver, AResultFn cb)
-{
-    Q_ASSERT(d);
-    d->exec(d, query, params, receiver, cb);
-}
-
-void ADatabase::exec(QUtf8StringView query,
-                     const QVariantList &params,
-                     QObject *receiver,
-                     AResultFn cb)
-{
-    Q_ASSERT(d);
-    d->exec(d, query, params, receiver, cb);
-}
-
-void ADatabase::exec(const APreparedQuery &query,
-                     const QVariantList &params,
-                     QObject *receiver,
-                     AResultFn cb)
-{
-    Q_ASSERT(d);
-    d->exec(d, query, params, receiver, cb);
-}
-
 void ADatabase::setLastQuerySingleRowMode()
 {
     Q_ASSERT(d);

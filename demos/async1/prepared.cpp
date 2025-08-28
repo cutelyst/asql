@@ -40,22 +40,23 @@ int main(int argc, char *argv[])
         Q_ASSERT(q1.identification() != q2.identification());
     }
 
-    auto callBD = []() {
-        auto db = APool::database();
-        db.exec(APreparedQuery(u"SELECT now()"), nullptr, [=](AResult &result) {
-            if (result.hasError()) {
-                qDebug() << "SELECT operator error" << result.errorString();
-                return;
-            }
+    auto callBD = []() -> ACoroTerminator {
+        // auto db = APool::database();
+        // db.exec(APreparedQuery(u"SELECT now()"), nullptr, [=](AResult &result) {
+        //     if (result.hasError()) {
+        //         qDebug() << "SELECT operator error" << result.errorString();
+        //         return;
+        //     }
 
-            qDebug() << "PREPARED operator size" << result.toListHash();
-        });
+        //     qDebug() << "PREPARED operator size" << result.toListHash();
+        // });
     };
 
     callBD();
 
     callBD();
 
+#if 0
     auto simpleDb = APool::database();
     simpleDb.exec(
         APreparedQuery(u"SELECT $1, now()"), {qint64(12345)}, nullptr, [=](AResult &result) {
@@ -196,6 +197,6 @@ int main(int argc, char *argv[])
 
     loopFn(1);
     loopFn(2);
-
+#endif
     app.exec();
 }

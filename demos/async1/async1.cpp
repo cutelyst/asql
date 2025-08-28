@@ -27,6 +27,7 @@ using namespace Qt::StringLiterals;
 void recursiveLoop()
 {
     auto db = APool::database(u"memory_loop");
+#if 0
     db.exec(u"SELECT now()", {QJsonObject{{u"foo"_s, true}}}, nullptr, [](AResult &result) {
         if (result.hasError()) {
             qDebug() << "Error memory_loop" << result.errorString();
@@ -34,6 +35,7 @@ void recursiveLoop()
             recursiveLoop();
         }
     });
+#endif
 }
 
 int main(int argc, char *argv[])
@@ -43,6 +45,7 @@ int main(int argc, char *argv[])
     {
         APool::create(APg::factory(u"postgres:///")), u"move_db_pool"_s;
         APool::setMaxConnections(1, u"move_db_pool");
+#if 0
         APool::database(nullptr, [](ADatabase db) {
             db.exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
                 qDebug() << "=====iterator single row" << result.toHash();
@@ -59,6 +62,7 @@ int main(int argc, char *argv[])
                 }
             });
         }, u"move_db_pool");
+#endif
     }
 
     {
@@ -66,6 +70,7 @@ int main(int argc, char *argv[])
         APool::create(APg::factory(u"postgres:///")), u"delete_db_after_use"_s;
         APool::setMaxIdleConnections(0, u"delete_db_after_use");
 
+#if 0
         {
             APool::database(u"delete_db_after_use")
                 .exec(u"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
@@ -75,6 +80,7 @@ int main(int argc, char *argv[])
                 }
             });
         }
+#endif
     }
 
     {
@@ -94,6 +100,7 @@ int main(int argc, char *argv[])
     APool::setMaxIdleConnections(10);
 
     {
+#if 0
         auto db = APool::database();
         // Zero-copy and zero allocation
         db.exec(u8"SELECT 'I ♥ Cutelyst!' AS utf8", nullptr, [](AResult &result) {
@@ -175,8 +182,10 @@ int main(int argc, char *argv[])
                 ++it;
             }
         });
+#endif
     }
 
+#if 0
     APool::database().exec(u"SELECT $1, $2, $3, $4, now()"_s,
                            {
                                QJsonValue(true),
@@ -388,6 +397,7 @@ int main(int argc, char *argv[])
         });
     });
     loopT->start();
+#endif
 
     app.exec();
 }

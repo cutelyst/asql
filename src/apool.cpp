@@ -295,15 +295,18 @@ AExpectedResult APool::exec(QStringView query, QObject *receiver, QStringView po
     AExpectedResult coro(receiver);
     auto cb = coro.callback;
 
-    database(receiver, [cb, query, receiver](ADatabase db) {
-        if (db.isValid()) {
-            db.exec(query, receiver, cb);
-            return;
+    [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+        auto db = co_await coDatabase(receiver, poolName);
+        if (db) {
+            auto result = co_await db->coExec(query, receiver);
+            if (result) {
+                cb(*result);
+            }
         }
 
         AResult result;
         cb(result);
-    }, poolName);
+    }(cb, query, receiver, poolName);
 
     return coro;
 }
@@ -313,15 +316,18 @@ AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringVie
     AExpectedResult coro(receiver);
     auto cb = coro.callback;
 
-    database(receiver, [cb, query, receiver](ADatabase db) {
-        if (db.isValid()) {
-            db.exec(query, receiver, cb);
-            return;
+    [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+        auto db = co_await coDatabase(receiver, poolName);
+        if (db) {
+            auto result = co_await db->coExec(query, receiver);
+            if (result) {
+                cb(*result);
+            }
         }
 
         AResult result;
         cb(result);
-    }, poolName);
+    }(cb, query, receiver, poolName);
 
     return coro;
 }
@@ -331,15 +337,25 @@ AExpectedMultiResult APool::execMulti(QStringView query, QObject *receiver, QStr
     AExpectedMultiResult coro(receiver);
     auto cb = coro.callback;
 
-    database(receiver, [cb, query, receiver](ADatabase db) {
-        if (db.isValid()) {
-            db.exec(query, receiver, cb);
-            return;
+    [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+        auto db = co_await coDatabase(receiver, poolName);
+        if (db) {
+            auto awaiter = db->execMulti(query, receiver);
+
+            auto result = co_await awaiter;
+            while (result) {
+                cb(*result);
+
+                if (result->lastResultSet()) {
+                    co_return;
+                }
+                result = co_await awaiter;
+            };
         }
 
         AResult result;
         cb(result);
-    }, poolName);
+    }(cb, query, receiver, poolName);
 
     return coro;
 }
@@ -350,15 +366,25 @@ AExpectedMultiResult
     AExpectedMultiResult coro(receiver);
     auto cb = coro.callback;
 
-    database(receiver, [cb, query, receiver](ADatabase db) {
-        if (db.isValid()) {
-            db.exec(query, receiver, cb);
-            return;
+    [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+        auto db = co_await coDatabase(receiver, poolName);
+        if (db) {
+            auto awaiter = db->execMulti(query, receiver);
+
+            auto result = co_await awaiter;
+            while (result) {
+                cb(*result);
+
+                if (result->lastResultSet()) {
+                    co_return;
+                }
+                result = co_await awaiter;
+            };
         }
 
         AResult result;
         cb(result);
-    }, poolName);
+    }(cb, query, receiver, poolName);
 
     return coro;
 }
@@ -368,15 +394,18 @@ AExpectedResult APool::exec(const APreparedQuery &query, QObject *receiver, QStr
     AExpectedResult coro(receiver);
     auto cb = coro.callback;
 
-    database(receiver, [cb, query, receiver](ADatabase db) {
-        if (db.isValid()) {
-            db.exec(query, receiver, cb);
-            return;
+    [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+        auto db = co_await coDatabase(receiver, poolName);
+        if (db) {
+            auto result = co_await db->coExec(query, receiver);
+            if (result) {
+                cb(*result);
+            }
         }
 
         AResult result;
         cb(result);
-    }, poolName);
+    }(cb, query, receiver, poolName);
 
     return coro;
 }
@@ -389,15 +418,19 @@ AExpectedResult APool::exec(QStringView query,
     AExpectedResult coro(receiver);
     auto cb = coro.callback;
 
-    database(receiver, [cb, query, params, receiver](ADatabase db) {
-        if (db.isValid()) {
-            db.exec(query, params, receiver, cb);
-            return;
+    [](AResultFn cb, auto query, QVariantList params, QObject *receiver, QStringView poolName)
+        -> ACoroTerminator {
+        auto db = co_await coDatabase(receiver, poolName);
+        if (db) {
+            auto result = co_await db->coExec(query, params, receiver);
+            if (result) {
+                cb(*result);
+            }
         }
 
         AResult result;
         cb(result);
-    }, poolName);
+    }(cb, query, params, receiver, poolName);
 
     return coro;
 }
@@ -410,15 +443,19 @@ AExpectedResult APool::exec(QUtf8StringView query,
     AExpectedResult coro(receiver);
     auto cb = coro.callback;
 
-    database(receiver, [cb, query, params, receiver](ADatabase db) {
-        if (db.isValid()) {
-            db.exec(query, params, receiver, cb);
-            return;
+    [](AResultFn cb, auto query, QVariantList params, QObject *receiver, QStringView poolName)
+        -> ACoroTerminator {
+        auto db = co_await coDatabase(receiver, poolName);
+        if (db) {
+            auto result = co_await db->coExec(query, params, receiver);
+            if (result) {
+                cb(*result);
+            }
         }
 
         AResult result;
         cb(result);
-    }, poolName);
+    }(cb, query, params, receiver, poolName);
 
     return coro;
 }
@@ -431,15 +468,19 @@ AExpectedResult APool::exec(const APreparedQuery &query,
     AExpectedResult coro(receiver);
     auto cb = coro.callback;
 
-    database(receiver, [cb, query, params, receiver](ADatabase db) {
-        if (db.isValid()) {
-            db.exec(query, params, receiver, cb);
-            return;
+    [](AResultFn cb, auto query, QVariantList params, QObject *receiver, QStringView poolName)
+        -> ACoroTerminator {
+        auto db = co_await coDatabase(receiver, poolName);
+        if (db) {
+            auto result = co_await db->coExec(query, params, receiver);
+            if (result) {
+                cb(*result);
+            }
         }
 
         AResult result;
         cb(result);
-    }, poolName);
+    }(cb, query, params, receiver, poolName);
 
     return coro;
 }
@@ -449,6 +490,7 @@ AExpectedTransaction APool::begin(QObject *receiver, QStringView poolName)
     AExpectedTransaction coro(receiver);
     auto cb = coro.callback;
 
+    // TODO fix me &coro will crash
     database(receiver, [cb, receiver, &coro](ADatabase db) {
         if (db.isValid()) {
             coro.database = db;

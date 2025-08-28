@@ -32,22 +32,24 @@ int main(int argc, char *argv[])
     APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setMaxIdleConnections(10);
 
-    {
+    []() -> ACoroTerminator {
         auto db = APool::database();
-        ATransaction t(db);
-        t.begin();
-        db.exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
-            if (result.hasError()) {
-                qDebug() << "SELECT error" << result.errorString();
-                return;
+        auto t  = co_await db.coBegin();
+        if (t) {
+#if 0
+            db.exec(u"SELECT now()"_s, nullptr);
+            if (!result) {
+                qDebug() << "SELECT error" << result.error();
+                co_return;
             }
 
-            if (result.size()) {
+            if (result->size()) {
                 qDebug() << "SELECT value" << result.begin().value(0);
                 ATransaction(t).commit();
             }
-        });
-    }
+#endif
+        }
+    }();
 
     {
         ATransaction t(APool::database());
@@ -57,6 +59,7 @@ int main(int argc, char *argv[])
                 return;
             }
 
+#if 0
             t.database().exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
                 if (result.hasError()) {
                     qDebug() << "SELECT error" << result.errorString();
@@ -67,6 +70,7 @@ int main(int argc, char *argv[])
                     qDebug() << "SELECT value" << result.begin().value(0);
                 }
             });
+#endif
         });
     }
 
@@ -78,6 +82,7 @@ int main(int argc, char *argv[])
                 return;
             }
 
+#if 0
             for (int i = 0; i < 5; ++i) {
                 t.database().exec(u"SELECT $1"_s,
                                   {
@@ -99,6 +104,7 @@ int main(int argc, char *argv[])
                     });
                 });
             }
+#endif
         });
     }
 

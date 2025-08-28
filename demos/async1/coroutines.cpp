@@ -37,117 +37,6 @@ int main(int argc, char *argv[])
     APool::setMaxIdleConnections(2, u"pool");
     APool::setMaxConnections(3, u"pool");
 
-    AResultFn resultFn;
-    QElapsedTimer t;
-    if (false) {
-        auto coroBench = [&t, &resultFn]() -> ACoroTerminator {
-            auto db      = APool::database();
-            auto counter = std::make_shared<int>(0);
-
-            const int maxQueries = 100'000;
-
-            // warm up
-            t.start();
-            for (int i = 0; i < maxQueries; ++i) {
-                auto result = co_await db.coExec(u"SELECT 1", nullptr);
-                // qDebug() << "coroutine" << *counter << t.elapsed();
-                if (*counter == maxQueries - 1) {
-                    qDebug() << "coroutine warminig" << t.elapsed();
-                }
-                *counter = *counter + 1;
-            }
-
-            *counter = 0;
-            t.restart();
-
-            for (int i = 0; i < maxQueries; ++i) {
-                auto result = co_await db.coExec(u"SELECT 1", nullptr);
-                // qDebug() << "coroutine" << *counter << t.elapsed();
-                if (*counter == maxQueries - 1) {
-                    qDebug() << "coroutine warm" << t.elapsed();
-                }
-                *counter = *counter + 1;
-            }
-
-            *counter = 0;
-            t.restart();
-
-            // Biggest non coro issue seems to be queueing queries
-            // this recursive mode that prevents queueing doesn't make much of a
-            // performance difference but is still rather more complex to write.
-            // After all coro machinery still uses AResultFn lambdas to be notified
-            // of a result and resume execution.
-            resultFn = [counter, db, &resultFn, &t](AResult &result) mutable {
-                // qDebug() << "lambda" << *counter << t.elapsed();
-                if (*counter == maxQueries - 1) {
-                    qDebug() << "recursive  lambda" << t.elapsed();
-
-                    *counter = 0;
-                    t.restart();
-                    for (int i = 0; i < maxQueries; ++i) {
-                        db.exec(u"SELECT 1", nullptr, [counter, db, &t](AResult &result) mutable {
-                            // qDebug() << "lambda" << *counter << t.elapsed();
-                            if (*counter == maxQueries - 1) {
-                                qDebug() << "queued lambda" << t.elapsed();
-                            }
-                            *counter = *counter + 1;
-                        });
-                    }
-
-                    return;
-                }
-                *counter = *counter + 1;
-
-                db.exec(u"SELECT 1", nullptr, resultFn);
-            };
-
-            db.exec(u"SELECT 1", nullptr, resultFn);
-        }();
-    }
-
-    if (false) {
-        auto callEx = []() -> ACoroTerminator {
-            qDebug() << "coro started";
-
-            auto db = APool::database();
-            db.exec(u"SELECT 2", nullptr, [](AResult &result) {
-                if (result.hasError()) {
-                    qDebug() << "Error" << result.errorString();
-                } else {
-                    qDebug() << "1s loop" << result.toHash();
-                }
-            });
-
-            auto obj = new QObject;
-            QTimer::singleShot(500, obj, [obj] {
-                qDebug() << "Delete Obj";
-                delete obj;
-            });
-
-            {
-                auto result = co_await db.coExec(u8"SELECT now(), pg_sleep(3)", obj);
-                if (result.has_value()) {
-                    qDebug() << "coro result has value" << result->toJsonObject();
-                } else {
-                    qDebug() << "coro result error" << result.error();
-                }
-                obj->setProperty("crash", true);
-            }
-
-            {
-                auto result = co_await db.coExec(u8"SELECT now(), pg_sleep(1)", nullptr);
-                if (result.has_value()) {
-                    qDebug() << "coro result has value" << result->toJsonObject();
-                } else {
-                    qDebug() << "coro result error" << result.error();
-                }
-                obj->setProperty("crash", true);
-            }
-        };
-
-        callEx();
-    }
-
     if (false) {
         auto callTransaction = []() -> ACoroTerminator {
             auto _ = qScopeGuard([] { qDebug() << "coro exited"; });
@@ -260,8 +149,8 @@ int main(int argc, char *argv[])
         callOuter();
     }
 
-    if (false) {
-        auto callPool = []() -> ACoroTerminator {
+    if (true) {
+        auto callPool = [=]() -> ATask<QJsonObject> {
             auto _ = qScopeGuard([] { qDebug() << "coro pool exited"; });
             qDebug() << "coro pool started";
 
@@ -272,15 +161,43 @@ int main(int argc, char *argv[])
                 qDebug() << "coro pool error" << db.error();
             }
 
-            auto result = co_await db->coExec(u"SELECT now(), pg_sleep(1)"_s, nullptr);
+            auto obj = new QObject;
+            // QTimer::singleShot(2000, obj, [obj] {
+            //     qDebug() << "Delete Obj later";
+            //     delete obj;
+            // });
+            // co_yield obj; // so that this promise is destroyed if this object is destroyed
+
+            auto result = co_await db->coExec(u"SELECT now(), pg_sleep(1)"_s, obj);
             if (result.has_value()) {
                 qDebug() << "coro result has value" << result->toJsonObject();
+                co_return result->toJsonObject();
             } else {
                 qDebug() << "coro result error" << result.error();
             }
+
+            co_return {};
         };
 
-        callPool();
+        auto callPoolTask = [=]() -> ACoroTerminator {
+            auto _ = qScopeGuard([] { qDebug() << "coro callPoolTask exited"; });
+            qDebug() << "coro callPoolTask started";
+            auto task = callPool();
+            ;
+            qDebug() << "coro callPoolTask awaitable";
+
+            auto obj = new QObject;
+            QTimer::singleShot(200, obj, [obj] {
+                qDebug() << "Delete callPoolTask obj later";
+                delete obj;
+            });
+            co_yield obj; // so that this promise is destroyed if this object is destroyed
+
+            auto result = co_await task;
+            qDebug() << "coro callPoolTask result" << result;
+        };
+
+        callPoolTask();
     }
 
     if (false) {
@@ -367,7 +284,7 @@ int main(int argc, char *argv[])
         callPool();
     }
 
-    if (true) {
+    if (false) {
         auto destroyedLambda = []() -> ACoroTerminator {
             auto _ = qScopeGuard([] { qDebug() << "destroyedLambda exited"; });
             qDebug() << "destroyedLambda started";
