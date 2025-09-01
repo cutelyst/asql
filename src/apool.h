@@ -202,10 +202,12 @@ public:
                                               QObject *receiver    = nullptr,
                                               QStringView poolName = defaultPool);
 
+#if 0
     [[deprecated]] // Deprecated for now as this is likely to crash we need to refactor our
                    // awaitable
     [[nodiscard]] static AExpectedTransaction
         begin(QObject *receiver = nullptr, QStringView poolName = defaultPool);
+#endif
 
 private:
     inline static void pushDatabaseBack(QStringView connectionName, ADriver *driver);

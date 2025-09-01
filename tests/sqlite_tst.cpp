@@ -134,8 +134,13 @@ void TestSqlite::testQueries()
             auto _ = qScopeGuard(
                 [finished] { qDebug() << "multipleQueries exited" << finished.use_count(); });
 
-            auto t = co_await APool::begin(nullptr);
+            auto db = co_await APool::coDatabase();
+            AVERIFY(db);
+
+            // TODO use APool::begin() once new coro class is ready
+            auto t = co_await db->beginTransaction(nullptr);
             AVERIFY(t);
+            AVERIFY(t->database().isValid());
 
             // This test checks if we do not crash by not consuming all results
             auto result = co_await t->database().execMulti(

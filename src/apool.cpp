@@ -301,6 +301,7 @@ AExpectedResult APool::exec(QStringView query, QObject *receiver, QStringView po
             auto result = co_await db->exec(query, receiver);
             if (result) {
                 cb(*result);
+                co_return;
             }
         }
 
@@ -322,6 +323,7 @@ AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringVie
             auto result = co_await db->exec(query, receiver);
             if (result) {
                 cb(*result);
+                co_return;
             }
         }
 
@@ -400,6 +402,7 @@ AExpectedResult APool::exec(const APreparedQuery &query, QObject *receiver, QStr
             auto result = co_await db->exec(query, receiver);
             if (result) {
                 cb(*result);
+                co_return;
             }
         }
 
@@ -423,8 +426,10 @@ AExpectedResult APool::exec(QStringView query,
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, params, receiver);
+
             if (result) {
                 cb(*result);
+                co_return;
             }
         }
 
@@ -450,6 +455,7 @@ AExpectedResult APool::exec(QUtf8StringView query,
             auto result = co_await db->exec(query, params, receiver);
             if (result) {
                 cb(*result);
+                co_return;
             }
         }
 
@@ -475,6 +481,7 @@ AExpectedResult APool::exec(const APreparedQuery &query,
             auto result = co_await db->exec(query, params, receiver);
             if (result) {
                 cb(*result);
+                co_return;
             }
         }
 
@@ -484,7 +491,8 @@ AExpectedResult APool::exec(const APreparedQuery &query,
 
     return coro;
 }
-
+#if 0
+// Crashing on tests as it was expected
 AExpectedTransaction APool::begin(QObject *receiver, QStringView poolName)
 {
     AExpectedTransaction coro(receiver);
@@ -496,7 +504,9 @@ AExpectedTransaction APool::begin(QObject *receiver, QStringView poolName)
         if (db) {
             auto result = co_await db->begin(receiver);
             if (result) {
+                coro.database = db.value();
                 cb(*result);
+                co_return;
             }
         }
 
@@ -506,3 +516,4 @@ AExpectedTransaction APool::begin(QObject *receiver, QStringView poolName)
 
     return coro;
 }
+#endif
