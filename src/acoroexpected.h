@@ -5,6 +5,7 @@
 #include <atransaction.h>
 #include <coroutine>
 #include <expected>
+#include <utility>
 
 #include <QPointer>
 #include <QQueue>
@@ -328,6 +329,102 @@ public:
             return {};
         }
     };
+};
+
+template <typename T>
+class ATask
+{
+public:
+    struct promise_type {
+        std::coroutine_handle<promise_type> handle;
+        std::vector<QMetaObject::Connection> connections;
+        std::optional<T> value;                  // Store the return value
+        std::coroutine_handle<> awaiting_handle; // Store the awaiting coroutine
+
+        promise_type() = default; // Required for lambdas
+
+        template <typename... ArgTypes>
+        promise_type(QObject &obj, ArgTypes &&...)
+        {
+            yield_value(&obj);
+        }
+
+        ~promise_type()
+        {
+            clean();
+            if (awaiting_handle) {
+                awaiting_handle.destroy(); // Resume the awaiting coroutine
+            }
+        }
+
+        void clean()
+        {
+            for (auto &conn : connections) {
+                QObject::disconnect(conn);
+            }
+            connections.clear();
+        }
+
+        void return_value(T v) noexcept
+        {
+            value = v; // Store the return value
+            if (awaiting_handle) {
+                auto tmpHandle = std::exchange(awaiting_handle, {});
+                tmpHandle.resume(); // Resume the awaiting coroutine
+            }
+        }
+
+        ATask<T> get_return_object()
+        {
+            qDebug() << "get_return_object" << this;
+            handle = std::coroutine_handle<promise_type>::from_promise(*this);
+            return {*this};
+        }
+
+        std::suspend_never initial_suspend() const noexcept { return {}; }
+        std::suspend_always final_suspend() noexcept
+        {
+            return {};
+        } // Suspend at end to control resumption
+        void unhandled_exception() {}
+
+        std::suspend_never yield_value(QObject *obj)
+        {
+            auto conn = QObject::connect(obj, &QObject::destroyed, [this] {
+                clean();
+                if (handle) {
+                    handle.destroy();
+                }
+            });
+            connections.emplace_back(std::move(conn));
+            return {};
+        }
+    };
+
+    // Access the stored value
+    T get() const { return promise.value.value(); } // Use value() to access optional
+
+    // Awaitable interface
+    bool await_ready() const noexcept { return promise.value.has_value(); } // Ready if value is set
+    void await_suspend(std::coroutine_handle<> h) noexcept
+    {
+        promise.awaiting_handle = h; // Store the awaiting coroutine's handle
+    }
+    T await_resume() const noexcept { return promise.value.value(); } // Return the stored value
+
+    ~ATask()
+    {
+        qDebug() << Q_FUNC_INFO;
+        promise.handle = {};
+    }
+
+private:
+    promise_type &promise;
+    ATask(promise_type &p)
+        : promise(p)
+    {
+        qDebug() << Q_FUNC_INFO;
+    }
 };
 
 } // namespace ASql
