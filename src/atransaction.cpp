@@ -24,7 +24,7 @@ public:
     {
         if (running && db.isValid()) {
             qDebug(ASQL_TRANSACTION, "Rolling back transaction");
-            db.rollback();
+            std::ignore = db.rollback();
         }
     }
 
