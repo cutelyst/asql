@@ -291,7 +291,7 @@ QCborMap AResult::toCborMapIndexed(QStringView columnKey, QStringView rowsKey) c
     return ret;
 }
 
-QCborMap AResult::toCBorFlattened() const
+QCborMap AResult::toCborFlattened() const
 {
     QCborMap ret;
 

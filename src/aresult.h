@@ -172,7 +172,7 @@ public:
                                             QStringView rowsKey   = u"rows") const;
 
     /*!
-     * \brief toCBorFlattened returns all rows into a single "data" array, "columns" with column
+     * \brief toCborFlattened returns all rows into a single "data" array, "columns" with column
      * names and "rows" with the number of rows.
      *
      * This is the most compact representation of the data set, which is also faster
@@ -182,7 +182,7 @@ public:
      *
      * \return { "columns": ["col1", "col2"], "data": [ 1, "foo", 2, "bar" ], "rows": 2 }
      */
-    [[nodiscard]] QCborMap toCBorFlattened() const;
+    [[nodiscard]] QCborMap toCborFlattened() const;
 
     AResult &operator=(const AResult &copy);
     bool operator==(const AResult &other) const;
