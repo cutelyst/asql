@@ -313,6 +313,8 @@ int main(int argc, char *argv[])
             auto _ = qScopeGuard([] { qDebug() << "coro pool exited"; });
             qDebug() << "coro exec pool started";
 
+#if 0
+// TODO enable once APool::begin() is fixed
             auto t = co_await APool::begin(nullptr);
             if (t.has_value()) {
                 qDebug() << "coro exec t has value" << t->database().isOpen();
@@ -333,6 +335,7 @@ int main(int argc, char *argv[])
                 delete obj;
             });
             co_yield obj; // so that this promise is destroyed if this object is destroyed
+#endif
 
             std::ignore = APool::exec(u8"SELECT now(), pg_sleep(1)" /*, obj*/);
         };
