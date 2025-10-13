@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
         callOuter();
     }
 
-    if (true) {
+    if (false) {
         auto callPool = [=]() -> ATask<QJsonObject> {
             auto _ = qScopeGuard([] { qDebug() << "coro pool exited"; });
             qDebug() << "coro pool started";
@@ -247,12 +247,12 @@ int main(int argc, char *argv[])
         callTerminatorLater();
     }
 
-    if (false) {
+    if (true) {
         auto callPool = []() -> ACoroTerminator {
             auto _ = qScopeGuard([] { qDebug() << "callPool exited"; });
             qDebug() << "callPool started";
 
-            auto result = co_await APool::exec(u8"SELECT now()", nullptr, u"invalid");
+            auto result = co_await APool::exec(u8"SELECT nosdadw()", nullptr, u"invalid");
             if (result.has_value()) {
                 qDebug() << "coro exec result has value" << result->toJsonObject();
             } else {
