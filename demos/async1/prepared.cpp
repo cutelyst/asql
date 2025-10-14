@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
 
         //     qDebug() << "PREPARED operator size" << result.toListHash();
         // });
+        co_return;
     };
 
     callBD();
