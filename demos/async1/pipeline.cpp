@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
                 callStaticDb(-i);
             }
 #endif
+            co_return;
         });
     }
 

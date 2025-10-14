@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
         //         << result.toJsonObject();
         //     });
         // });
+        co_return;
     }(obj);
 
     app.exec();

@@ -338,6 +338,7 @@ int main(int argc, char *argv[])
 #endif
 
             std::ignore = APool::exec(u8"SELECT now(), pg_sleep(1)" /*, obj*/);
+            co_return;
         };
 
         callPoolBegin();
