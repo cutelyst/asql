@@ -41,6 +41,7 @@ public:
     virtual double toDouble(int row, int column) const         = 0;
     virtual QString toString(int row, int column) const        = 0;
     virtual std::string toStdString(int row, int column) const = 0;
+    virtual QUuid toUuid(int row, int column) const            = 0;
     virtual QDate toDate(int row, int column) const            = 0;
     virtual QTime toTime(int row, int column) const            = 0;
     virtual QDateTime toDateTime(int row, int column) const    = 0;
@@ -212,6 +213,7 @@ public:
         [[nodiscard]] inline double toDouble() const { return d->toDouble(row, column); }
         [[nodiscard]] inline QString toString() const { return d->toString(row, column); }
         [[nodiscard]] inline std::string toStdString() const { return d->toStdString(row, column); }
+        [[nodiscard]] QUuid toUuid() const;
         [[nodiscard]] QDate toDate() const;
         [[nodiscard]] QTime toTime() const;
         [[nodiscard]] QDateTime toDateTime() const;

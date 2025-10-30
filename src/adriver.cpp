@@ -9,6 +9,7 @@
 
 #include <QDate>
 #include <QJsonValue>
+#include <QUuid>
 
 using namespace ASql;
 using namespace Qt::StringLiterals;
@@ -38,6 +39,7 @@ public:
     double toDouble(int row, int column) const final { return 0; }
     QString toString(int row, int column) const final { return {}; }
     std::string toStdString(int row, int column) const final { return {}; }
+    QUuid toUuid(int row, int column) const final { return {}; }
     QDate toDate(int row, int column) const final { return {}; }
     QTime toTime(int row, int column) const final { return {}; }
     QDateTime toDateTime(int row, int column) const final { return {}; }

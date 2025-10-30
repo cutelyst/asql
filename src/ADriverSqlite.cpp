@@ -861,6 +861,11 @@ std::string AResultSqlite::toStdString(int row, int column) const
     return toString(row, column).toStdString();
 }
 
+QUuid AResultSqlite::toUuid(int row, int column) const
+{
+    return QUuid::fromString(value(row, column).toByteArray());
+}
+
 QDate AResultSqlite::toDate(int row, int column) const
 {
     return value(row, column).toDate();

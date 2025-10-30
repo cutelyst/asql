@@ -59,6 +59,7 @@ public:
     double toDouble(int row, int column) const override { return {}; }
     QString toString(int row, int column) const override { return {}; }
     std::string toStdString(int row, int column) const override { return {}; }
+    QUuid toUuid(int row, int column) const final { return {}; }
     QDate toDate(int row, int column) const override { return {}; }
     QTime toTime(int row, int column) const override { return {}; }
     QDateTime toDateTime(int row, int column) const override { return {}; }

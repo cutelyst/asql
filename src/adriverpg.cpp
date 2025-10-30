@@ -1205,6 +1205,17 @@ std::string AResultPg::toStdString(int row, int column) const
     return std::string(val);
 }
 
+QUuid AResultPg::toUuid(int row, int column) const
+{
+    Q_ASSERT_X(column < PQnfields(m_result), "toUuid", "column out of range");
+    if (PQgetisnull(m_result, row, column) == 1) {
+        return {};
+    }
+
+    const char *val = PQgetvalue(m_result, row, column);
+    return QUuid::fromString(val);
+}
+
 QDate AResultPg::toDate(int row, int column) const
 {
     Q_ASSERT_X(column < PQnfields(m_result), "toDate", "column out of range");
