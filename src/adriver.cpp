@@ -70,7 +70,7 @@ bool ADriver::isValid() const
     return false;
 }
 
-void ADriver::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, ADatabaseOpenFn cb)
+void ADriver::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, AOpenFn cb)
 {
     Q_UNUSED(driver);
     Q_UNUSED(receiver);
@@ -95,57 +95,57 @@ bool ADriver::isOpen() const
     return false;
 }
 
-void ADriver::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
+void ADriver::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
 {
     Q_UNUSED(db);
     Q_UNUSED(receiver);
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
-        cb(result);
+        cb.deliverResult(result);
     }
 }
 
-void ADriver::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
+void ADriver::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
 {
     Q_UNUSED(db);
     Q_UNUSED(receiver);
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
-        cb(result);
+        cb.deliverResult(result);
     }
 }
 
-void ADriver::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
+void ADriver::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
 {
     Q_UNUSED(db);
     Q_UNUSED(receiver);
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
-        cb(result);
+        cb.deliverResult(result);
     }
 }
 
 void ADriver::exec(const std::shared_ptr<ADriver> &driver,
                    QUtf8StringView query,
                    QObject *receiver,
-                   AResultFn cb)
+                   AExpectedResultRef cb)
 {
-    exec(driver, query, {}, receiver, cb);
+    exec(driver, query, {}, receiver, std::move(cb));
 }
 
 void ADriver::exec(const std::shared_ptr<ADriver> &driver,
                    QStringView query,
                    QObject *receiver,
-                   AResultFn cb)
+                   AExpectedResultRef cb)
 {
-    exec(driver, query, {}, receiver, cb);
+    exec(driver, query, {}, receiver, std::move(cb));
 }
 
 void ADriver::exec(const std::shared_ptr<ADriver> &db,
                    QStringView query,
                    const QVariantList &params,
                    QObject *receiver,
-                   AResultFn cb)
+                   AExpectedResultRef cb)
 {
     Q_UNUSED(db)
     Q_UNUSED(query)
@@ -153,7 +153,7 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db,
     Q_UNUSED(receiver)
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
-        cb(result);
+        cb.deliverResult(result);
     }
 }
 
@@ -161,7 +161,7 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db,
                    QUtf8StringView query,
                    const QVariantList &params,
                    QObject *receiver,
-                   AResultFn cb)
+                   AExpectedResultRef cb)
 {
     Q_UNUSED(db);
     Q_UNUSED(query);
@@ -169,7 +169,7 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db,
     Q_UNUSED(receiver);
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
-        cb(result);
+        cb.deliverResult(result);
     }
 }
 
@@ -177,7 +177,7 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db,
                    const APreparedQuery &query,
                    const QVariantList &params,
                    QObject *receiver,
-                   AResultFn cb)
+                   AExpectedResultRef cb)
 {
     Q_UNUSED(db);
     Q_UNUSED(query);
@@ -185,7 +185,7 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db,
     Q_UNUSED(receiver);
     if (cb) {
         AResult result(std::shared_ptr<AResultInvalid>(new AResultInvalid));
-        cb(result);
+        cb.deliverResult(result);
     }
 }
 

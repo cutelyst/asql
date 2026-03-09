@@ -232,7 +232,7 @@ void APool::database(QObject *receiver, ADatabaseFn cb, QStringView poolName)
                 qInfo(ASQL_POOL) << "Maximum number of connections reached, queuing" << poolName
                                  << iPool.connectionCount << iPool.connectionQueue.size();
                 APoolQueuedClient queued;
-                queued.cb            = cb;
+                queued.cb            = std::move(cb);
                 queued.receiver      = receiver;
                 queued.checkReceiver = receiver;
                 iPool.connectionQueue.emplace(std::move(queued));
@@ -281,7 +281,9 @@ void APool::database(QObject *receiver, ADatabaseFn cb, QStringView poolName)
 AExpectedDatabase APool::coDatabase(QObject *receiver, QStringView poolName)
 {
     AExpectedDatabase coro(receiver);
-    database(receiver, coro.callback, poolName);
+    database(receiver,
+             ADatabaseFn{std::weak_ptr<ACoroDatabase>{coro.m_data}},
+             poolName);
     return coro;
 }
 
@@ -342,24 +344,24 @@ void APool::setReuseCallback(ADatabaseFn cb, QStringView poolName)
 AExpectedResult APool::exec(QStringView query, QObject *receiver, QStringView poolName)
 {
     AExpectedResult coro(receiver);
-    auto cb = coro.callback;
+    auto ref = coro.ref();
 
-    [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+    [](AExpectedResultRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, receiver);
             if (result) {
-                cb(*result);
+                ref.deliverResult(*result);
             } else {
                 AResult error{std::make_shared<AResultError>(result.error())};
-                cb(error);
+                ref.deliverResult(error);
             }
             co_return;
         }
 
         AResult error{std::make_shared<AResultError>(db.error())};
-        cb(error);
-    }(cb, query, receiver, poolName);
+        ref.deliverResult(error);
+    }(std::move(ref), query, receiver, poolName);
 
     return coro;
 }
@@ -367,24 +369,24 @@ AExpectedResult APool::exec(QStringView query, QObject *receiver, QStringView po
 AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringView poolName)
 {
     AExpectedResult coro(receiver);
-    auto cb = coro.callback;
+    auto ref = coro.ref();
 
-    [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+    [](AExpectedResultRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, receiver);
             if (result) {
-                cb(*result);
+                ref.deliverResult(*result);
             } else {
                 AResult error{std::make_shared<AResultError>(result.error())};
-                cb(error);
+                ref.deliverResult(error);
             }
             co_return;
         }
 
         AResult error{std::make_shared<AResultError>(db.error())};
-        cb(error);
-    }(cb, query, receiver, poolName);
+        ref.deliverResult(error);
+    }(std::move(ref), query, receiver, poolName);
 
     return coro;
 }
@@ -392,16 +394,16 @@ AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringVie
 AExpectedMultiResult APool::execMulti(QStringView query, QObject *receiver, QStringView poolName)
 {
     AExpectedMultiResult coro(receiver);
-    auto cb = coro.callback;
+    auto ref = coro.ref();
 
-    [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+    [](AExpectedResultRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto awaiter = db->execMulti(query, receiver);
 
             auto result = co_await awaiter;
             while (result) {
-                cb(*result);
+                ref.deliverResult(*result);
 
                 if (result->lastResultSet()) {
                     co_return;
@@ -410,13 +412,13 @@ AExpectedMultiResult APool::execMulti(QStringView query, QObject *receiver, QStr
             };
 
             AResult error{std::make_shared<AResultError>(result.error())};
-            cb(error);
+            ref.deliverResult(error);
             co_return;
         }
 
         AResult error{std::make_shared<AResultError>(db.error())};
-        cb(error);
-    }(cb, query, receiver, poolName);
+        ref.deliverResult(error);
+    }(std::move(ref), query, receiver, poolName);
 
     return coro;
 }
@@ -425,16 +427,16 @@ AExpectedMultiResult
     APool::execMulti(QUtf8StringView query, QObject *receiver, QStringView poolName)
 {
     AExpectedMultiResult coro(receiver);
-    auto cb = coro.callback;
+    auto ref = coro.ref();
 
-    [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+    [](AExpectedResultRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto awaiter = db->execMulti(query, receiver);
 
             auto result = co_await awaiter;
             while (result) {
-                cb(*result);
+                ref.deliverResult(*result);
 
                 if (result->lastResultSet()) {
                     co_return;
@@ -443,13 +445,13 @@ AExpectedMultiResult
             };
 
             AResult error{std::make_shared<AResultError>(result.error())};
-            cb(error);
+            ref.deliverResult(error);
             co_return;
         }
 
         AResult error{std::make_shared<AResultError>(db.error())};
-        cb(error);
-    }(cb, query, receiver, poolName);
+        ref.deliverResult(error);
+    }(std::move(ref), query, receiver, poolName);
 
     return coro;
 }
@@ -457,24 +459,24 @@ AExpectedMultiResult
 AExpectedResult APool::exec(const APreparedQuery &query, QObject *receiver, QStringView poolName)
 {
     AExpectedResult coro(receiver);
-    auto cb = coro.callback;
+    auto ref = coro.ref();
 
-    [](AResultFn cb, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+    [](AExpectedResultRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, receiver);
             if (result) {
-                cb(*result);
+                ref.deliverResult(*result);
             } else {
                 AResult error{std::make_shared<AResultError>(result.error())};
-                cb(error);
+                ref.deliverResult(error);
             }
             co_return;
         }
 
         AResult error{std::make_shared<AResultError>(db.error())};
-        cb(error);
-    }(cb, query, receiver, poolName);
+        ref.deliverResult(error);
+    }(std::move(ref), query, receiver, poolName);
 
     return coro;
 }
@@ -485,26 +487,26 @@ AExpectedResult APool::exec(QStringView query,
                             QStringView poolName)
 {
     AExpectedResult coro(receiver);
-    auto cb = coro.callback;
+    auto ref = coro.ref();
 
-    [](AResultFn cb, auto query, QVariantList params, QObject *receiver, QStringView poolName)
+    [](AExpectedResultRef ref, auto query, QVariantList params, QObject *receiver, QStringView poolName)
         -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, params, receiver);
 
             if (result) {
-                cb(*result);
+                ref.deliverResult(*result);
             } else {
                 AResult error{std::make_shared<AResultError>(result.error())};
-                cb(error);
+                ref.deliverResult(error);
             }
             co_return;
         }
 
         AResult error{std::make_shared<AResultError>(db.error())};
-        cb(error);
-    }(cb, query, params, receiver, poolName);
+        ref.deliverResult(error);
+    }(std::move(ref), query, params, receiver, poolName);
 
     return coro;
 }
@@ -515,25 +517,25 @@ AExpectedResult APool::exec(QUtf8StringView query,
                             QStringView poolName)
 {
     AExpectedResult coro(receiver);
-    auto cb = coro.callback;
+    auto ref = coro.ref();
 
-    [](AResultFn cb, auto query, QVariantList params, QObject *receiver, QStringView poolName)
+    [](AExpectedResultRef ref, auto query, QVariantList params, QObject *receiver, QStringView poolName)
         -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, params, receiver);
             if (result) {
-                cb(*result);
+                ref.deliverResult(*result);
             } else {
                 AResult error{std::make_shared<AResultError>(result.error())};
-                cb(error);
+                ref.deliverResult(error);
             }
             co_return;
         }
 
         AResult error{std::make_shared<AResultError>(db.error())};
-        cb(error);
-    }(cb, query, params, receiver, poolName);
+        ref.deliverResult(error);
+    }(std::move(ref), query, params, receiver, poolName);
 
     return coro;
 }
@@ -544,51 +546,43 @@ AExpectedResult APool::exec(const APreparedQuery &query,
                             QStringView poolName)
 {
     AExpectedResult coro(receiver);
-    auto cb = coro.callback;
+    auto ref = coro.ref();
 
-    [](AResultFn cb, auto query, QVariantList params, QObject *receiver, QStringView poolName)
+    [](AExpectedResultRef ref, auto query, QVariantList params, QObject *receiver, QStringView poolName)
         -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, params, receiver);
             if (result) {
-                cb(*result);
+                ref.deliverResult(*result);
             } else {
                 AResult error{std::make_shared<AResultError>(result.error())};
-                cb(error);
+                ref.deliverResult(error);
             }
             co_return;
         }
 
         AResult error{std::make_shared<AResultError>(db.error())};
-        cb(error);
-    }(cb, query, params, receiver, poolName);
+        ref.deliverResult(error);
+    }(std::move(ref), query, params, receiver, poolName);
 
     return coro;
 }
-#if 0
-// Crashing on tests as it was expected
 AExpectedTransaction APool::begin(QObject *receiver, QStringView poolName)
 {
     AExpectedTransaction coro(receiver);
-    auto cb = coro.callback;
-
-    // TODO fix me &coro will crash
-    [&coro](AResultFn cb, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+    [](auto chainData, QObject *receiver, QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->begin(receiver);
             if (result) {
-                coro.database = db.value();
-                cb(*result);
+                chainData->deliverDirect(ATransaction::fromStarted(db.value()));
                 co_return;
             }
+            chainData->deliverDirect(std::unexpected(result.error()));
+            co_return;
         }
-
-        AResult result;
-        cb(result);
-    }(cb, receiver, poolName);
-
+        chainData->deliverDirect(std::unexpected(db.error()));
+    }(coro.m_data, receiver, poolName);
     return coro;
 }
-#endif

@@ -12,13 +12,93 @@
 
 namespace ASql {
 
+/*!
+ * \brief ACoroData is the concrete coroutine state class for \c ACoroExpected<T>.
+ *
+ * It merges the abstract delivery interface (\c ACoroResult or \c ACoroDatabase) with the actual
+ * coroutine state (handle, result, status).  There is no separate inner "Data" struct —
+ * \c ACoroExpected<T> holds a \c std::shared_ptr<ACoroData<T>> directly.
+ *
+ *  - When \c T == \c ADatabase the class inherits from \c ACoroDatabase and \c deliver(ADatabase)
+ *    stores the connection.
+ *  - For all other \c T the class inherits from \c ACoroResult and \c deliver(AResult &)
+ *    converts the result into \c std::expected<T, QString>.
+ */
+template<typename T>
+class ACoroData
+    : public std::conditional_t<std::is_same_v<T, ADatabase>, ACoroDatabase, ACoroResult>
+{
+public:
+    enum Status {
+        Waiting,
+        Suspended,
+        Done,
+        Finished,
+    };
+
+    std::coroutine_handle<> handle;
+    std::expected<T, QString> result;
+    Status status = Waiting;
+
+    using DeliverArg =
+        std::conditional_t<std::is_same_v<T, ADatabase>, ADatabase, AResult &>;
+
+    void deliver(DeliverArg arg) override
+    {
+        if (status == Finished) {
+            return;
+        }
+
+        if constexpr (std::is_same_v<T, ADatabase>) {
+            if (arg.isValid()) {
+                result = std::move(arg);
+            } else {
+                result = std::unexpected(
+                    QStringLiteral("Could not get a valid database connection"));
+            }
+        } else {
+            if (arg.hasError()) {
+                result = std::unexpected(arg.errorString());
+            } else {
+                if constexpr (std::is_constructible_v<T, AResult &>) {
+                    result = arg;
+                } else {
+                    result =
+                        std::unexpected(QStringLiteral("deliver called on incompatible type; "
+                                                       "use deliverDirect() instead"));
+                }
+            }
+        }
+
+        const auto prevStatus = std::exchange(status, Done);
+        if (prevStatus == Suspended && handle) {
+            handle.resume();
+        }
+    }
+
+    template<typename U>
+    void deliverDirect(U &&value)
+    {
+        if (status == Finished) {
+            return;
+        }
+
+        result = std::forward<U>(value);
+
+        const auto prevStatus = std::exchange(status, Done);
+        if (prevStatus == Suspended && handle) {
+            handle.resume();
+        }
+    }
+};
+
 template <typename T>
 class ACoroExpected
 {
 public:
     bool await_ready() const noexcept
     {
-        return *m_status == Done; // skips suspension
+        return m_data->status == ACoroData<T>::Done; // skips suspension
     }
 
     bool await_suspend(std::coroutine_handle<> h) noexcept
@@ -27,59 +107,45 @@ public:
             return false;
         }
 
-        m_handle  = h;
-        *m_status = Suspended;
+        m_data->handle = h;
+        m_data->status = ACoroData<T>::Suspended;
         return true;
     }
 
-    std::expected<T, QString> await_resume() { return m_result; }
+    std::expected<T, QString> await_resume() { return m_data->result; }
 
     ACoroExpected(QObject *receiver)
         : m_receiver(receiver)
-        , m_status{std::make_shared<Status>(Waiting)}
+        , m_data{std::make_shared<ACoroData<T>>()}
     {
-        callback = [this, status = m_status](AResult &result) {
-            const auto currentState = *status;
-            if (currentState == Done || currentState == Finished) {
-                return;
-            }
-
-            if (result.hasError()) {
-                m_result = std::unexpected(result.errorString());
-            } else {
-                if constexpr (std::is_same_v<T, ATransaction>) {
-                    m_result = ATransaction(database, true);
-                } else {
-                    m_result = result;
-                }
-            }
-
-            *status = Done;
-
-            if (currentState == Suspended && m_handle) {
-                m_handle.resume();
-            }
-        };
-
         if (receiver) {
-            m_destroyConn =
-                QObject::connect(receiver, &QObject::destroyed, [this, status = m_status] {
-                if (*status == Finished) {
-                    return;
-                }
+            m_destroyConn = QObject::connect(
+                receiver,
+                &QObject::destroyed,
+                [weak_data = std::weak_ptr<ACoroData<T>>(m_data)] {
+                    auto data = weak_data.lock();
+                    if (!data || data->status == ACoroData<T>::Finished) {
+                        return;
+                    }
 
-                m_result = std::unexpected(QStringLiteral("QObject receiver* destroyed"));
-                if (m_handle) {
-                    m_handle.destroy();
-                }
-            });
+                    data->result = std::unexpected(QStringLiteral("QObject receiver* destroyed"));
+                    if (data->handle) {
+                        data->handle.destroy();
+                    }
+                });
         }
     }
 
     ~ACoroExpected()
     {
-        *m_status = Finished;
+        m_data->status = ACoroData<T>::Finished;
         QObject::disconnect(m_destroyConn);
+    }
+
+    [[nodiscard]] AExpectedResultRef ref() const
+        requires(!std::is_same_v<T, ADatabase>)
+    {
+        return AExpectedResultRef{std::weak_ptr<ACoroResult>(m_data)};
     }
 
 protected:
@@ -87,30 +153,54 @@ protected:
     friend class ACache;
     friend class ATransaction;
     friend class APool;
-    std::function<void(AResult &result)> callback;
-    ADatabase database;
+    std::shared_ptr<ACoroData<T>> m_data;
 
 private:
+    QMetaObject::Connection m_destroyConn;
+    QPointer<QObject> m_receiver;
+};
+
+template <typename T>
+class ACoroMultiExpected
+{
     enum Status {
         Waiting,
         Suspended,
         Done,
         Finished,
     };
-    QMetaObject::Connection m_destroyConn;
-    QPointer<QObject> m_receiver;
-    std::expected<T, QString> m_result;
-    std::shared_ptr<Status> m_status;
-    std::coroutine_handle<> m_handle;
-};
 
-template <typename T>
-class ACoroMultiExpected
-{
+    struct Data : public ACoroResult {
+        std::coroutine_handle<> handle;
+        QQueue<std::expected<T, QString>> results;
+        Status status = Waiting;
+
+        void deliver(AResult &result) override
+        {
+            if (status == Finished) {
+                return;
+            }
+
+            const auto prevStatus = status;
+
+            if (result.hasError()) {
+                results.enqueue(std::unexpected(result.errorString()));
+            } else {
+                results.enqueue(result);
+            }
+
+            status = result.lastResultSet() ? Done : Waiting;
+
+            if (prevStatus == Suspended && handle) {
+                handle.resume();
+            }
+        }
+    };
+
 public:
     bool await_ready() const noexcept
     {
-        return !m_results.isEmpty() || *m_status == Done; // skips suspension
+        return !m_data->results.isEmpty() || m_data->status == Done; // skips suspension
     }
 
     bool await_suspend(std::coroutine_handle<> h) noexcept
@@ -119,155 +209,145 @@ public:
             return false;
         }
 
-        m_handle  = h;
-        *m_status = Suspended;
+        m_data->handle = h;
+        m_data->status = Suspended;
         return true;
     }
 
     std::expected<T, QString> await_resume()
     {
-        return !m_results.empty() ? m_results.dequeue()
-                                  : std::unexpected(QStringLiteral("no results available"));
+        return !m_data->results.empty()
+                   ? m_data->results.dequeue()
+                   : std::unexpected(QStringLiteral("no results available"));
     }
 
     ACoroMultiExpected(QObject *receiver)
         : m_receiver(receiver)
-        , m_status{std::make_shared<Status>(Waiting)}
+        , m_data{std::make_shared<Data>()}
     {
-        callback = [this, status = m_status](AResult &result) {
-            const auto currentState = *status;
-            if (currentState == Finished) {
-                return;
-            }
-
-            if (result.hasError()) {
-                m_results.enqueue(std::unexpected(result.errorString()));
-            } else {
-                m_results.enqueue(result);
-            }
-
-            if (result.lastResultSet()) {
-                *status = Done;
-            } else {
-                *m_status = Waiting;
-            }
-
-            if (currentState == Suspended && m_handle) {
-                m_handle.resume();
-            }
-        };
-
         if (receiver) {
-            m_destroyConn =
-                QObject::connect(receiver, &QObject::destroyed, [this, status = m_status] {
-                if (*status == Finished) {
-                    return;
-                }
+            m_destroyConn = QObject::connect(
+                receiver,
+                &QObject::destroyed,
+                [weak_data = std::weak_ptr<Data>(m_data)] {
+                    auto data = weak_data.lock();
+                    if (!data || data->status == Finished) {
+                        return;
+                    }
 
-                m_results.clear();
-                m_results.enqueue(std::unexpected(QStringLiteral("QObject receiver* destroyed")));
-                if (m_handle) {
-                    m_handle.destroy();
-                }
-            });
+                    data->results.clear();
+                    data->results.enqueue(
+                        std::unexpected(QStringLiteral("QObject receiver* destroyed")));
+                    if (data->handle) {
+                        data->handle.destroy();
+                    }
+                });
         }
     }
 
     ~ACoroMultiExpected()
     {
-        *m_status = Finished;
+        m_data->status = Finished;
         QObject::disconnect(m_destroyConn);
+    }
+
+    [[nodiscard]] AExpectedResultRef ref() const
+    {
+        return AExpectedResultRef{std::weak_ptr<ACoroResult>(m_data)};
     }
 
 protected:
     friend class ADatabase;
     friend class ACache;
     friend class APool;
-    std::function<void(AResult &result)> callback;
-    ADatabase database;
+    std::shared_ptr<Data> m_data;
 
 private:
-    enum Status {
-        Waiting,
-        Suspended,
-        Done,
-        Finished,
-    };
     QMetaObject::Connection m_destroyConn;
     QPointer<QObject> m_receiver;
-    QQueue<std::expected<T, QString>> m_results;
-    std::shared_ptr<Status> m_status;
-    std::coroutine_handle<> m_handle;
 };
 
-class AExpectedDatabase
+class AExpectedOpen
 {
+    struct Data : public ACoroOpenData {
+        std::coroutine_handle<> handle;
+        std::expected<bool, QString> result;
+        bool delivered = false;
+        bool finished  = false;
+
+        void deliverOpen(bool isOpen, const QString &error) override
+        {
+            if (finished) {
+                return;
+            }
+
+            delivered = true;
+            if (isOpen) {
+                result = true;
+            } else {
+                result = std::unexpected(error.isEmpty() ? QStringLiteral("Connection failed")
+                                                         : error);
+            }
+
+            if (handle) {
+                handle.resume();
+            }
+        }
+    };
+
 public:
-    bool await_ready() const noexcept
-    {
-        return m_result.has_value() || !m_result.error().isEmpty();
-    }
+    bool await_ready() const noexcept { return m_data->delivered; }
 
     bool await_suspend(std::coroutine_handle<> h) noexcept
     {
-        m_handle = h;
+        m_data->handle = h;
         if (m_receiver) {
-            m_destroyConn = QObject::connect(m_receiver, &QObject::destroyed, [this] {
-                m_result = std::unexpected(QStringLiteral("QObject receiver* destroyed"));
-                if (m_handle) {
-                    m_handle.destroy();
-                }
-            });
+            m_destroyConn = QObject::connect(
+                m_receiver,
+                &QObject::destroyed,
+                [weak_data = std::weak_ptr<Data>(m_data)] {
+                    auto data = weak_data.lock();
+                    if (!data || data->finished) {
+                        return;
+                    }
+
+                    data->delivered = true;
+                    data->result    = std::unexpected(QStringLiteral("QObject receiver* destroyed"));
+                    if (data->handle) {
+                        data->handle.destroy();
+                    }
+                });
         }
 
         return !await_ready();
     }
 
-    std::expected<ADatabase, QString> await_resume()
+    std::expected<bool, QString> await_resume()
     {
-        m_handle = nullptr;
-        return m_result;
+        m_data->handle   = nullptr;
+        m_data->finished = true;
+        return m_data->result;
     }
 
-    AExpectedDatabase(QObject *receiver)
+    AExpectedOpen(QObject *receiver)
         : m_receiver(receiver)
-        , m_result{std::unexpected(QString{})}
-        , m_finished{std::make_shared<bool>(false)}
+        , m_data{std::make_shared<Data>()}
     {
-        callback = [this, finished = m_finished](ADatabase db) {
-            if (*finished) {
-                return;
-            }
-
-            if (db.isValid()) {
-                m_result = db;
-            } else {
-                m_result =
-                    std::unexpected(QStringLiteral("Could not get a valid database connection"));
-            }
-
-            if (m_handle) {
-                m_handle.resume();
-            }
-        };
     }
 
-    ~AExpectedDatabase()
+    ~AExpectedOpen()
     {
-        *m_finished = true;
+        m_data->finished = true;
         QObject::disconnect(m_destroyConn);
     }
 
 protected:
-    friend class APool;
-    std::function<void(ADatabase db)> callback;
+    friend class ADatabase;
+    std::shared_ptr<Data> m_data;
 
 private:
     QMetaObject::Connection m_destroyConn;
     QPointer<QObject> m_receiver;
-    std::expected<ADatabase, QString> m_result;
-    std::shared_ptr<bool> m_finished;
-    std::coroutine_handle<> m_handle;
 };
 
 /**

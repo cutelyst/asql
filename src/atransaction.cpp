@@ -46,6 +46,11 @@ ATransaction::ATransaction(const ADatabase &db, bool started)
     d->running = started;
 }
 
+ATransaction ATransaction::fromStarted(const ADatabase &db)
+{
+    return ATransaction(db, true);
+}
+
 ATransaction::ATransaction(const ADatabase &db)
     : d(std::make_shared<ATransactionPrivate>(db))
 {

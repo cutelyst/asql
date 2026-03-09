@@ -22,8 +22,7 @@ Qt Async Sql library
 
 ## Requirements
 * Qt 6.4 or later
-* C++20 capable compiler, C++26 for experimental coroutines support (see demos)
-* For coroutines support g++-14 is required.
+* C++23 capable compiler (g++-14 or newer is required).
 
 ## Usage
 
@@ -239,6 +238,135 @@ mig->connect(mig, &AMigrations::ready, [=] (bool error, const QString &erroStrin
     });
 });
 mig->load(APool::database(), "my_app_foo");
+```
+
+### Coroutines
+ASql fully supports C++20/23 coroutines. Use `ACoroTerminator` as the return type for fire-and-forget coroutines. Every `exec()` / `coDatabase()` call returns an awaitable directly — just `co_await` it and check the `std::expected<AResult, QString>` value.
+
+> **Note:** Always define coroutines as free functions or static member functions, not as local lambdas. Coroutine frames outlive the statement that starts them, so a lambda that captures local variables by reference will produce dangling references.
+
+#### Simple query via APool
+The easiest entry point: `APool::exec()` grabs a connection, runs the query and resumes the coroutine — all in one `co_await`.
+```c++
+using namespace ASql;
+
+ACoroTerminator runQuery()
+{
+    auto result = co_await APool::exec(u8"SELECT id, message FROM messages LIMIT 5");
+    if (result.has_value()) {
+        for (auto row : *result) {
+            qDebug() << "id" << row[0].toInt() << "msg" << row["message"].toString();
+        }
+    } else {
+        qDebug() << "Query error:" << result.error();
+    }
+}
+
+// call it
+runQuery();
+```
+
+#### Getting a connection and running multiple queries
+`APool::coDatabase()` suspends until a pooled connection is available and then returns it wrapped in `std::expected`.
+```c++
+ACoroTerminator runQueries()
+{
+    auto db = co_await APool::coDatabase();
+    if (!db) {
+        qDebug() << "Could not get a connection:" << db.error();
+        co_return;
+    }
+
+    auto result1 = co_await db->exec(u"SELECT now()"_s);
+    if (result1.has_value()) {
+        qDebug() << "now:" << result1->toJsonObject();
+    }
+
+    auto result2 = co_await db->exec(u"SELECT count(*) FROM messages"_s);
+    if (result2.has_value()) {
+        qDebug() << "count:" << result2->begin().value(0);
+    }
+}
+
+runQueries();
+```
+
+#### Transactions
+`ADatabase::beginTransaction()` returns an `AExpectedTransaction`. `co_await` it to start the transaction; the returned `ATransaction` will automatically roll back when it goes out of scope unless `commit()` is called.
+```c++
+ACoroTerminator runTransaction()
+{
+    auto db = co_await APool::coDatabase();
+    if (!db) {
+        qDebug() << "Connection error:" << db.error();
+        co_return;
+    }
+
+    auto transaction = co_await db->beginTransaction();
+    if (!transaction) {
+        qDebug() << "BEGIN error:" << transaction.error();
+        co_return;
+    }
+
+    auto result = co_await db->exec(u"INSERT INTO messages (message) VALUES ($1) RETURNING id"_s,
+                                    {u"Hello from coroutine!"_s});
+    if (!result) {
+        qDebug() << "INSERT error:" << result.error();
+        co_return; // transaction rolls back automatically
+    }
+    qDebug() << "Inserted id:" << result->begin().value(0).toInt();
+
+    auto commit = co_await transaction->commit();
+    if (!commit) {
+        qDebug() << "COMMIT error:" << commit.error();
+    }
+}
+
+runTransaction();
+```
+
+#### Lifetime management with co_yield
+`co_yield` a `QObject*` pointer to tie the coroutine's lifetime to that object. If the object is destroyed while the coroutine is suspended (e.g. waiting for a slow query), the coroutine is destroyed and the function is never resumed — preventing dangling-pointer crashes.
+```c++
+ACoroTerminator runWithLifetime()
+{
+    auto *guard = new QObject;
+    QTimer::singleShot(500, guard, [guard] { delete guard; }); // simulate early teardown
+
+    co_yield guard; // coroutine is destroyed when guard is destroyed
+
+    auto result = co_await APool::exec(u8"SELECT now(), pg_sleep(1)", guard);
+    if (result.has_value()) {
+        qDebug() << "result:" << result->toJsonObject();
+    } else {
+        qDebug() << "error (or cancelled):" << result.error();
+    }
+}
+
+runWithLifetime();
+```
+
+#### Cached queries
+Use `ACache::coExec()` inside a coroutine the same way as `ADatabase::exec()`.
+```c++
+ACoroTerminator runCached(ACache *cache)
+{
+    // First call hits the database
+    auto result = co_await cache->coExec(u"SELECT now()"_s);
+    if (result.has_value()) {
+        qDebug() << "fresh result:" << result->toJsonObject();
+    }
+
+    // Second call with the same query returns the cached result immediately
+    auto cached = co_await cache->coExec(u"SELECT now()"_s);
+    if (cached.has_value()) {
+        qDebug() << "cached result:" << cached->toJsonObject();
+    }
+}
+
+auto cache = new ACache;
+cache->setDatabase(APool::database());
+runCached(cache);
 ```
 
 ### Caching

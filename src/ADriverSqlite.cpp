@@ -30,7 +30,7 @@ ADriverSqlite::ADriverSqlite(const QString &connInfo)
             if (!promise.receiver.has_value() || !promise.receiver->isNull()) {
                 if (promise.cb) {
                     AResult result{promise.result};
-                    promise.cb(result);
+                    promise.cb.deliverResult(result);
                 }
             }
 
@@ -68,7 +68,7 @@ bool ADriverSqlite::isValid() const
 
 void ADriverSqlite::open(const std::shared_ptr<ADriver> &driver,
                          QObject *receiver,
-                         std::function<void(bool, const QString &)> cb)
+                         AOpenFn cb)
 {
     if (m_state == ADatabase::State::Connected) {
         if (cb) {
@@ -146,31 +146,31 @@ void ADriverSqlite::onStateChanged(QObject *receiver,
     }
 }
 
-void ADriverSqlite::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
+void ADriverSqlite::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
 {
-    exec(db, u8"BEGIN", receiver, cb);
+    exec(db, u8"BEGIN", receiver, std::move(cb));
 }
 
-void ADriverSqlite::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
+void ADriverSqlite::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
 {
-    exec(db, u8"COMMIT", receiver, cb);
+    exec(db, u8"COMMIT", receiver, std::move(cb));
 }
 
-void ADriverSqlite::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
+void ADriverSqlite::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
 {
-    exec(db, u8"ROLLBACK", receiver, cb);
+    exec(db, u8"ROLLBACK", receiver, std::move(cb));
 }
 
 void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          QUtf8StringView query,
                          QObject *receiver,
-                         AResultFn cb)
+                         AExpectedResultRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
 
     QueryPromise data{
-        .cb     = cb,
+        .cb     = std::move(cb),
         .result = std::make_shared<AResultSqlite>(),
     };
     if (receiver) {
@@ -190,13 +190,13 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
 void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          QStringView query,
                          QObject *receiver,
-                         AResultFn cb)
+                         AExpectedResultRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
 
     QueryPromise data{
-        .cb     = cb,
+        .cb     = std::move(cb),
         .result = std::make_shared<AResultSqlite>(),
     };
     if (receiver) {
@@ -217,13 +217,13 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          QUtf8StringView query,
                          const QVariantList &params,
                          QObject *receiver,
-                         AResultFn cb)
+                         AExpectedResultRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
 
     QueryPromise data{
-        .cb     = cb,
+        .cb     = std::move(cb),
         .result = std::make_shared<AResultSqlite>(),
     };
     if (receiver) {
@@ -245,13 +245,13 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          QStringView query,
                          const QVariantList &params,
                          QObject *receiver,
-                         AResultFn cb)
+                         AExpectedResultRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
 
     QueryPromise data{
-        .cb     = cb,
+        .cb     = std::move(cb),
         .result = std::make_shared<AResultSqlite>(),
     };
     if (receiver) {
@@ -273,14 +273,14 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          const APreparedQuery &query,
                          const QVariantList &params,
                          QObject *receiver,
-                         AResultFn cb)
+                         AExpectedResultRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
 
     QueryPromise data{
         .preparedQuery = query,
-        .cb            = cb,
+        .cb            = std::move(cb),
         .result        = std::make_shared<AResultSqlite>(),
     };
     if (receiver) {
