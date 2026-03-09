@@ -5,6 +5,7 @@
 
 #include "adriverpg.h"
 
+#include "acoroexpected.h"
 #include "aresult.h"
 
 #include <libpq-fe.h>
@@ -134,6 +135,7 @@ QString connectionStatus(ConnStatusType type)
         return u"STATUS: "_s.arg(type);
     }
 }
+
 } // namespace
 
 ADriverPg::ADriverPg(const QString &connInfo)
@@ -153,7 +155,7 @@ bool ADriverPg::isValid() const
     return true;
 }
 
-void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, ADatabaseOpenFn cb)
+void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, AOpenFn cb)
 {
     qDebug(ASQL_PG) << "Open" << connectionInfo();
     m_conn = std::make_unique<APgConn>(connectionInfo());
@@ -404,19 +406,19 @@ void ADriverPg::onStateChanged(QObject *receiver,
     }
 }
 
-void ADriverPg::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
+void ADriverPg::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
 {
-    exec(db, u8"BEGIN", receiver, cb);
+    exec(db, u8"BEGIN", receiver, std::move(cb));
 }
 
-void ADriverPg::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
+void ADriverPg::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
 {
-    exec(db, u8"COMMIT", receiver, cb);
+    exec(db, u8"COMMIT", receiver, std::move(cb));
 }
 
-void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb)
+void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
 {
-    exec(db, u8"ROLLBACK", receiver, cb);
+    exec(db, u8"ROLLBACK", receiver, std::move(cb));
 }
 
 void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
@@ -478,11 +480,11 @@ bool ADriverPg::queryShouldBeQueued() const
 void ADriverPg::exec(const std::shared_ptr<ADriver> &db,
                      QUtf8StringView query,
                      QObject *receiver,
-                     AResultFn cb)
+                     AExpectedResultRef cb)
 {
     APGQuery pgQuery;
     pgQuery.query.setRawData(query.data(), query.size());
-    pgQuery.cb = cb;
+    pgQuery.cb = std::move(cb);
 
     setupCheckReceiver(pgQuery, receiver);
 
@@ -495,11 +497,11 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db,
 void ADriverPg::exec(const std::shared_ptr<ADriver> &db,
                      QStringView query,
                      QObject *receiver,
-                     AResultFn cb)
+                     AExpectedResultRef cb)
 {
     APGQuery pgQuery;
     pgQuery.query = query.toUtf8();
-    pgQuery.cb    = cb;
+    pgQuery.cb    = std::move(cb);
 
     setupCheckReceiver(pgQuery, receiver);
 
@@ -513,12 +515,12 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db,
                      QUtf8StringView query,
                      const QVariantList &params,
                      QObject *receiver,
-                     AResultFn cb)
+                     AExpectedResultRef cb)
 {
     APGQuery pgQuery;
     pgQuery.query.setRawData(query.data(), query.size());
     pgQuery.params = params;
-    pgQuery.cb     = cb;
+    pgQuery.cb     = std::move(cb);
 
     setupCheckReceiver(pgQuery, receiver);
 
@@ -532,12 +534,12 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db,
                      QStringView query,
                      const QVariantList &params,
                      QObject *receiver,
-                     AResultFn cb)
+                     AExpectedResultRef cb)
 {
     APGQuery pgQuery;
     pgQuery.query  = query.toUtf8();
     pgQuery.params = params;
-    pgQuery.cb     = cb;
+    pgQuery.cb     = std::move(cb);
 
     setupCheckReceiver(pgQuery, receiver);
 
@@ -551,12 +553,12 @@ void ADriverPg::exec(const std::shared_ptr<ADriver> &db,
                      const APreparedQuery &query,
                      const QVariantList &params,
                      QObject *receiver,
-                     AResultFn cb)
+                     AExpectedResultRef cb)
 {
     APGQuery pgQuery;
     pgQuery.preparedQuery = query;
     pgQuery.params        = params;
-    pgQuery.cb            = cb;
+    pgQuery.cb            = std::move(cb);
 
     setupCheckReceiver(pgQuery, receiver);
 
@@ -645,12 +647,7 @@ void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db,
     }
 
     m_subscribedNotifications.insert(name, cb);
-    exec(db, QString{u"LISTEN " + name}, {}, this, [this, name](AResult &result) {
-        qDebug(ASQL_PG) << "subscribed" << !result.hasError() << result.errorString();
-        if (result.hasError()) {
-            m_subscribedNotifications.remove(name);
-        }
-    });
+    listenCoro(db, name);
 
     connect(
         receiver, &QObject::destroyed, this, [=, this] { m_subscribedNotifications.remove(name); });
@@ -664,10 +661,35 @@ QStringList ADriverPg::subscribedToNotifications() const
 void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name)
 {
     if (m_subscribedNotifications.remove(name)) {
-        exec(db, QString{u"UNLISTEN "_s + name}, {}, this, [=](AResult &result) {
-            qDebug(ASQL_PG) << "unsubscribed" << !result.hasError() << result.errorString();
-        });
+        unlistenCoro(db, name);
     }
+}
+
+ACoroTerminator ADriverPg::listenCoro(std::shared_ptr<ADriver> db, const QString &name)
+{
+    co_yield this;
+
+    AExpectedResult result(this);
+    const QString query = u"LISTEN "_s + name;
+    exec(db, QStringView(query), this, result.ref());
+    auto r = co_await result;
+
+    qDebug(ASQL_PG) << "subscribed" << r.has_value() << (!r ? r.error() : r->errorString());
+    if (!r || r->hasError()) {
+        m_subscribedNotifications.remove(name);
+    }
+}
+
+ACoroTerminator ADriverPg::unlistenCoro(std::shared_ptr<ADriver> db, const QString &name)
+{
+    co_yield this;
+
+    AExpectedResult result(this);
+    const QString query = u"UNLISTEN "_s + name;
+    exec(db, QStringView(query), this, result.ref());
+    auto r = co_await result;
+
+    qDebug(ASQL_PG) << "unsubscribed" << r.has_value() << (!r ? r.error() : r->errorString());
 }
 
 void ADriverPg::nextQuery()
@@ -676,7 +698,7 @@ void ADriverPg::nextQuery()
 
     while (pipelineOff && !m_queuedQueries.empty() && !m_queryRunning) {
         APGQuery &pgQuery = m_queuedQueries.front();
-        if (pgQuery.checkReceiver && pgQuery.receiver.isNull()) {
+        if ((pgQuery.checkReceiver && pgQuery.receiver.isNull()) || !pgQuery.cb) {
             m_queuedQueries.pop();
         } else {
             runQuery(pgQuery);

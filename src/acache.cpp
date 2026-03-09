@@ -282,14 +282,14 @@ int ACache::size() const
 AExpectedResult ACache::coExec(const QString &query, QObject *receiver)
 {
     AExpectedResult coro(receiver);
-    execExpiring(query, -1ms, {}, receiver, coro.callback);
+    execExpiring(query, -1ms, {}, receiver, coro.ref());
     return coro;
 }
 
 AExpectedResult ACache::coExec(const QString &query, const QVariantList &args, QObject *receiver)
 {
     AExpectedResult coro(receiver);
-    execExpiring(query, -1ms, args, receiver, coro.callback);
+    execExpiring(query, -1ms, args, receiver, coro.ref());
     return coro;
 }
 
@@ -298,7 +298,7 @@ AExpectedResult ACache::coExecExpiring(const QString &query,
                                        QObject *receiver)
 {
     AExpectedResult coro(receiver);
-    execExpiring(query, maxAge, {}, receiver, coro.callback);
+    execExpiring(query, maxAge, {}, receiver, coro.ref());
     return coro;
 }
 
@@ -308,7 +308,7 @@ AExpectedResult ACache::coExecExpiring(const QString &query,
                                        QObject *receiver)
 {
     AExpectedResult coro(receiver);
-    execExpiring(query, maxAge, args, receiver, coro.callback);
+    execExpiring(query, maxAge, args, receiver, coro.ref());
     return coro;
 }
 

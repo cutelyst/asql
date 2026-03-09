@@ -6,6 +6,7 @@
 
 #include "apreparedquery.h"
 #include "aresult.h"
+#include "acoroexpected.h"
 
 #include <adriver.h>
 #include <libpq-fe.h>
@@ -76,7 +77,7 @@ public:
     std::optional<APreparedQuery> preparedQuery;
     std::shared_ptr<AResultPg> result;
     QVariantList params;
-    AResultFn cb;
+    AExpectedResultRef cb;
     QPointer<QObject> receiver;
     QObject *checkReceiver = nullptr;
     bool preparing         = false;
@@ -88,7 +89,7 @@ public:
             result->m_query     = query;
             result->m_queryArgs = params;
             AResult r(std::move(result));
-            cb(r);
+            cb.deliverResult(r);
         }
     }
 
@@ -101,7 +102,7 @@ public:
             result->m_errorString = error;
             result->m_error       = true;
             AResult r(std::move(result));
-            cb(r);
+            cb.deliverResult(r);
         }
     }
 };
@@ -143,7 +144,7 @@ public:
     bool isValid() const override;
     void open(const std::shared_ptr<ADriver> &driver,
               QObject *receiver,
-              ADatabaseOpenFn cb) override;
+              AOpenFn cb) override;
     bool isOpen() const override;
 
     void setState(ADatabase::State state, const QString &status);
@@ -152,35 +153,35 @@ public:
         QObject *receiver,
         std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
-    void begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
-    void commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
-    void rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AResultFn cb) override;
+    void begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb) override;
+    void commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb) override;
+    void rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb) override;
 
     void exec(const std::shared_ptr<ADriver> &db,
               QUtf8StringView query,
               QObject *receiver,
-              AResultFn cb) override;
+              AExpectedResultRef cb) override;
 
     void exec(const std::shared_ptr<ADriver> &db,
               QStringView query,
               QObject *receiver,
-              AResultFn cb) override;
+              AExpectedResultRef cb) override;
 
     void exec(const std::shared_ptr<ADriver> &db,
               QUtf8StringView query,
               const QVariantList &params,
               QObject *receiver,
-              AResultFn cb) override;
+              AExpectedResultRef cb) override;
     void exec(const std::shared_ptr<ADriver> &db,
               QStringView query,
               const QVariantList &params,
               QObject *receiver,
-              AResultFn cb) override;
+              AExpectedResultRef cb) override;
     void exec(const std::shared_ptr<ADriver> &db,
               const APreparedQuery &query,
               const QVariantList &params,
               QObject *receiver,
-              AResultFn cb) override;
+              AExpectedResultRef cb) override;
 
     void setLastQuerySingleRowMode() override;
 
@@ -213,10 +214,12 @@ private:
     inline void setSingleRowMode();
     inline void cmdFlush();
     inline bool isConnected() const;
+    ACoroTerminator listenCoro(std::shared_ptr<ADriver> db, const QString &name);
+    ACoroTerminator unlistenCoro(std::shared_ptr<ADriver> db, const QString &name);
 
     struct OpenCaller {
         std::shared_ptr<ADriver> driver;
-        ADatabaseOpenFn cb;
+        AOpenFn cb;
         std::optional<QPointer<QObject>> receiverPtr;
 
         void emit(bool isOpen, const QString &error)

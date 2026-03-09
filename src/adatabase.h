@@ -8,6 +8,7 @@
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <optional>
 
 #include <QObject>
 #include <QVariantList>
@@ -15,6 +16,7 @@
 namespace ASql {
 
 class AResult;
+class ADatabase;
 class ATransaction;
 class ADriver;
 class ADriverFactory;
@@ -29,7 +31,151 @@ public:
 
 using ADatabaseOpenFn = std::function<void(bool isOpen, const QString &error)>;
 using ANotificationFn = std::function<void(const ADatabaseNotification &payload)>;
-using AResultFn       = std::function<void(AResult &result)>;
+
+/*!
+ * \brief ACoroOpenData is the base interface used by coroutine awaitables to receive open results.
+ *
+ * The ASql engine holds a \c std::weak_ptr<ACoroOpenData> instead of a copied callback lambda.
+ * When the open operation completes, the engine locks the weak_ptr and calls deliverOpen().
+ * If the coroutine has already been destroyed, lock() returns nullptr and the call is skipped.
+ */
+class ASQL_EXPORT ACoroOpenData
+{
+public:
+    virtual ~ACoroOpenData()                                         = default;
+    virtual void deliverOpen(bool isOpen, const QString &error) = 0;
+};
+
+/*!
+ * \brief AOpenFn is callable type accepted by driver open methods.
+ *
+ * Constructed from a \c std::weak_ptr<ACoroOpenData>; the driver holds only the weak reference
+ * and calls deliverOpen() on the pointed-to object when the connection attempt completes.
+ * If the awaitable has already been destroyed, lock() returns nullptr and the call is skipped.
+ */
+class ASQL_EXPORT AOpenFn
+{
+public:
+    AOpenFn() = default;
+
+    AOpenFn(std::weak_ptr<ACoroOpenData> coroData)
+        : m_coroData(std::move(coroData))
+    {
+    }
+
+    void operator()(bool isOpen, const QString &error) const
+    {
+        if (m_coroData.has_value()) {
+            if (auto data = m_coroData->lock()) {
+                data->deliverOpen(isOpen, error);
+            }
+        }
+    }
+
+    explicit operator bool() const
+    {
+        return m_coroData.has_value() && !m_coroData->expired();
+    }
+
+private:
+    std::optional<std::weak_ptr<ACoroOpenData>> m_coroData;
+};
+
+/*!
+ * \brief ACoroResult is the abstract delivery interface used by coroutine awaitables that receive
+ * query results (AResult).
+ *
+ * The ASql engine holds a \c std::weak_ptr<ACoroResult> instead of a copied callback lambda.
+ * When the query completes, the engine locks the weak_ptr and calls deliver().
+ * If the coroutine has already been destroyed, lock() returns nullptr and the call is skipped.
+ *
+ * The concrete implementation lives in \c ACoroData<T> (see acoroexpected.h).
+ */
+class ASQL_EXPORT ACoroResult
+{
+public:
+    virtual ~ACoroResult()             = default;
+    virtual void deliver(AResult &v)   = 0;
+};
+
+/*!
+ * \brief AResultFn is callable type accepted by all driver query methods.
+ *
+ * It can be constructed from:
+ * - A regular \c std::function<void(AResult&)> for non-coroutine callers (backward compatible).
+ * - A \c std::weak_ptr<ACoroResult> for the coroutine path (no lambda needed).
+ */
+class ASQL_EXPORT AResultFn
+{
+public:
+    AResultFn() = default;
+
+    AResultFn(std::function<void(AResult &result)> fn)
+        : m_fn(std::move(fn))
+    {
+    }
+
+    AResultFn(std::weak_ptr<ACoroResult> coroData)
+        : m_coroData(std::move(coroData))
+    {
+    }
+
+    void operator()(AResult &result) const
+    {
+        if (m_coroData.has_value()) {
+            if (auto data = m_coroData->lock()) {
+                data->deliver(result);
+            }
+        } else if (m_fn) {
+            m_fn(result);
+        }
+    }
+
+    explicit operator bool() const
+    {
+        if (m_coroData.has_value()) {
+            return !m_coroData->expired();
+        }
+        return bool(m_fn);
+    }
+
+private:
+    std::function<void(AResult &result)> m_fn;
+    std::optional<std::weak_ptr<ACoroResult>> m_coroData;
+};
+
+/*!
+ * \brief AExpectedResultRef is a lightweight, movable reference to an ACoroExpected's
+ * coroutine data. It holds a weak pointer to the underlying ACoroResult so the driver
+ * can deliver query results without keeping the awaitable alive.
+ *
+ * Obtain an instance via AExpectedResult::ref() or AExpectedMultiResult::ref().
+ */
+class ASQL_EXPORT AExpectedResultRef
+{
+public:
+    AExpectedResultRef() = default;
+
+    explicit AExpectedResultRef(std::weak_ptr<ACoroResult> coroData)
+        : m_coroData(std::move(coroData))
+    {
+    }
+
+    void deliverResult(AResult &result) const
+    {
+        if (auto data = m_coroData.lock()) {
+            data->deliver(result);
+        }
+    }
+
+    explicit operator bool() const { return !m_coroData.expired(); }
+
+    // Implicit conversion so AExpectedResultRef can be passed anywhere AResultFn is expected.
+    operator AResultFn() const { return AResultFn{m_coroData}; }
+
+private:
+    std::weak_ptr<ACoroResult> m_coroData;
+};
 
 template <typename T>
 class ACoroExpected;
@@ -37,10 +183,13 @@ class ACoroExpected;
 template <typename T>
 class ACoroMultiExpected;
 
+class AExpectedOpen;
+
 using AExpectedResult      = ACoroExpected<AResult>;
 using AExpectedMultiResult = ACoroMultiExpected<AResult>;
 
 using AExpectedTransaction = ACoroExpected<ATransaction>;
+using AExpectedDatabase    = ACoroExpected<ADatabase>;
 
 class APreparedQuery;
 class ASQL_EXPORT ADatabase
@@ -108,6 +257,21 @@ public:
      * \param cb
      */
     void open(QObject *receiver = nullptr, ADatabaseOpenFn cb = {});
+
+    /*!
+     * \brief coOpen opens the database and returns a coroutine awaitable.
+     *
+     * co_await the returned object to suspend until the connection is established
+     * (or fails). The result is \c std::expected<bool, QString>: \c true on success,
+     * or an error string on failure.
+     *
+     * The operation is only initiated if the current state is Disconnected;
+     * if already Connected the awaitable is immediately ready with \c true.
+     *
+     * \param receiver optional lifetime guard; if the QObject is destroyed
+     *        before the connection completes the coroutine is destroyed.
+     */
+    [[nodiscard]] AExpectedOpen coOpen(QObject *receiver = nullptr);
 
     /*!
      * \brief state
@@ -378,6 +542,71 @@ public:
 protected:
     friend class APool;
     std::shared_ptr<ADriver> d;
+};
+
+/*!
+ * \brief ACoroDatabase is the abstract delivery interface used by coroutine awaitables that
+ * receive a database connection (ADatabase).
+ *
+ * The concrete implementation lives in \c ACoroData<ADatabase> (see acoroexpected.h).
+ */
+class ASQL_EXPORT ACoroDatabase
+{
+public:
+    virtual ~ACoroDatabase()            = default;
+    virtual void deliver(ADatabase v)   = 0;
+};
+
+/*!
+ * \brief ADatabaseFn is the callable type accepted by pool methods that deliver a database
+ * connection.
+ *
+ * It can be constructed from:
+ * - A regular \c std::function<void(ADatabase)> for non-coroutine callers (backward compatible).
+ * - A \c std::weak_ptr<ACoroDatabase> for the coroutine path (no lambda needed).
+ */
+class ASQL_EXPORT ADatabaseFn
+{
+public:
+    ADatabaseFn() = default;
+
+    template <typename Callable,
+              typename = std::enable_if_t<
+                  !std::is_same_v<std::decay_t<Callable>, ADatabaseFn> &&
+                  !std::is_same_v<std::decay_t<Callable>, std::weak_ptr<ACoroDatabase>> &&
+                  std::is_invocable_v<std::decay_t<Callable>, ADatabase>>>
+    ADatabaseFn(Callable &&fn)
+        : m_fn(std::forward<Callable>(fn))
+    {
+    }
+
+    ADatabaseFn(std::weak_ptr<ACoroDatabase> coroData)
+        : m_coroData(std::move(coroData))
+    {
+    }
+
+    void operator()(ADatabase db) const
+    {
+        if (m_coroData.has_value()) {
+            if (auto data = m_coroData->lock()) {
+                data->deliver(std::move(db));
+            }
+        } else if (m_fn) {
+            m_fn(std::move(db));
+        }
+    }
+
+    explicit operator bool() const
+    {
+        if (m_coroData.has_value()) {
+            return !m_coroData->expired();
+        }
+        return bool(m_fn);
+    }
+
+private:
+    std::function<void(ADatabase db)> m_fn;
+    std::optional<std::weak_ptr<ACoroDatabase>> m_coroData;
 };
 
 } // namespace ASql

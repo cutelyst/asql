@@ -3,12 +3,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "../../src/acache.h"
+#include "../../src/acoroexpected.h"
 #include "../../src/adatabase.h"
-#include "../../src/amigrations.h"
 #include "../../src/apool.h"
 #include "../../src/aresult.h"
-#include "../../src/atransaction.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -19,6 +17,9 @@
 #include <QUrl>
 #include <QUuid>
 
+using namespace ASql;
+using namespace Qt::StringLiterals;
+
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
@@ -26,20 +27,19 @@ int main(int argc, char *argv[])
     auto obj = new QObject;
     {
         ADatabase db(u"postgres:///?target_session_attrs=read-write"_s);
-        db.open([db, obj](bool ok, const QString &status) {
-            qDebug() << "OPEN value" << ok << status;
+        [](ADatabase db, QObject *obj) -> ACoroTerminator {
+            auto opened = co_await db.coOpen(obj);
+            qDebug() << "OPEN value" << opened.has_value() << opened.error();
 
-            ADatabase(db).exec(u"SELECT now()"_s, [db](AResult &result) {
-                if (result.error()) {
-                    qDebug() << "SELECT error" << result.errorString();
-                    return;
+            if (opened.has_value()) {
+                auto result = co_await db.exec(u"SELECT now()"_s, obj);
+                if (!result.has_value()) {
+                    qDebug() << "SELECT error" << result.error();
+                } else {
+                    qDebug() << "SELECT value" << result->toJsonObject();
                 }
-
-                if (result.next()) {
-                    qDebug() << "SELECT value" << result.value(0);
-                }
-            }, obj);
-        });
+            }
+        }(db, obj);
     }
 
     QTimer::singleShot(2000, [=] {

@@ -38,6 +38,17 @@ public:
     }
 
     /*!
+     * \brief fromStarted creates an ATransaction that is already in a started state.
+     *
+     * This factory is used internally when a BEGIN query has already been sent to the
+     * database (e.g. by ADatabase::beginTransaction or APool::begin) and the transaction
+     * object just needs to track that running state.
+     *
+     * \param db the database connection that issued BEGIN
+     */
+    static ATransaction fromStarted(const ADatabase &db);
+
+    /*!
      * \brief begin a transaction, this operation usually succeeds,
      * but one can hook up a callback to check it's result.
      *
@@ -73,12 +84,8 @@ public:
 
     [[nodiscard]] bool isActive() const;
 
-protected:
-    template <typename T>
-    friend class ACoroExpected;
-    ATransaction(const ADatabase &db, bool started);
-
 private:
+    ATransaction(const ADatabase &db, bool started);
     std::shared_ptr<ATransactionPrivate> d;
 };
 

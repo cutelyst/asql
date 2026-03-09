@@ -56,8 +56,50 @@ void ADatabase::open(QObject *receiver, ADatabaseOpenFn cb)
     }
 
     if (d->state() == ADatabase::State::Disconnected) {
-        d->open(d, receiver, cb);
+        if (cb) {
+            // Wrap the legacy callback in an ACoroOpenData adapter.
+            // The adapter holds a self-reference so it stays alive until
+            // deliverOpen() is invoked, at which point the self-reference
+            // is released and only the driver's weak_ptr remains.
+            struct OpenAdapter final : public ACoroOpenData {
+                ADatabaseOpenFn fn;
+                std::optional<QPointer<QObject>> receiverPtr;
+                std::shared_ptr<OpenAdapter> keepAlive;
+
+                void deliverOpen(bool isOpen, const QString &error) override
+                {
+                    auto ref = std::move(keepAlive); // release self-ref after call
+                    if (!receiverPtr.has_value() || !receiverPtr->isNull()) {
+                        fn(isOpen, error);
+                    }
+                }
+            };
+            auto adapter      = std::make_shared<OpenAdapter>();
+            adapter->fn       = std::move(cb);
+            adapter->keepAlive = adapter; // self-reference
+            if (receiver) {
+                adapter->receiverPtr = receiver;
+            }
+            d->open(d, receiver, AOpenFn{std::weak_ptr<ACoroOpenData>(adapter)});
+        } else {
+            d->open(d, receiver, AOpenFn{});
+        }
     }
+}
+
+AExpectedOpen ADatabase::coOpen(QObject *receiver)
+{
+    AExpectedOpen coro(receiver);
+    if (!d) {
+        d = std::make_shared<ADriver>();
+    }
+
+    if (d->state() == ADatabase::State::Connected) {
+        coro.m_data->deliverOpen(true, {});
+    } else if (d->state() == ADatabase::State::Disconnected) {
+        d->open(d, receiver, AOpenFn{std::weak_ptr<ACoroOpenData>{coro.m_data}});
+    }
+    return coro;
 }
 
 ADatabase::State ADatabase::state() const
@@ -84,7 +126,7 @@ AExpectedResult ADatabase::begin(QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
-    d->begin(d, receiver, coro.callback);
+    d->begin(d, receiver, coro.ref());
     return coro;
 }
 
@@ -92,8 +134,14 @@ AExpectedTransaction ADatabase::beginTransaction(QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedTransaction coro(receiver);
-    coro.database = d;
-    d->begin(d, receiver, coro.callback);
+    [](auto chainData, ADatabase db, QObject *receiver) -> ACoroTerminator {
+        auto result = co_await db.begin(receiver);
+        if (result.has_value()) {
+            chainData->deliverDirect(ATransaction::fromStarted(db));
+        } else {
+            chainData->deliverDirect(std::unexpected(result.error()));
+        }
+    }(coro.m_data, *this, receiver);
     return coro;
 }
 
@@ -101,7 +149,7 @@ AExpectedResult ADatabase::commit(QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
-    d->commit(d, receiver, coro.callback);
+    d->commit(d, receiver, coro.ref());
     return coro;
 }
 
@@ -109,7 +157,7 @@ AExpectedResult ADatabase::rollback(QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
-    d->rollback(d, receiver, coro.callback);
+    d->rollback(d, receiver, coro.ref());
     return coro;
 }
 
@@ -117,7 +165,7 @@ AExpectedResult ADatabase::exec(QStringView query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
-    d->exec(d, query, receiver, coro.callback);
+    d->exec(d, query, receiver, coro.ref());
     return coro;
 }
 
@@ -125,7 +173,7 @@ AExpectedResult ADatabase::exec(QStringView query, const QVariantList &params, Q
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
-    d->exec(d, query, params, receiver, coro.callback);
+    d->exec(d, query, params, receiver, coro.ref());
     return coro;
 }
 
@@ -133,7 +181,7 @@ AExpectedMultiResult ADatabase::execMulti(QStringView query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedMultiResult coro(receiver);
-    d->exec(d, query, receiver, coro.callback);
+    d->exec(d, query, receiver, coro.ref());
     return coro;
 }
 
@@ -141,7 +189,7 @@ AExpectedMultiResult ADatabase::execMulti(QUtf8StringView query, QObject *receiv
 {
     Q_ASSERT(d);
     AExpectedMultiResult coro(receiver);
-    d->exec(d, query, receiver, coro.callback);
+    d->exec(d, query, receiver, coro.ref());
     return coro;
 }
 
@@ -149,7 +197,7 @@ AExpectedResult ADatabase::exec(QUtf8StringView query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
-    d->exec(d, query, QVariantList(), receiver, coro.callback);
+    d->exec(d, query, QVariantList(), receiver, coro.ref());
     return coro;
 }
 
@@ -158,7 +206,7 @@ AExpectedResult
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
-    d->exec(d, query, params, receiver, coro.callback);
+    d->exec(d, query, params, receiver, coro.ref());
     return coro;
 }
 
@@ -166,7 +214,7 @@ AExpectedResult ADatabase::exec(const APreparedQuery &query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
-    d->exec(d, query, QVariantList(), receiver, coro.callback);
+    d->exec(d, query, QVariantList(), receiver, coro.ref());
     return coro;
 }
 
@@ -175,7 +223,7 @@ AExpectedResult
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
-    d->exec(d, query, params, receiver, coro.callback);
+    d->exec(d, query, params, receiver, coro.ref());
     return coro;
 }
 
