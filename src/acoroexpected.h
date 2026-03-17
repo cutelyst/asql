@@ -138,10 +138,10 @@ public:
         QObject::disconnect(m_destroyConn);
     }
 
-    [[nodiscard]] AExpectedResultRef ref() const
+    [[nodiscard]] ACoroDataRef ref() const
         requires(!std::is_same_v<T, ADatabase>)
     {
-        return AExpectedResultRef{std::weak_ptr<ACoroResult>(m_data)};
+        return ACoroDataRef{std::weak_ptr<ACoroResult>(m_data)};
     }
 
 protected:
@@ -244,9 +244,9 @@ public:
         QObject::disconnect(m_destroyConn);
     }
 
-    [[nodiscard]] AExpectedResultRef ref() const
+    [[nodiscard]] ACoroDataRef ref() const
     {
-        return AExpectedResultRef{std::weak_ptr<ACoroResult>(m_data)};
+        return ACoroDataRef{std::weak_ptr<ACoroResult>(m_data)};
     }
 
 protected:

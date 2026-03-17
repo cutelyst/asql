@@ -95,7 +95,7 @@ bool ADriver::isOpen() const
     return false;
 }
 
-void ADriver::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
+void ADriver::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb)
 {
     Q_UNUSED(db);
     Q_UNUSED(receiver);
@@ -105,7 +105,7 @@ void ADriver::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpe
     }
 }
 
-void ADriver::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
+void ADriver::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb)
 {
     Q_UNUSED(db);
     Q_UNUSED(receiver);
@@ -115,7 +115,7 @@ void ADriver::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AExp
     }
 }
 
-void ADriver::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
+void ADriver::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb)
 {
     Q_UNUSED(db);
     Q_UNUSED(receiver);
@@ -128,7 +128,7 @@ void ADriver::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AE
 void ADriver::exec(const std::shared_ptr<ADriver> &driver,
                    QUtf8StringView query,
                    QObject *receiver,
-                   AExpectedResultRef cb)
+                   ACoroDataRef cb)
 {
     exec(driver, query, {}, receiver, std::move(cb));
 }
@@ -136,7 +136,7 @@ void ADriver::exec(const std::shared_ptr<ADriver> &driver,
 void ADriver::exec(const std::shared_ptr<ADriver> &driver,
                    QStringView query,
                    QObject *receiver,
-                   AExpectedResultRef cb)
+                   ACoroDataRef cb)
 {
     exec(driver, query, {}, receiver, std::move(cb));
 }
@@ -145,7 +145,7 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db,
                    QStringView query,
                    const QVariantList &params,
                    QObject *receiver,
-                   AExpectedResultRef cb)
+                   ACoroDataRef cb)
 {
     Q_UNUSED(db)
     Q_UNUSED(query)
@@ -161,7 +161,7 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db,
                    QUtf8StringView query,
                    const QVariantList &params,
                    QObject *receiver,
-                   AExpectedResultRef cb)
+                   ACoroDataRef cb)
 {
     Q_UNUSED(db);
     Q_UNUSED(query);
@@ -177,7 +177,7 @@ void ADriver::exec(const std::shared_ptr<ADriver> &db,
                    const APreparedQuery &query,
                    const QVariantList &params,
                    QObject *receiver,
-                   AExpectedResultRef cb)
+                   ACoroDataRef cb)
 {
     Q_UNUSED(db);
     Q_UNUSED(query);

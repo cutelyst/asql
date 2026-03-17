@@ -279,67 +279,48 @@ int ACache::size() const
     return d->cache.size();
 }
 
-AExpectedResult ACache::coExec(const QString &query, QObject *receiver)
-{
-    AExpectedResult coro(receiver);
-    execExpiring(query, -1ms, {}, receiver, coro.ref());
-    return coro;
-}
-
-AExpectedResult ACache::coExec(const QString &query, const QVariantList &args, QObject *receiver)
-{
-    AExpectedResult coro(receiver);
-    execExpiring(query, -1ms, args, receiver, coro.ref());
-    return coro;
-}
-
-AExpectedResult ACache::coExecExpiring(const QString &query,
-                                       std::chrono::milliseconds maxAge,
-                                       QObject *receiver)
-{
-    AExpectedResult coro(receiver);
-    execExpiring(query, maxAge, {}, receiver, coro.ref());
-    return coro;
-}
-
-AExpectedResult ACache::coExecExpiring(const QString &query,
-                                       std::chrono::milliseconds maxAge,
-                                       const QVariantList &args,
-                                       QObject *receiver)
-{
-    AExpectedResult coro(receiver);
-    execExpiring(query, maxAge, args, receiver, coro.ref());
-    return coro;
-}
-
-void ACache::exec(const QString &query, QObject *receiver, AResultFn cb)
-{
-    execExpiring(query, -1ms, {}, receiver, cb);
-}
-
-void ACache::exec(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb)
-{
-    execExpiring(query, -1ms, args, receiver, cb);
-}
-
-void ACache::execExpiring(const QString &query,
-                          std::chrono::milliseconds maxAge,
-                          QObject *receiver,
-                          AResultFn cb)
-{
-    execExpiring(query, maxAge, {}, receiver, cb);
-}
-
-void ACache::execExpiring(const QString &query,
-                          std::chrono::milliseconds maxAge,
-                          const QVariantList &args,
-                          QObject *receiver,
-                          AResultFn cb)
+AExpectedResult ACache::exec(const QString &query, QObject *receiver)
 {
     Q_D(ACache);
-    if (!d->searchOrQueue(query, maxAge, args, receiver, cb)) {
-        d->requestData(query, args, receiver, cb);
+    AExpectedResult coro(receiver);
+    if (!d->searchOrQueue(query, -1ms, {}, receiver, coro.ref())) {
+        d->requestData(query, {}, receiver, coro.ref());
     }
+    return coro;
+}
+
+AExpectedResult ACache::exec(const QString &query, const QVariantList &args, QObject *receiver)
+{
+    Q_D(ACache);
+    AExpectedResult coro(receiver);
+    if (!d->searchOrQueue(query, -1ms, args, receiver, coro.ref())) {
+        d->requestData(query, args, receiver, coro.ref());
+    }
+    return coro;
+}
+
+AExpectedResult
+    ACache::execExpiring(const QString &query, std::chrono::milliseconds maxAge, QObject *receiver)
+{
+    Q_D(ACache);
+    AExpectedResult coro(receiver);
+    if (!d->searchOrQueue(query, maxAge, {}, receiver, coro.ref())) {
+        d->requestData(query, {}, receiver, coro.ref());
+    }
+    return coro;
+}
+
+AExpectedResult ACache::execExpiring(const QString &query,
+                                     std::chrono::milliseconds maxAge,
+                                     const QVariantList &args,
+                                     QObject *receiver)
+{
+    Q_D(ACache);
+    AExpectedResult coro(receiver);
+    if (!d->searchOrQueue(query, maxAge, args, receiver, coro.ref())) {
+        d->requestData(query, args, receiver, coro.ref());
+    }
+    return coro;
 }
 
 #include "moc_acache.cpp"

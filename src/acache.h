@@ -47,28 +47,16 @@ public:
      */
     [[nodiscard]] int size() const;
 
-    AExpectedResult coExec(const QString &query, QObject *receiver = nullptr);
+    AExpectedResult exec(const QString &query, QObject *receiver = nullptr);
     AExpectedResult
-        coExec(const QString &query, const QVariantList &args, QObject *receiver = nullptr);
-    AExpectedResult coExecExpiring(const QString &query,
-                                   std::chrono::milliseconds maxAge,
-                                   QObject *receiver = nullptr);
-    AExpectedResult coExecExpiring(const QString &query,
-                                   std::chrono::milliseconds maxAge,
-                                   const QVariantList &args,
-                                   QObject *receiver = nullptr);
-
-    void exec(const QString &query, QObject *receiver, AResultFn cb);
-    void exec(const QString &query, const QVariantList &args, QObject *receiver, AResultFn cb);
-    void execExpiring(const QString &query,
-                      std::chrono::milliseconds maxAge,
-                      QObject *receiver,
-                      AResultFn cb);
-    void execExpiring(const QString &query,
-                      std::chrono::milliseconds maxAge,
-                      const QVariantList &args,
-                      QObject *receiver,
-                      AResultFn cb);
+        exec(const QString &query, const QVariantList &args, QObject *receiver = nullptr);
+    AExpectedResult execExpiring(const QString &query,
+                                 std::chrono::milliseconds maxAge,
+                                 QObject *receiver = nullptr);
+    AExpectedResult execExpiring(const QString &query,
+                                 std::chrono::milliseconds maxAge,
+                                 const QVariantList &args,
+                                 QObject *receiver = nullptr);
 
 private:
     ACachePrivate *d_ptr;

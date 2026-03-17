@@ -172,7 +172,7 @@ void TestSqlite::testQueries()
                 [finished] { qDebug() << "singleQuery2 exited" << finished.use_count(); });
 
             qDebug() << Q_FUNC_INFO << 1;
-            std::ignore = APool::coDatabase();
+            std::ignore = APool::database();
             qDebug() << Q_FUNC_INFO << 2;
             co_return;
         };

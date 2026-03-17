@@ -32,11 +32,11 @@ int main(int argc, char *argv[])
     APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setMaxIdleConnections(10);
 
+#if 0
     []() -> ACoroTerminator {
         auto db = APool::database();
         auto t  = co_await db.beginTransaction();
         if (t) {
-#if 0
             db.exec(u"SELECT now()"_s, nullptr);
             if (!result) {
                 qDebug() << "SELECT error" << result.error();
@@ -47,9 +47,9 @@ int main(int argc, char *argv[])
                 qDebug() << "SELECT value" << result.begin().value(0);
                 ATransaction(t).commit();
             }
-#endif
         }
     }();
+#endif
 
     {
 #if 0

@@ -34,40 +34,38 @@ public:
 
     virtual bool isOpen() const;
 
+    virtual void begin(const std::shared_ptr<ADriver> &driver, QObject *receiver, ACoroDataRef cb);
+    virtual void commit(const std::shared_ptr<ADriver> &driver, QObject *receiver, ACoroDataRef cb);
     virtual void
-        begin(const std::shared_ptr<ADriver> &driver, QObject *receiver, AExpectedResultRef cb);
-    virtual void
-        commit(const std::shared_ptr<ADriver> &driver, QObject *receiver, AExpectedResultRef cb);
-    virtual void
-        rollback(const std::shared_ptr<ADriver> &driver, QObject *receiver, AExpectedResultRef cb);
+        rollback(const std::shared_ptr<ADriver> &driver, QObject *receiver, ACoroDataRef cb);
 
     virtual void exec(const std::shared_ptr<ADriver> &driver,
                       QUtf8StringView query,
                       QObject *receiver,
-                      AExpectedResultRef cb);
+                      ACoroDataRef cb);
 
     virtual void exec(const std::shared_ptr<ADriver> &driver,
                       QStringView query,
                       QObject *receiver,
-                      AExpectedResultRef cb);
+                      ACoroDataRef cb);
 
     virtual void exec(const std::shared_ptr<ADriver> &driver,
                       QUtf8StringView query,
                       const QVariantList &params,
                       QObject *receiver,
-                      AExpectedResultRef cb);
+                      ACoroDataRef cb);
 
     virtual void exec(const std::shared_ptr<ADriver> &driver,
                       QStringView query,
                       const QVariantList &params,
                       QObject *receiver,
-                      AExpectedResultRef cb);
+                      ACoroDataRef cb);
 
     virtual void exec(const std::shared_ptr<ADriver> &driver,
                       const APreparedQuery &query,
                       const QVariantList &params,
                       QObject *receiver,
-                      AExpectedResultRef cb);
+                      ACoroDataRef cb);
 
     virtual void setLastQuerySingleRowMode();
 

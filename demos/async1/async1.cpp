@@ -26,8 +26,8 @@ using namespace Qt::StringLiterals;
 
 void recursiveLoop()
 {
-    auto db = APool::database(u"memory_loop");
 #if 0
+    auto db = APool::database(u"memory_loop");
     db.exec(u"SELECT now()", {QJsonObject{{u"foo"_s, true}}}, nullptr, [](AResult &result) {
         if (result.hasError()) {
             qDebug() << "Error memory_loop" << result.errorString();

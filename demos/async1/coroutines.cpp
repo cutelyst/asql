@@ -73,31 +73,31 @@ int main(int argc, char *argv[])
         callTransaction();
     }
 
-    if (false) {
-        auto cache = new ACache;
-        cache->setDatabase(APool::database());
+    // if (false) {
+    //     auto cache = new ACache;
+    //     cache->setDatabase(APool::database());
 
-        auto callCache = [cache]() -> ACoroTerminator {
-            auto _ = qScopeGuard([] { qDebug() << "coro cache exited"; });
-            qDebug() << "coro cache started";
+    //     auto callCache = [cache]() -> ACoroTerminator {
+    //         auto _ = qScopeGuard([] { qDebug() << "coro cache exited"; });
+    //         qDebug() << "coro cache started";
 
-            auto result = co_await cache->coExec(u"SELECT now(), pg_sleep(1)"_s, nullptr);
-            if (result.has_value()) {
-                qDebug() << "coro result has value" << result->toJsonObject();
-            } else {
-                qDebug() << "coro result error" << result.error();
-            }
+    //         auto result = co_await cache->exec(u"SELECT now(), pg_sleep(1)"_s, nullptr);
+    //         if (result.has_value()) {
+    //             qDebug() << "coro result has value" << result->toJsonObject();
+    //         } else {
+    //             qDebug() << "coro result error" << result.error();
+    //         }
 
-            auto resultCached = co_await cache->coExec(u"SELECT now(), pg_sleep(1)"_s, nullptr);
-            if (resultCached.has_value()) {
-                qDebug() << "coro resultCached has value" << resultCached->toJsonObject();
-            } else {
-                qDebug() << "coro resultCached error" << resultCached.error();
-            }
-        };
+    //         auto resultCached = co_await cache->exec(u"SELECT now(), pg_sleep(1)"_s, nullptr);
+    //         if (resultCached.has_value()) {
+    //             qDebug() << "coro resultCached has value" << resultCached->toJsonObject();
+    //         } else {
+    //             qDebug() << "coro resultCached error" << resultCached.error();
+    //         }
+    //     };
 
-        callCache();
-    }
+    //     callCache();
+    // }
 
     if (false) {
         auto callInvalid = []() -> ACoroTerminator {

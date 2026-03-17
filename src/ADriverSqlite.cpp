@@ -144,23 +144,17 @@ void ADriverSqlite::onStateChanged(QObject *receiver,
     }
 }
 
-void ADriverSqlite::begin(const std::shared_ptr<ADriver> &db,
-                          QObject *receiver,
-                          AExpectedResultRef cb)
+void ADriverSqlite::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb)
 {
     exec(db, u8"BEGIN", receiver, std::move(cb));
 }
 
-void ADriverSqlite::commit(const std::shared_ptr<ADriver> &db,
-                           QObject *receiver,
-                           AExpectedResultRef cb)
+void ADriverSqlite::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb)
 {
     exec(db, u8"COMMIT", receiver, std::move(cb));
 }
 
-void ADriverSqlite::rollback(const std::shared_ptr<ADriver> &db,
-                             QObject *receiver,
-                             AExpectedResultRef cb)
+void ADriverSqlite::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb)
 {
     exec(db, u8"ROLLBACK", receiver, std::move(cb));
 }
@@ -168,7 +162,7 @@ void ADriverSqlite::rollback(const std::shared_ptr<ADriver> &db,
 void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          QUtf8StringView query,
                          QObject *receiver,
-                         AExpectedResultRef cb)
+                         ACoroDataRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
@@ -194,7 +188,7 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
 void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          QStringView query,
                          QObject *receiver,
-                         AExpectedResultRef cb)
+                         ACoroDataRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
@@ -221,7 +215,7 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          QUtf8StringView query,
                          const QVariantList &params,
                          QObject *receiver,
-                         AExpectedResultRef cb)
+                         ACoroDataRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
@@ -249,7 +243,7 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          QStringView query,
                          const QVariantList &params,
                          QObject *receiver,
-                         AExpectedResultRef cb)
+                         ACoroDataRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
@@ -277,7 +271,7 @@ void ADriverSqlite::exec(const std::shared_ptr<ADriver> &db,
                          const APreparedQuery &query,
                          const QVariantList &params,
                          QObject *receiver,
-                         AExpectedResultRef cb)
+                         ACoroDataRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
