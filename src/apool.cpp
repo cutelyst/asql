@@ -281,9 +281,7 @@ void APool::database(QObject *receiver, ADatabaseFn cb, QStringView poolName)
 AExpectedDatabase APool::coDatabase(QObject *receiver, QStringView poolName)
 {
     AExpectedDatabase coro(receiver);
-    database(receiver,
-             ADatabaseFn{std::weak_ptr<ACoroDatabase>{coro.m_data}},
-             poolName);
+    database(receiver, ADatabaseFn{std::weak_ptr<ACoroDatabase>{coro.m_data}}, poolName);
     return coro;
 }
 
@@ -346,7 +344,10 @@ AExpectedResult APool::exec(QStringView query, QObject *receiver, QStringView po
     AExpectedResult coro(receiver);
     auto ref = coro.ref();
 
-    [](AExpectedResultRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+    [](AExpectedResultRef ref,
+       auto query,
+       QObject *receiver,
+       QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, receiver);
@@ -371,7 +372,10 @@ AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringVie
     AExpectedResult coro(receiver);
     auto ref = coro.ref();
 
-    [](AExpectedResultRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+    [](AExpectedResultRef ref,
+       auto query,
+       QObject *receiver,
+       QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, receiver);
@@ -396,7 +400,10 @@ AExpectedMultiResult APool::execMulti(QStringView query, QObject *receiver, QStr
     AExpectedMultiResult coro(receiver);
     auto ref = coro.ref();
 
-    [](AExpectedResultRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+    [](AExpectedResultRef ref,
+       auto query,
+       QObject *receiver,
+       QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto awaiter = db->execMulti(query, receiver);
@@ -429,7 +436,10 @@ AExpectedMultiResult
     AExpectedMultiResult coro(receiver);
     auto ref = coro.ref();
 
-    [](AExpectedResultRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+    [](AExpectedResultRef ref,
+       auto query,
+       QObject *receiver,
+       QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto awaiter = db->execMulti(query, receiver);
@@ -461,7 +471,10 @@ AExpectedResult APool::exec(const APreparedQuery &query, QObject *receiver, QStr
     AExpectedResult coro(receiver);
     auto ref = coro.ref();
 
-    [](AExpectedResultRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
+    [](AExpectedResultRef ref,
+       auto query,
+       QObject *receiver,
+       QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, receiver);
@@ -489,8 +502,11 @@ AExpectedResult APool::exec(QStringView query,
     AExpectedResult coro(receiver);
     auto ref = coro.ref();
 
-    [](AExpectedResultRef ref, auto query, QVariantList params, QObject *receiver, QStringView poolName)
-        -> ACoroTerminator {
+    [](AExpectedResultRef ref,
+       auto query,
+       QVariantList params,
+       QObject *receiver,
+       QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, params, receiver);
@@ -519,8 +535,11 @@ AExpectedResult APool::exec(QUtf8StringView query,
     AExpectedResult coro(receiver);
     auto ref = coro.ref();
 
-    [](AExpectedResultRef ref, auto query, QVariantList params, QObject *receiver, QStringView poolName)
-        -> ACoroTerminator {
+    [](AExpectedResultRef ref,
+       auto query,
+       QVariantList params,
+       QObject *receiver,
+       QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, params, receiver);
@@ -548,8 +567,11 @@ AExpectedResult APool::exec(const APreparedQuery &query,
     AExpectedResult coro(receiver);
     auto ref = coro.ref();
 
-    [](AExpectedResultRef ref, auto query, QVariantList params, QObject *receiver, QStringView poolName)
-        -> ACoroTerminator {
+    [](AExpectedResultRef ref,
+       auto query,
+       QVariantList params,
+       QObject *receiver,
+       QStringView poolName) -> ACoroTerminator {
         auto db = co_await coDatabase(receiver, poolName);
         if (db) {
             auto result = co_await db->exec(query, params, receiver);

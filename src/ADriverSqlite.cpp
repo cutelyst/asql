@@ -66,9 +66,7 @@ bool ADriverSqlite::isValid() const
     return true;
 }
 
-void ADriverSqlite::open(const std::shared_ptr<ADriver> &driver,
-                         QObject *receiver,
-                         AOpenFn cb)
+void ADriverSqlite::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, AOpenFn cb)
 {
     if (m_state == ADatabase::State::Connected) {
         if (cb) {
@@ -146,17 +144,23 @@ void ADriverSqlite::onStateChanged(QObject *receiver,
     }
 }
 
-void ADriverSqlite::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
+void ADriverSqlite::begin(const std::shared_ptr<ADriver> &db,
+                          QObject *receiver,
+                          AExpectedResultRef cb)
 {
     exec(db, u8"BEGIN", receiver, std::move(cb));
 }
 
-void ADriverSqlite::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
+void ADriverSqlite::commit(const std::shared_ptr<ADriver> &db,
+                           QObject *receiver,
+                           AExpectedResultRef cb)
 {
     exec(db, u8"COMMIT", receiver, std::move(cb));
 }
 
-void ADriverSqlite::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
+void ADriverSqlite::rollback(const std::shared_ptr<ADriver> &db,
+                             QObject *receiver,
+                             AExpectedResultRef cb)
 {
     exec(db, u8"ROLLBACK", receiver, std::move(cb));
 }

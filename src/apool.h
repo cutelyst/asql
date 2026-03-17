@@ -198,8 +198,8 @@ public:
                                               QObject *receiver    = nullptr,
                                               QStringView poolName = defaultPool);
 
-    [[nodiscard]] static AExpectedTransaction
-        begin(QObject *receiver = nullptr, QStringView poolName = defaultPool);
+    [[nodiscard]] static AExpectedTransaction begin(QObject *receiver    = nullptr,
+                                                    QStringView poolName = defaultPool);
 
 private:
     inline static void pushDatabaseBack(QStringView connectionName, ADriver *driver);
