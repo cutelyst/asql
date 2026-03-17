@@ -45,6 +45,11 @@ if (DRIVER_POSTGRES)
     find_package(PostgreSQL REQUIRED)
 endif ()
 
+option(DRIVER_MYSQL "Enable MySQL Driver" ON)
+if (DRIVER_MYSQL)
+    find_package(MySQL REQUIRED)
+endif ()
+
 # NONE
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
