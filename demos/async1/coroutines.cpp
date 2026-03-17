@@ -9,6 +9,7 @@
 #include "../../src/amigrations.h"
 #include "../../src/apg.h"
 #include "../../src/apool.h"
+#include "../../src/apreparedquery.h"
 #include "../../src/aresult.h"
 #include "../../src/atransaction.h"
 
@@ -247,7 +248,7 @@ int main(int argc, char *argv[])
         callTerminatorLater();
     }
 
-    if (true) {
+    if (false) {
         auto callPool = []() -> ACoroTerminator {
             auto _ = qScopeGuard([] { qDebug() << "callPool exited"; });
             qDebug() << "callPool started";
@@ -278,6 +279,55 @@ int main(int argc, char *argv[])
                 qDebug() << "coro exec result has value" << result->toJsonObject();
             } else {
                 qDebug() << "coro exec result error" << result.error();
+            }
+        };
+
+        callPool();
+    }
+
+    if (true) {
+        auto callPool = []() -> ACoroTerminator {
+            auto _ = qScopeGuard([] { qDebug() << "callPool exited"; });
+            qDebug() << "callPool started";
+
+            auto db = co_await APool::coDatabase(nullptr);
+            if (!db.has_value()) {
+                qDebug() << "coro exec get db error" << db.error();
+                co_return;
+            }
+
+            auto result = co_await db->exec(u"SET search_path TO bar", nullptr);
+            if (result.has_value()) {
+                qDebug() << "coro exec search_path has value" << result->toJsonObject();
+            } else {
+                qDebug() << "coro exec search_path error" << result.error();
+            }
+
+            const auto preparedQuery = APreparedQuery(u"SELECT ss FROM mytable");
+
+            result = co_await db->exec(preparedQuery, nullptr);
+            if (result.has_value()) {
+                qDebug() << "coro exec foo has value" << result->toJsonObject()
+                         << preparedQuery.identification();
+            } else {
+                qDebug() << "coro exec foo error" << result.error()
+                         << preparedQuery.identification();
+            }
+
+            result = co_await db->exec(u"SET search_path TO foo", nullptr);
+            if (result.has_value()) {
+                qDebug() << "coro exec search_path has value" << result->toJsonObject();
+            } else {
+                qDebug() << "coro exec search_path error" << result.error();
+            }
+
+            result = co_await db->exec(preparedQuery, nullptr);
+            if (result.has_value()) {
+                qDebug() << "coro exec foo has value" << result->toJsonObject()
+                         << preparedQuery.identification();
+            } else {
+                qDebug() << "coro exec foo error" << result.error()
+                         << preparedQuery.identification();
             }
         };
 
