@@ -134,7 +134,7 @@ void TestSqlite::testQueries()
             auto _ = qScopeGuard(
                 [finished] { qDebug() << "multipleQueries exited" << finished.use_count(); });
 
-            auto db = co_await APool::coDatabase();
+            auto db = co_await APool::database();
             AVERIFY(db);
 
             // TODO use APool::begin() once new coro class is ready
@@ -167,17 +167,6 @@ void TestSqlite::testQueries()
         };
         singleQuery();
 
-        auto singleQuery2 = [finished]() -> ACoroTerminator {
-            auto _ = qScopeGuard(
-                [finished] { qDebug() << "singleQuery2 exited" << finished.use_count(); });
-
-            qDebug() << Q_FUNC_INFO << 1;
-            std::ignore = APool::database();
-            qDebug() << Q_FUNC_INFO << 2;
-            co_return;
-        };
-        singleQuery2();
-
         auto queryParams = [finished]() -> ACoroTerminator {
             auto _ = qScopeGuard(
                 [finished] { qDebug() << "queryParams exited" << finished.use_count(); });
@@ -204,7 +193,7 @@ void TestSqlite::testQueries()
             auto _ = qScopeGuard(
                 [finished] { qDebug() << "queryPrepared exited" << finished.use_count(); });
 
-            auto db = co_await APool::coDatabase(); // Must be the same db
+            auto db = co_await APool::database(); // Must be the same db
             AVERIFY(db);
 
             for (int i = 0; i < 5; ++i) {
@@ -222,7 +211,7 @@ void TestSqlite::testQueries()
             auto _ = qScopeGuard(
                 [finished] { qDebug() << "rowsAffected exited" << finished.use_count(); });
 
-            auto db = co_await APool::coDatabase(); // Must be the same memory db
+            auto db = co_await APool::database(); // Must be the same memory db
             AVERIFY(db);
 
             auto create = co_await db->exec(u"CREATE TABLE temp (name TEXT)");

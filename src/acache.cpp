@@ -126,7 +126,7 @@ ACoroTerminator
         break;
     case ACachePrivate::DbSource::Pool:
     {
-        auto dbFromPool = co_await APool::coDatabase(q_ptr, poolName);
+        auto dbFromPool = co_await APool::database(q_ptr, poolName);
         if (!dbFromPool) {
             qCritical(ASQL_CACHE) << "Failed to get connection from pool" << dbFromPool.error();
             if (cb) {

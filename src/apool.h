@@ -58,40 +58,14 @@ public:
     static QStringList pools();
 
     /*!
-     * \brief database
-     *
-     * This method returns a new database object, unless an idle connection
-     * (one that were previously dereferenced) is available on the pool.
-     *
-     * If the pool was not created or has reached it's maximum limit an invalid
-     * database object is returned.
-     *
-     * \param poolName
-     * \return ADatabase
-     */
-    static ADatabase database(QStringView poolName = defaultPool);
-
-    /*!
      * \brief currentConnections of the pool
      * \param poolName
      * \return the number of active connections on this pool
      */
     static int currentConnections(QStringView poolName = defaultPool);
 
-    /*!
-     * \brief retrieves a database object
-     *
-     * This method is only useful if the pool has a limit of maximum connections allowed,
-     * when the limit is reached instead of immediately returning a database object it will
-     * queue the request and once a connection is freed the callback is issued.
-     *
-     * \param receiver
-     * \param connectionName
-     */
-    static void database(QObject *receiver, ADatabaseFn cb, QStringView poolName = defaultPool);
-
-    static AExpectedDatabase coDatabase(QObject *receiver    = nullptr,
-                                        QStringView poolName = defaultPool);
+    static AExpectedDatabase database(QObject *receiver    = nullptr,
+                                      QStringView poolName = defaultPool);
 
     /*!
      * \brief setMaxIdleConnections maximum number of idle connections of the pool
@@ -202,6 +176,7 @@ public:
                                                     QStringView poolName = defaultPool);
 
 private:
+    static void databaseCallback(QObject *receiver, ADatabaseFn cb, QStringView poolName);
     inline static void pushDatabaseBack(QStringView connectionName, ADriver *driver);
 };
 
