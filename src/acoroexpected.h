@@ -24,7 +24,7 @@ namespace ASql {
  *  - For all other \c T the class inherits from \c ACoroResult and \c deliver(AResult &)
  *    converts the result into \c std::expected<T, QString>.
  */
-template<typename T>
+template <typename T>
 class ACoroData
     : public std::conditional_t<std::is_same_v<T, ADatabase>, ACoroDatabase, ACoroResult>
 {
@@ -40,8 +40,7 @@ public:
     std::expected<T, QString> result;
     Status status = Waiting;
 
-    using DeliverArg =
-        std::conditional_t<std::is_same_v<T, ADatabase>, ADatabase, AResult &>;
+    using DeliverArg = std::conditional_t<std::is_same_v<T, ADatabase>, ADatabase, AResult &>;
 
     void deliver(DeliverArg arg) override
     {
@@ -53,8 +52,8 @@ public:
             if (arg.isValid()) {
                 result = std::move(arg);
             } else {
-                result = std::unexpected(
-                    QStringLiteral("Could not get a valid database connection"));
+                result =
+                    std::unexpected(QStringLiteral("Could not get a valid database connection"));
             }
         } else {
             if (arg.hasError()) {
@@ -63,9 +62,8 @@ public:
                 if constexpr (std::is_constructible_v<T, AResult &>) {
                     result = arg;
                 } else {
-                    result =
-                        std::unexpected(QStringLiteral("deliver called on incompatible type; "
-                                                       "use deliverDirect() instead"));
+                    result = std::unexpected(QStringLiteral("deliver called on incompatible type; "
+                                                            "use deliverDirect() instead"));
                 }
             }
         }
@@ -76,7 +74,7 @@ public:
         }
     }
 
-    template<typename U>
+    template <typename U>
     void deliverDirect(U &&value)
     {
         if (status == Finished) {
@@ -120,19 +118,17 @@ public:
     {
         if (receiver) {
             m_destroyConn = QObject::connect(
-                receiver,
-                &QObject::destroyed,
-                [weak_data = std::weak_ptr<ACoroData<T>>(m_data)] {
-                    auto data = weak_data.lock();
-                    if (!data || data->status == ACoroData<T>::Finished) {
-                        return;
-                    }
+                receiver, &QObject::destroyed, [weak_data = std::weak_ptr<ACoroData<T>>(m_data)] {
+                auto data = weak_data.lock();
+                if (!data || data->status == ACoroData<T>::Finished) {
+                    return;
+                }
 
-                    data->result = std::unexpected(QStringLiteral("QObject receiver* destroyed"));
-                    if (data->handle) {
-                        data->handle.destroy();
-                    }
-                });
+                data->result = std::unexpected(QStringLiteral("QObject receiver* destroyed"));
+                if (data->handle) {
+                    data->handle.destroy();
+                }
+            });
         }
     }
 
@@ -216,9 +212,8 @@ public:
 
     std::expected<T, QString> await_resume()
     {
-        return !m_data->results.empty()
-                   ? m_data->results.dequeue()
-                   : std::unexpected(QStringLiteral("no results available"));
+        return !m_data->results.empty() ? m_data->results.dequeue()
+                                        : std::unexpected(QStringLiteral("no results available"));
     }
 
     ACoroMultiExpected(QObject *receiver)
@@ -227,21 +222,19 @@ public:
     {
         if (receiver) {
             m_destroyConn = QObject::connect(
-                receiver,
-                &QObject::destroyed,
-                [weak_data = std::weak_ptr<Data>(m_data)] {
-                    auto data = weak_data.lock();
-                    if (!data || data->status == Finished) {
-                        return;
-                    }
+                receiver, &QObject::destroyed, [weak_data = std::weak_ptr<Data>(m_data)] {
+                auto data = weak_data.lock();
+                if (!data || data->status == Finished) {
+                    return;
+                }
 
-                    data->results.clear();
-                    data->results.enqueue(
-                        std::unexpected(QStringLiteral("QObject receiver* destroyed")));
-                    if (data->handle) {
-                        data->handle.destroy();
-                    }
-                });
+                data->results.clear();
+                data->results.enqueue(
+                    std::unexpected(QStringLiteral("QObject receiver* destroyed")));
+                if (data->handle) {
+                    data->handle.destroy();
+                }
+            });
         }
     }
 
@@ -285,8 +278,8 @@ class AExpectedOpen
             if (isOpen) {
                 result = true;
             } else {
-                result = std::unexpected(error.isEmpty() ? QStringLiteral("Connection failed")
-                                                         : error);
+                result =
+                    std::unexpected(error.isEmpty() ? QStringLiteral("Connection failed") : error);
             }
 
             if (handle) {
@@ -303,20 +296,18 @@ public:
         m_data->handle = h;
         if (m_receiver) {
             m_destroyConn = QObject::connect(
-                m_receiver,
-                &QObject::destroyed,
-                [weak_data = std::weak_ptr<Data>(m_data)] {
-                    auto data = weak_data.lock();
-                    if (!data || data->finished) {
-                        return;
-                    }
+                m_receiver, &QObject::destroyed, [weak_data = std::weak_ptr<Data>(m_data)] {
+                auto data = weak_data.lock();
+                if (!data || data->finished) {
+                    return;
+                }
 
-                    data->delivered = true;
-                    data->result    = std::unexpected(QStringLiteral("QObject receiver* destroyed"));
-                    if (data->handle) {
-                        data->handle.destroy();
-                    }
-                });
+                data->delivered = true;
+                data->result    = std::unexpected(QStringLiteral("QObject receiver* destroyed"));
+                if (data->handle) {
+                    data->handle.destroy();
+                }
+            });
         }
 
         return !await_ready();

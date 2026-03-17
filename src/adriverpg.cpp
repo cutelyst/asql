@@ -416,7 +416,9 @@ void ADriverPg::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AE
     exec(db, u8"COMMIT", receiver, std::move(cb));
 }
 
-void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb)
+void ADriverPg::rollback(const std::shared_ptr<ADriver> &db,
+                         QObject *receiver,
+                         AExpectedResultRef cb)
 {
     exec(db, u8"ROLLBACK", receiver, std::move(cb));
 }

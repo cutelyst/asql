@@ -4,9 +4,9 @@
  */
 #pragma once
 
+#include "acoroexpected.h"
 #include "apreparedquery.h"
 #include "aresult.h"
-#include "acoroexpected.h"
 
 #include <adriver.h>
 #include <libpq-fe.h>
@@ -142,9 +142,7 @@ public:
     QString driverName() const override;
 
     bool isValid() const override;
-    void open(const std::shared_ptr<ADriver> &driver,
-              QObject *receiver,
-              AOpenFn cb) override;
+    void open(const std::shared_ptr<ADriver> &driver, QObject *receiver, AOpenFn cb) override;
     bool isOpen() const override;
 
     void setState(ADatabase::State state, const QString &status);
@@ -153,9 +151,15 @@ public:
         QObject *receiver,
         std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
-    void begin(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb) override;
-    void commit(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb) override;
-    void rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, AExpectedResultRef cb) override;
+    void begin(const std::shared_ptr<ADriver> &db,
+               QObject *receiver,
+               AExpectedResultRef cb) override;
+    void commit(const std::shared_ptr<ADriver> &db,
+                QObject *receiver,
+                AExpectedResultRef cb) override;
+    void rollback(const std::shared_ptr<ADriver> &db,
+                  QObject *receiver,
+                  AExpectedResultRef cb) override;
 
     void exec(const std::shared_ptr<ADriver> &db,
               QUtf8StringView query,

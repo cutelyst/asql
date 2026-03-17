@@ -74,8 +74,8 @@ void ADatabase::open(QObject *receiver, ADatabaseOpenFn cb)
                     }
                 }
             };
-            auto adapter      = std::make_shared<OpenAdapter>();
-            adapter->fn       = std::move(cb);
+            auto adapter       = std::make_shared<OpenAdapter>();
+            adapter->fn        = std::move(cb);
             adapter->keepAlive = adapter; // self-reference
             if (receiver) {
                 adapter->receiverPtr = receiver;

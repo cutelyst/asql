@@ -42,7 +42,7 @@ using ANotificationFn = std::function<void(const ADatabaseNotification &payload)
 class ASQL_EXPORT ACoroOpenData
 {
 public:
-    virtual ~ACoroOpenData()                                         = default;
+    virtual ~ACoroOpenData()                                    = default;
     virtual void deliverOpen(bool isOpen, const QString &error) = 0;
 };
 
@@ -72,10 +72,7 @@ public:
         }
     }
 
-    explicit operator bool() const
-    {
-        return m_coroData.has_value() && !m_coroData->expired();
-    }
+    explicit operator bool() const { return m_coroData.has_value() && !m_coroData->expired(); }
 
 private:
     std::optional<std::weak_ptr<ACoroOpenData>> m_coroData;
@@ -94,8 +91,8 @@ private:
 class ASQL_EXPORT ACoroResult
 {
 public:
-    virtual ~ACoroResult()             = default;
-    virtual void deliver(AResult &v)   = 0;
+    virtual ~ACoroResult()           = default;
+    virtual void deliver(AResult &v) = 0;
 };
 
 /*!
@@ -553,8 +550,8 @@ protected:
 class ASQL_EXPORT ACoroDatabase
 {
 public:
-    virtual ~ACoroDatabase()            = default;
-    virtual void deliver(ADatabase v)   = 0;
+    virtual ~ACoroDatabase()          = default;
+    virtual void deliver(ADatabase v) = 0;
 };
 
 /*!
