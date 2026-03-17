@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
             auto _ = qScopeGuard([] { qDebug() << "coro exited"; });
             qDebug() << "coro started";
 
-            auto db = co_await APool::coDatabase();
+            auto db = co_await APool::database();
 
             auto transaction = co_await db->beginTransaction();
             qDebug() << "transaction started";
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
                 auto _ = qScopeGuard([] { qDebug() << "coro inner exited"; });
                 qDebug() << "coro inner started";
 
-                auto db = co_await APool::coDatabase();
+                auto db = co_await APool::database();
                 if (!db) {
                     qDebug() << "coro db error" << db.error();
                     co_return;
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
             auto _ = qScopeGuard([] { qDebug() << "coro pool exited"; });
             qDebug() << "coro pool started";
 
-            auto db = co_await APool::coDatabase();
+            auto db = co_await APool::database();
             if (db.has_value()) {
                 qDebug() << "coro pool has value" << db->isOpen();
             } else {
@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
             });
             co_yield obj; // so that this promise is destroyed if this object is destroyed
 
-            auto db = co_await APool::coDatabase();
+            auto db = co_await APool::database();
 
             auto result = co_await db->exec(u8"SELECT now(), pg_sleep(2)", obj);
             if (result.has_value()) {
@@ -235,7 +235,7 @@ int main(int argc, char *argv[])
             });
             co_yield obj; // so that this promise is destroyed if this object is destroyed
 
-            auto db = co_await APool::coDatabase();
+            auto db = co_await APool::database();
 
             auto result = co_await db->exec(u8"SELECT now()", obj);
             if (result.has_value()) {
@@ -452,15 +452,15 @@ int main(int argc, char *argv[])
     if (false) {
         auto testPoolSync = []() -> ACoroTerminator {
             {
-                auto db1 = co_await APool::coDatabase(nullptr, u"pool");
+                auto db1 = co_await APool::database(nullptr, u"pool");
                 qDebug() << db1->isValid();
                 qDebug() << APool::currentConnections(u"pool");
 
-                auto db2 = co_await APool::coDatabase(nullptr, u"pool");
+                auto db2 = co_await APool::database(nullptr, u"pool");
                 qDebug() << db2->isValid();
                 qDebug() << APool::currentConnections(u"pool");
 
-                auto db3 = co_await APool::coDatabase(nullptr, u"pool");
+                auto db3 = co_await APool::database(nullptr, u"pool");
                 qDebug() << db3->isValid();
                 qDebug() << APool::currentConnections(u"pool");
             }

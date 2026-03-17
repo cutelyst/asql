@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 
             // TODO database returns a db handle that is not open yet.
             // because database() method calls open() and do not wait it.
-            auto db = co_await APool::coDatabase();
+            auto db = co_await APool::database();
             if (db) {
                 qDebug() << "coro db isOpen" << db->isOpen();
             } else {
