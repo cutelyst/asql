@@ -736,10 +736,10 @@ int ADriverPg::doExec(APGQuery &pgQuery)
         if (prepared == m_preparedQueries.end()) {
             const auto preparedId = preparedQueryStringId(pgQuery.preparedQuery->identification());
             ret                   = PQsendPrepare(m_conn->conn(),
-                                preparedId.constData(),
-                                pgQuery.preparedQuery->query().constData(),
-                                0,
-                                nullptr); // perhaps later use binary results
+                                                  preparedId.constData(),
+                                                  pgQuery.preparedQuery->query().constData(),
+                                                  0,
+                                                  nullptr); // perhaps later use binary results
 
             if (ret == 1 && pipelineStatus() == ADatabase::PipelineStatus::On) {
                 // pretend that it was prepared otherwise it can't be used in in the pipeline
@@ -907,10 +907,10 @@ int ADriverPg::doExecParams(APGQuery &pgQuery)
         if (prepared == m_preparedQueries.end()) {
             const auto preparedId = preparedQueryStringId(pgQuery.preparedQuery->identification());
             ret                   = PQsendPrepare(m_conn->conn(),
-                                preparedId.constData(),
-                                pgQuery.preparedQuery->query().constData(),
-                                params.size(),
-                                paramTypes.get());
+                                                  preparedId.constData(),
+                                                  pgQuery.preparedQuery->query().constData(),
+                                                  params.size(),
+                                                  paramTypes.get());
 
             if (ret == 1 && pipelineStatus() == ADatabase::PipelineStatus::On) {
                 // pretend that it was prepared otherwise it can't be used in in the pipeline
