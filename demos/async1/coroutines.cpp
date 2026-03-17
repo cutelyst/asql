@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
             auto _ = qScopeGuard([] { qDebug() << "callPool exited"; });
             qDebug() << "callPool started";
 
-            auto db = co_await APool::coDatabase(nullptr);
+            auto db = co_await APool::database(nullptr);
             if (!db.has_value()) {
                 qDebug() << "coro exec get db error" << db.error();
                 co_return;
