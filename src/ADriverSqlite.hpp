@@ -74,7 +74,7 @@ struct OpenPromise {
 
 struct QueryPromise {
     std::optional<APreparedQuery> preparedQuery;
-    AExpectedResultRef cb;
+    ACoroDataRef cb;
     std::shared_ptr<AResultSqlite> result;
     std::optional<QPointer<QObject>> receiver;
 };
@@ -137,41 +137,35 @@ public:
         QObject *receiver,
         std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
-    void begin(const std::shared_ptr<ADriver> &db,
-               QObject *receiver,
-               AExpectedResultRef cb) override;
-    void commit(const std::shared_ptr<ADriver> &db,
-                QObject *receiver,
-                AExpectedResultRef cb) override;
-    void rollback(const std::shared_ptr<ADriver> &db,
-                  QObject *receiver,
-                  AExpectedResultRef cb) override;
+    void begin(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb) override;
+    void commit(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb) override;
+    void rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb) override;
 
     void exec(const std::shared_ptr<ADriver> &db,
               QUtf8StringView query,
               QObject *receiver,
-              AExpectedResultRef cb) override;
+              ACoroDataRef cb) override;
 
     void exec(const std::shared_ptr<ADriver> &db,
               QStringView query,
               QObject *receiver,
-              AExpectedResultRef cb) override;
+              ACoroDataRef cb) override;
 
     void exec(const std::shared_ptr<ADriver> &db,
               QUtf8StringView query,
               const QVariantList &params,
               QObject *receiver,
-              AExpectedResultRef cb) override;
+              ACoroDataRef cb) override;
     void exec(const std::shared_ptr<ADriver> &db,
               QStringView query,
               const QVariantList &params,
               QObject *receiver,
-              AExpectedResultRef cb) override;
+              ACoroDataRef cb) override;
     void exec(const std::shared_ptr<ADriver> &db,
               const APreparedQuery &query,
               const QVariantList &params,
               QObject *receiver,
-              AExpectedResultRef cb) override;
+              ACoroDataRef cb) override;
 
     void setLastQuerySingleRowMode() override;
 

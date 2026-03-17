@@ -142,18 +142,18 @@ private:
 };
 
 /*!
- * \brief AExpectedResultRef is a lightweight, movable reference to an ACoroExpected's
+ * \brief ACoroDataRef is a lightweight, movable reference to an ACoroExpected's
  * coroutine data. It holds a weak pointer to the underlying ACoroResult so the driver
  * can deliver query results without keeping the awaitable alive.
  *
  * Obtain an instance via AExpectedResult::ref() or AExpectedMultiResult::ref().
  */
-class ASQL_EXPORT AExpectedResultRef
+class ASQL_EXPORT ACoroDataRef
 {
 public:
-    AExpectedResultRef() = default;
+    ACoroDataRef() = default;
 
-    explicit AExpectedResultRef(std::weak_ptr<ACoroResult> coroData)
+    explicit ACoroDataRef(std::weak_ptr<ACoroResult> coroData)
         : m_coroData(std::move(coroData))
     {
     }
@@ -167,7 +167,7 @@ public:
 
     explicit operator bool() const { return !m_coroData.expired(); }
 
-    // Implicit conversion so AExpectedResultRef can be passed anywhere AResultFn is expected.
+    // Implicit conversion so ACoroDataRef can be passed anywhere AResultFn is expected.
     operator AResultFn() const { return AResultFn{m_coroData}; }
 
 private:

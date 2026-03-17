@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
     APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setMaxIdleConnections(10);
 
+#if 0
     {
         auto db = APool::database();
         db.onStateChanged(
@@ -68,7 +69,6 @@ int main(int argc, char *argv[])
             // Must be called with an empty db query queue and after it is connected (state)
             qDebug() << "2 PIPELINE ENTER" << state << db.enterPipelineMode(2s);
 
-#if 0
             qDebug() << "2 PIPELINE STATUS" << int(db.pipelineStatus());
             auto callDb = [db](int id) mutable {
                 db.exec(APreparedQuery(u"SELECT now(), $1"), {id}, nullptr, [=](AResult &result) {
@@ -105,10 +105,10 @@ int main(int argc, char *argv[])
                 callDb(i);
                 callStaticDb(-i);
             }
-#endif
             co_return;
         });
     }
+#endif
 
     app.exec();
 }

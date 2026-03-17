@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
             auto _ = qScopeGuard([] { qDebug() << "coro exited"; });
             qDebug() << "coro started prepared queries";
 
-            // TODO coDatabase returns a db handle that is not open yet.
+            // TODO database returns a db handle that is not open yet.
             // because database() method calls open() and do not wait it.
             auto db = co_await APool::coDatabase();
             if (db) {

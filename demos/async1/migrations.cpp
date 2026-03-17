@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
             qDebug() << "Migration Error" << error << errorString;
         });
     });
-    mig->load(APool::database(), u"foo"_s);
+    // mig->load(APool::database(), u"foo"_s);
 
     mig->fromString(uR"V0G0N(
 -- 1 up
