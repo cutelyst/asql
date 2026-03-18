@@ -18,6 +18,16 @@
 
 namespace ASql {
 
+/*!
+ * \brief Tracks which phase of the non-blocking query lifecycle is active.
+ */
+enum class QueryPhase {
+    None,          ///< No query in flight
+    Sending,       ///< mysql_real_query_nonblocking() in progress
+    StoringResult, ///< mysql_store_result_nonblocking() in progress
+    FetchingRows,  ///< mysql_fetch_row_nonblocking() in progress
+};
+
 class AResultMysql final : public AResultPrivate
 {
 public:
@@ -175,8 +185,12 @@ public:
 
 private:
     inline bool isConnected() const;
+    bool skipInvalidQueries();
     void setupCheckReceiver(AMysqlQuery &mysqlQuery, QObject *receiver);
+    void handleQueryProgress();
     void nextQuery();
+    void finishCurrentQuery();
+    void finishCurrentQuery(const QString &error);
     void finishConnection(const QString &error);
 
     struct OpenCaller {
@@ -202,9 +216,11 @@ private:
     std::unique_ptr<QSocketNotifier> m_writeNotify;
     std::unique_ptr<QSocketNotifier> m_readNotify;
 
-    MYSQL *m_mysql           = nullptr;
-    ADatabase::State m_state = ADatabase::State::Disconnected;
-    bool m_queryRunning      = false;
+    MYSQL *m_mysql             = nullptr;
+    MYSQL_RES *m_currentResult = nullptr;
+    ADatabase::State m_state   = ADatabase::State::Disconnected;
+    QueryPhase m_queryPhase    = QueryPhase::None;
+    bool m_queryRunning        = false;
 
     // Connection parameters stored for non-blocking re-poll
     QByteArray m_host;
