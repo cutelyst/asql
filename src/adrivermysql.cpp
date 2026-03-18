@@ -591,6 +591,140 @@ void ADriverMysql::unsubscribeFromNotification(const std::shared_ptr<ADriver> &d
 // Private helpers
 // ---------------------------------------------------------------------------
 
+/*!
+ * \brief Interpolates \a params into a query template that uses \c ? placeholders.
+ *
+ * Each \c ? in \a query (outside quoted strings) is replaced by the properly
+ * escaped and quoted representation of the corresponding element of \a params.
+ * The result is a self-contained SQL string that can be sent via
+ * mysql_real_query_nonblocking() without a separate bind step.
+ *
+ * Type mapping:
+ *  - QMetaType::Nullptr / isNull()  → NULL
+ *  - Bool                           → 1 / 0
+ *  - Int / UInt                     → decimal integer literal
+ *  - LongLong / ULongLong           → decimal integer literal
+ *  - Double / Float                 → decimal floating-point literal
+ *  - QByteArray                     → X'<hex>' hex literal
+ *  - everything else                → 'escaped UTF-8 string'
+ */
+
+// Significant digits retained when converting a floating-point param to text.
+// 15 is the number of significant decimal digits that round-trips a double (DBL_DIG).
+static constexpr int kFloatPrecision = 15;
+
+static QByteArray buildQueryWithParams(MYSQL *mysql,
+                                       const QByteArray &query,
+                                       const QVariantList &params)
+{
+    if (params.isEmpty()) {
+        return query;
+    }
+
+    QByteArray result;
+    result.reserve(query.size() + params.size() * 16);
+
+    int paramIdx = 0;
+    const int len = query.size();
+    for (int i = 0; i < len; ++i) {
+        const char c = query[i];
+
+        // Skip over single-quoted strings so we don't mistake a literal '?' for a placeholder
+        if (c == '\'') {
+            result.append(c);
+            ++i;
+            while (i < len) {
+                const char sc = query[i];
+                result.append(sc);
+                if (sc == '\\') {
+                    // escaped character - consume the next char raw
+                    ++i;
+                    if (i < len) {
+                        result.append(query[i]);
+                    }
+                } else if (sc == '\'') {
+                    // check for doubled-quote escape: ''
+                    if (i + 1 < len && query[i + 1] == '\'') {
+                        ++i;
+                        result.append(query[i]);
+                    } else {
+                        break; // end of quoted string
+                    }
+                }
+                ++i;
+            }
+            continue;
+        }
+
+        if (c != '?') {
+            result.append(c);
+            continue;
+        }
+
+        // Placeholder found — check that a param is available
+        if (paramIdx >= params.size()) {
+            qWarning(ASQL_MYSQL) << "More ? placeholders than params supplied; "
+                                    "leaving remaining ? unsubstituted";
+            result.append(c);
+            continue;
+        }
+
+        const QVariant &v = params.at(paramIdx++);
+        if (v.isNull()) {
+            result.append("NULL");
+            continue;
+        }
+
+        switch (v.userType()) {
+        case QMetaType::Bool:
+            result.append(v.toBool() ? "1" : "0");
+            break;
+        case QMetaType::Int:
+            result.append(QByteArray::number(v.toInt()));
+            break;
+        case QMetaType::UInt:
+            result.append(QByteArray::number(v.toUInt()));
+            break;
+        case QMetaType::LongLong:
+            result.append(QByteArray::number(v.toLongLong()));
+            break;
+        case QMetaType::ULongLong:
+            result.append(QByteArray::number(v.toULongLong()));
+            break;
+        case QMetaType::Double:
+        case QMetaType::Float:
+            // kFloatPrecision matches DBL_DIG — enough digits for a lossless round-trip
+            result.append(QByteArray::number(v.toDouble(), 'g', kFloatPrecision));
+            break;
+        case QMetaType::QByteArray: {
+            // Use hex literal X'...' for binary data - no charset issues
+            const QByteArray ba = v.toByteArray();
+            result.append("X'");
+            result.append(ba.toHex());
+            result.append('\'');
+            break;
+        }
+        default: {
+            // Treat as string: convert to UTF-8 and escape.
+            // mysql_real_escape_string() requires a buffer of at least length*2+1 bytes
+            // (per MySQL docs) where length is the byte length of the source string.
+            const QByteArray str = v.toString().toUtf8();
+            QByteArray escaped(static_cast<int>(str.size()) * 2 + 1, Qt::Uninitialized);
+            const unsigned long escapedLen =
+                mysql_real_escape_string(mysql, escaped.data(), str.constData(),
+                                         static_cast<unsigned long>(str.size()));
+            escaped.resize(static_cast<int>(escapedLen));
+            result.append('\'');
+            result.append(escaped);
+            result.append('\'');
+            break;
+        }
+        }
+    }
+
+    return result;
+}
+
 bool ADriverMysql::isConnected() const
 {
     return m_state == ADatabase::State::Connected && m_mysql != nullptr;
@@ -622,6 +756,12 @@ void ADriverMysql::nextQuery()
     if (!skipInvalidQueries()) {
         selfDriver.reset();
         return;
+    }
+
+    // Build the final SQL text, substituting any ? placeholders with escaped values
+    AMysqlQuery &front = m_queuedQueries.front();
+    if (!front.params.isEmpty()) {
+        front.query = buildQueryWithParams(m_mysql, front.query, front.params);
     }
 
     m_queryRunning = true;
