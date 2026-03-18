@@ -268,16 +268,16 @@ void ADriverMysql::open(const std::shared_ptr<ADriver> &driver, QObject *receive
     setState(ADatabase::State::Connecting, {});
 
     // Start non-blocking connection
-    enum net_async_status status = mysql_real_connect_nonblocking(
-        m_mysql,
-        m_host.isEmpty() ? nullptr : m_host.constData(),
-        m_user.isEmpty() ? nullptr : m_user.constData(),
-        m_password.isEmpty() ? nullptr : m_password.constData(),
-        m_database.isEmpty() ? nullptr : m_database.constData(),
-        m_port,
-        nullptr, // unix socket
-        0        // client flags
-    );
+    enum net_async_status status =
+        mysql_real_connect_nonblocking(m_mysql,
+                                       m_host.isEmpty() ? nullptr : m_host.constData(),
+                                       m_user.isEmpty() ? nullptr : m_user.constData(),
+                                       m_password.isEmpty() ? nullptr : m_password.constData(),
+                                       m_database.isEmpty() ? nullptr : m_database.constData(),
+                                       m_port,
+                                       nullptr, // unix socket
+                                       0        // client flags
+        );
 
     if (status == NET_ASYNC_COMPLETE) {
         qDebug(ASQL_MYSQL) << "Connected immediately";
@@ -322,15 +322,15 @@ void ADriverMysql::open(const std::shared_ptr<ADriver> &driver, QObject *receive
     m_readNotify  = std::make_unique<QSocketNotifier>(fd, QSocketNotifier::Read);
 
     auto connFn = [this] {
-        enum net_async_status s = mysql_real_connect_nonblocking(
-            m_mysql,
-            m_host.isEmpty() ? nullptr : m_host.constData(),
-            m_user.isEmpty() ? nullptr : m_user.constData(),
-            m_password.isEmpty() ? nullptr : m_password.constData(),
-            m_database.isEmpty() ? nullptr : m_database.constData(),
-            m_port,
-            nullptr,
-            0);
+        enum net_async_status s =
+            mysql_real_connect_nonblocking(m_mysql,
+                                           m_host.isEmpty() ? nullptr : m_host.constData(),
+                                           m_user.isEmpty() ? nullptr : m_user.constData(),
+                                           m_password.isEmpty() ? nullptr : m_password.constData(),
+                                           m_database.isEmpty() ? nullptr : m_database.constData(),
+                                           m_port,
+                                           nullptr,
+                                           0);
 
         if (s == NET_ASYNC_NOT_READY) {
             return; // keep waiting
@@ -615,13 +615,13 @@ void ADriverMysql::nextQuery()
         return;
     }
 
-    MYSQL_RES *res = mysql_store_result(m_mysql);
+    MYSQL_RES *res    = mysql_store_result(m_mysql);
     AMysqlQuery query = std::move(m_queuedQueries.front());
     m_queuedQueries.pop();
 
     if (res) {
         const unsigned int numFields = mysql_num_fields(res);
-        MYSQL_FIELD *fields = mysql_fetch_fields(res);
+        MYSQL_FIELD *fields          = mysql_fetch_fields(res);
 
         query.result->m_fields.reserve(static_cast<int>(numFields));
         for (unsigned int i = 0; i < numFields; ++i) {
@@ -650,7 +650,7 @@ void ADriverMysql::nextQuery()
             query.result->m_numRowsAffected = static_cast<qint64>(mysql_affected_rows(m_mysql));
         } else {
             // mysql_store_result() returned NULL even though there were fields
-            const QString error = QString::fromUtf8(mysql_error(m_mysql));
+            const QString error         = QString::fromUtf8(mysql_error(m_mysql));
             query.result->m_errorString = error;
             query.result->m_error       = true;
         }

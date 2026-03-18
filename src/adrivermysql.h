@@ -10,12 +10,11 @@
 
 #include <adriver.h>
 #include <mysql/mysql.h>
-
 #include <optional>
-#include <queue>
 
 #include <QHash>
 #include <QPointer>
+#include <queue>
 
 namespace ASql {
 
@@ -203,9 +202,9 @@ private:
     std::unique_ptr<QSocketNotifier> m_writeNotify;
     std::unique_ptr<QSocketNotifier> m_readNotify;
 
-    MYSQL *m_mysql        = nullptr;
+    MYSQL *m_mysql           = nullptr;
     ADatabase::State m_state = ADatabase::State::Disconnected;
-    bool m_queryRunning   = false;
+    bool m_queryRunning      = false;
 
     // Connection parameters stored for non-blocking re-poll
     QByteArray m_host;
