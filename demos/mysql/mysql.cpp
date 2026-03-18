@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
             }
 
             result =
-                co_await APool::exec(u"SELECT *, random() FROM (VALUES (1), (2), (3), (4), (5))"_s);
+                co_await APool::exec(u"SELECT *, RAND() FROM (VALUES (1), (2), (3), (4), (5))"_s);
             if (result) {
                 qDebug() << "coro result has value" << result->columnNames()
                          << result->toJsonArrayObject();
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
                 qDebug() << "coro result error" << result.error();
             }
 
-            result = co_await APool::exec(u"SELECT date()"_s);
+            result = co_await APool::exec(u"SELECT now()"_s);
             if (result) {
                 qDebug() << "coro result has value" << result->columnNames()
                          << result->toJsonObject();
