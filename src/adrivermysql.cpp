@@ -317,14 +317,12 @@ void ADriverMysql::open(const std::shared_ptr<ADriver> &driver, QObject *receive
     if (status == NET_ASYNC_COMPLETE) {
         // Connected immediately: set up notifiers for query execution
         qDebug(ASQL_MYSQL) << "Connected immediately";
-        connect(m_writeNotify.get(),
-                &QSocketNotifier::activated,
-                this,
-                [this] { handleQueryProgress(); });
-        connect(m_readNotify.get(),
-                &QSocketNotifier::activated,
-                this,
-                [this] { handleQueryProgress(); });
+        connect(m_writeNotify.get(), &QSocketNotifier::activated, this, [this] {
+            handleQueryProgress();
+        });
+        connect(m_readNotify.get(), &QSocketNotifier::activated, this, [this] {
+            handleQueryProgress();
+        });
         m_writeNotify->setEnabled(false);
         m_readNotify->setEnabled(false);
 
@@ -356,14 +354,12 @@ void ADriverMysql::open(const std::shared_ptr<ADriver> &driver, QObject *receive
         // Connection finished - switch notifiers from connection polling to query handling
         disconnect(m_writeNotify.get(), nullptr, this, nullptr);
         disconnect(m_readNotify.get(), nullptr, this, nullptr);
-        connect(m_writeNotify.get(),
-                &QSocketNotifier::activated,
-                this,
-                [this] { handleQueryProgress(); });
-        connect(m_readNotify.get(),
-                &QSocketNotifier::activated,
-                this,
-                [this] { handleQueryProgress(); });
+        connect(m_writeNotify.get(), &QSocketNotifier::activated, this, [this] {
+            handleQueryProgress();
+        });
+        connect(m_readNotify.get(), &QSocketNotifier::activated, this, [this] {
+            handleQueryProgress();
+        });
         m_writeNotify->setEnabled(false);
         m_readNotify->setEnabled(false);
 
@@ -649,12 +645,11 @@ void ADriverMysql::handleQueryProgress()
         case QueryPhase::None:
             return;
 
-        case QueryPhase::Sending: {
-            const QByteArray &sql = m_queuedQueries.front().query;
-            const enum net_async_status s =
-                mysql_real_query_nonblocking(m_mysql,
-                                             sql.constData(),
-                                             static_cast<unsigned long>(sql.size()));
+        case QueryPhase::Sending:
+        {
+            const QByteArray &sql         = m_queuedQueries.front().query;
+            const enum net_async_status s = mysql_real_query_nonblocking(
+                m_mysql, sql.constData(), static_cast<unsigned long>(sql.size()));
 
             if (s == NET_ASYNC_NOT_READY) {
                 // Wait for the socket to be ready for the next send chunk
@@ -675,7 +670,8 @@ void ADriverMysql::handleQueryProgress()
             continue;
         }
 
-        case QueryPhase::StoringResult: {
+        case QueryPhase::StoringResult:
+        {
             MYSQL_RES *res                = nullptr;
             const enum net_async_status s = mysql_store_result_nonblocking(m_mysql, &res);
 
@@ -711,8 +707,7 @@ void ADriverMysql::handleQueryProgress()
                 // No result set: INSERT/UPDATE/DELETE or error
                 auto &q = m_queuedQueries.front();
                 if (mysql_field_count(m_mysql) == 0) {
-                    q.result->m_numRowsAffected =
-                        static_cast<qint64>(mysql_affected_rows(m_mysql));
+                    q.result->m_numRowsAffected = static_cast<qint64>(mysql_affected_rows(m_mysql));
                 } else {
                     // mysql_store_result() returned NULL despite having fields → error
                     q.result->m_errorString = QString::fromUtf8(mysql_error(m_mysql));
@@ -723,7 +718,8 @@ void ADriverMysql::handleQueryProgress()
             }
         }
 
-        case QueryPhase::FetchingRows: {
+        case QueryPhase::FetchingRows:
+        {
             MYSQL_ROW row                 = nullptr;
             const enum net_async_status s = mysql_fetch_row_nonblocking(m_currentResult, &row);
 
@@ -762,8 +758,7 @@ void ADriverMysql::handleQueryProgress()
                 if (row[i] == nullptr) {
                     rowData.append(QVariant{});
                 } else {
-                    rowData.append(
-                        QString::fromUtf8(row[i], static_cast<int>(lengths[i])));
+                    rowData.append(QString::fromUtf8(row[i], static_cast<int>(lengths[i])));
                 }
             }
             m_queuedQueries.front().result->m_rows.append(std::move(rowData));
