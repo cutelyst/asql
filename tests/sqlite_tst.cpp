@@ -138,7 +138,7 @@ void TestSqlite::testQueries()
             AVERIFY(db);
 
             // TODO use APool::begin() once new coro class is ready
-            auto t = co_await db->beginTransaction(nullptr);
+            auto t = co_await db->begin(nullptr);
             AVERIFY(t);
             AVERIFY(t->database().isValid());
 

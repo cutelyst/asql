@@ -122,15 +122,7 @@ bool ADatabase::isOpen() const
     return d != nullptr && d->isOpen();
 }
 
-AExpectedResult ADatabase::begin(QObject *receiver)
-{
-    Q_ASSERT(d);
-    AExpectedResult coro(receiver);
-    d->begin(d, receiver, coro.ref());
-    return coro;
-}
-
-AExpectedTransaction ADatabase::beginTransaction(QObject *receiver)
+AExpectedTransaction ADatabase::begin(QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedTransaction coro(receiver);

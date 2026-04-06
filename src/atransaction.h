@@ -49,14 +49,6 @@ public:
     static ATransaction fromStarted(const ADatabase &db);
 
     /*!
-     * \brief begin a transaction, this operation usually succeeds,
-     * but one can hook up a callback to check it's result.
-     *
-     * \param cb
-     */
-    [[nodiscard]] AExpectedResult begin(QObject *receiver = nullptr);
-
-    /*!
      * \brief commit a transaction only if our usage count equals 1
      *
      * Because we are implicit shared we can see if this is the last
