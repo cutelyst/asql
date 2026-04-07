@@ -212,8 +212,8 @@ private:
     inline void setSingleRowMode();
     inline void cmdFlush();
     inline bool isConnected() const;
-    ACoroTerminator listenCoro(std::shared_ptr<ADriver> db, const QString &name);
-    ACoroTerminator unlistenCoro(std::shared_ptr<ADriver> db, const QString &name);
+    ACoroTerminator listenCoro(std::shared_ptr<ADriver> db, QString name);
+    ACoroTerminator unlistenCoro(std::shared_ptr<ADriver> db, QString name);
 
     struct OpenCaller {
         std::shared_ptr<ADriver> driver;
