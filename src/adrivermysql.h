@@ -13,26 +13,18 @@
 #include <optional>
 
 #include <QHash>
+#include <QMutex>
 #include <QPointer>
-#include <queue>
+#include <QQueue>
+#include <QThread>
 
 namespace ASql {
-
-/*!
- * \brief Tracks which phase of the non-blocking query lifecycle is active.
- */
-enum class QueryPhase {
-    None,          ///< No query in flight
-    Sending,       ///< mysql_real_query_nonblocking() in progress
-    StoringResult, ///< mysql_store_result_nonblocking() in progress
-    FetchingRows,  ///< mysql_fetch_row_nonblocking() in progress
-};
 
 class AResultMysql final : public AResultPrivate
 {
 public:
-    AResultMysql() = default;
-    virtual ~AResultMysql() override;
+    AResultMysql()          = default;
+    virtual ~AResultMysql() = default;
 
     bool lastResultSet() const override;
     bool hasError() const override;
@@ -68,48 +60,51 @@ public:
     QByteArray m_query;
     QVariantList m_queryArgs;
     QStringList m_fields;
-    QList<QVariantList> m_rows;
+    QVariantList m_rows; // flat: row*fields+col
     qint64 m_numRowsAffected = -1;
-    QString m_errorString;
-    bool m_error         = false;
+    std::optional<QString> m_error;
     bool m_lastResultSet = true;
 };
 
-class AMysqlQuery
-{
-public:
-    AMysqlQuery() = default;
+struct OpenPromise {
+    AOpenFn cb;
+    std::optional<QPointer<QObject>> receiver;
+};
 
-    QByteArray query;
+struct MysqlQueryPromise {
     std::optional<APreparedQuery> preparedQuery;
-    std::shared_ptr<AResultMysql> result;
-    QVariantList params;
     ACoroDataRef cb;
-    QPointer<QObject> receiver;
-    QObject *checkReceiver = nullptr;
+    std::shared_ptr<AResultMysql> result;
+    std::optional<QPointer<QObject>> receiver;
+};
 
-    inline void done()
-    {
-        if (cb && (!checkReceiver || !receiver.isNull())) {
-            result->m_query     = query;
-            result->m_queryArgs = params;
-            AResult r(std::move(result));
-            cb.deliverResult(r);
-        }
-    }
+class AMysqlThread final : public QThread
+{
+    Q_OBJECT
+public:
+    AMysqlThread(const QString &connInfo);
+    ~AMysqlThread();
 
-    inline void doneError(const QString &error)
-    {
-        if (cb && (!checkReceiver || !receiver.isNull())) {
-            result                = std::make_shared<AResultMysql>();
-            result->m_query       = query;
-            result->m_queryArgs   = params;
-            result->m_errorString = error;
-            result->m_error       = true;
-            AResult r(std::move(result));
-            cb.deliverResult(r);
-        }
-    }
+    QMutex m_promisesMutex;
+    QQueue<ASql::MysqlQueryPromise> m_promisesReady;
+
+public Q_SLOTS:
+    void open();
+    void query(ASql::MysqlQueryPromise promise);
+    void queryPrepared(ASql::MysqlQueryPromise promise);
+    void queryExec(ASql::MysqlQueryPromise promise);
+
+Q_SIGNALS:
+    void openned(bool isOpen, QString error);
+    void queryReady();
+
+private:
+    MYSQL_STMT *prepare(MysqlQueryPromise &promise);
+    void enqueueAndSignal(MysqlQueryPromise &promise);
+
+    QHash<int, MYSQL_STMT *> m_preparedQueries;
+    QString m_connInfo;
+    MYSQL *m_mysql = nullptr;
 };
 
 class ADriverMysql final : public ADriver
@@ -184,50 +179,16 @@ public:
                                      const QString &name) override;
 
 private:
-    inline bool isConnected() const;
-    bool skipInvalidQueries();
-    void setupCheckReceiver(AMysqlQuery &mysqlQuery, QObject *receiver);
-    void handleQueryProgress();
-    void nextQuery();
-    void finishCurrentQuery();
-    void finishCurrentQuery(const QString &error);
-    void finishConnection(const QString &error);
-
-    struct OpenCaller {
-        std::shared_ptr<ADriver> driver;
-        AOpenFn cb;
-        std::optional<QPointer<QObject>> receiverPtr;
-
-        void emit(bool isOpen, const QString &error)
-        {
-            if (cb && (!receiverPtr.has_value() || !receiverPtr->isNull())) {
-                cb(isOpen, error);
-            }
-        }
-    };
-    std::unique_ptr<OpenCaller> m_openCaller;
-
     std::optional<QPointer<QObject>> m_stateChangedReceiver;
     std::function<void(ADatabase::State, const QString &)> m_stateChangedCb;
-
-    std::queue<AMysqlQuery> m_queuedQueries;
     std::shared_ptr<ADriver> selfDriver;
-
-    std::unique_ptr<QSocketNotifier> m_writeNotify;
-    std::unique_ptr<QSocketNotifier> m_readNotify;
-
-    MYSQL *m_mysql             = nullptr;
-    MYSQL_RES *m_currentResult = nullptr;
-    ADatabase::State m_state   = ADatabase::State::Disconnected;
-    QueryPhase m_queryPhase    = QueryPhase::None;
-    bool m_queryRunning        = false;
-
-    // Connection parameters stored for non-blocking re-poll
-    QByteArray m_host;
-    QByteArray m_user;
-    QByteArray m_password;
-    QByteArray m_database;
-    unsigned int m_port = 3306;
+    AMysqlThread m_worker;
+    QThread m_thread;
+    ADatabase::State m_state = ADatabase::State::Disconnected;
+    int m_queueSize          = 0;
 };
 
 } // namespace ASql
+
+Q_DECLARE_METATYPE(ASql::OpenPromise)
+Q_DECLARE_METATYPE(ASql::MysqlQueryPromise)

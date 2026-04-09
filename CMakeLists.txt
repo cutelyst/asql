@@ -62,15 +62,14 @@ if (ASQL_DRIVER_POSTGRES)
     find_package(PostgreSQL REQUIRED)
 endif ()
 
-<<<<<<< copilot/write-initial-mysql-code
 option(DRIVER_MYSQL "Enable MySQL Driver" ON)
 if (DRIVER_MYSQL)
     find_package(MySQL REQUIRED)
-=======
+endif ()
+
 option(ASQL_DRIVER_ODBC "Enable unixODBC Driver" ON)
 if (ASQL_DRIVER_ODBC)
     find_package(ODBC REQUIRED)
->>>>>>> master
 endif ()
 
 # NONE

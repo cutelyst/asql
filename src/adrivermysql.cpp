@@ -16,7 +16,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLoggingCategory>
-#include <QSocketNotifier>
+#include <QMutexLocker>
 #include <QUrl>
 #include <QUrlQuery>
 #include <QUuid>
@@ -30,8 +30,6 @@ using namespace Qt::StringLiterals;
 // AResultMysql
 // ---------------------------------------------------------------------------
 
-AResultMysql::~AResultMysql() = default;
-
 bool AResultMysql::lastResultSet() const
 {
     return m_lastResultSet;
@@ -39,12 +37,12 @@ bool AResultMysql::lastResultSet() const
 
 bool AResultMysql::hasError() const
 {
-    return m_error;
+    return m_error.has_value();
 }
 
 QString AResultMysql::errorString() const
 {
-    return m_errorString;
+    return m_error.value_or(QString{});
 }
 
 QByteArray AResultMysql::query() const
@@ -59,7 +57,7 @@ QVariantList AResultMysql::queryArgs() const
 
 int AResultMysql::size() const
 {
-    return static_cast<int>(m_rows.size());
+    return m_fields.empty() ? 0 : static_cast<int>(m_rows.size()) / m_fields.size();
 }
 
 int AResultMysql::fields() const
@@ -87,11 +85,9 @@ QString AResultMysql::fieldName(int column) const
 
 QVariant AResultMysql::value(int row, int column) const
 {
-    if (row >= 0 && row < m_rows.size()) {
-        const QVariantList &r = m_rows.at(row);
-        if (column >= 0 && column < r.size()) {
-            return r.at(column);
-        }
+    const int idx = row * m_fields.size() + column;
+    if (idx >= 0 && idx < m_rows.size()) {
+        return m_rows.at(idx);
     }
     return {};
 }
@@ -198,24 +194,476 @@ QByteArray AResultMysql::toByteArray(int row, int column) const
 }
 
 // ---------------------------------------------------------------------------
+// AMysqlThread helpers
+// ---------------------------------------------------------------------------
+
+/*!
+ * \brief Reads all columns of the current row from a text-protocol result set.
+ *
+ * Each column value is appended to \a rows as a QString (or a null QVariant
+ * for SQL NULL).  \a numFields must equal mysql_num_fields(res).
+ */
+static void mysqlFillRow(MYSQL_ROW row,
+                         unsigned int numFields,
+                         unsigned long *lengths,
+                         QVariantList &rows)
+{
+    for (unsigned int i = 0; i < numFields; ++i) {
+        if (row[i] == nullptr) {
+            rows.append(QVariant{});
+        } else {
+            rows.append(QString::fromUtf8(row[i], static_cast<int>(lengths[i])));
+        }
+    }
+}
+
+/*!
+ * \brief Binds \a params to a prepared statement \a stmt.
+ *
+ * All data buffers passed to mysql_stmt_bind_param() must remain valid until
+ * mysql_stmt_execute() returns, so we store them in the vectors passed in.
+ *
+ * \return empty optional on success; an error message string on failure.
+ */
+static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
+                                              const QVariantList &params,
+                                              std::vector<MYSQL_BIND> &binds,
+                                              std::vector<long long> &intVals,
+                                              std::vector<double> &doubleVals,
+                                              std::vector<bool> &nullFlags,
+                                              std::vector<QByteArray> &strVals,
+                                              std::vector<unsigned long> &strLengths)
+{
+    const int n = params.size();
+    binds.assign(n, MYSQL_BIND{});
+    intVals.assign(n, 0LL);
+    doubleVals.assign(n, 0.0);
+    nullFlags.assign(n, false);
+    strVals.resize(n);
+    strLengths.assign(n, 0UL);
+
+    for (int i = 0; i < n; ++i) {
+        const QVariant &v = params.at(i);
+
+        if (v.isNull()) {
+            nullFlags[i]         = true;
+            binds[i].buffer_type = MYSQL_TYPE_NULL;
+            binds[i].is_null     = &nullFlags[i];
+            continue;
+        }
+
+        binds[i].is_null = &nullFlags[i];
+
+        switch (v.userType()) {
+        case QMetaType::Bool:
+            intVals[i]           = v.toBool() ? 1 : 0;
+            binds[i].buffer_type = MYSQL_TYPE_TINY;
+            binds[i].buffer      = &intVals[i];
+            break;
+        case QMetaType::Int:
+            intVals[i]           = v.toInt();
+            binds[i].buffer_type = MYSQL_TYPE_LONG;
+            binds[i].buffer      = &intVals[i];
+            break;
+        case QMetaType::UInt:
+            intVals[i]           = static_cast<long long>(v.toUInt());
+            binds[i].buffer_type = MYSQL_TYPE_LONG;
+            binds[i].buffer      = &intVals[i];
+            binds[i].is_unsigned = true;
+            break;
+        case QMetaType::LongLong:
+            intVals[i]           = v.toLongLong();
+            binds[i].buffer_type = MYSQL_TYPE_LONGLONG;
+            binds[i].buffer      = &intVals[i];
+            break;
+        case QMetaType::ULongLong:
+            intVals[i]           = static_cast<long long>(v.toULongLong());
+            binds[i].buffer_type = MYSQL_TYPE_LONGLONG;
+            binds[i].buffer      = &intVals[i];
+            binds[i].is_unsigned = true;
+            break;
+        case QMetaType::Double:
+        case QMetaType::Float:
+            doubleVals[i]        = v.toDouble();
+            binds[i].buffer_type = MYSQL_TYPE_DOUBLE;
+            binds[i].buffer      = &doubleVals[i];
+            break;
+        case QMetaType::QByteArray:
+            strVals[i]              = v.toByteArray();
+            strLengths[i]           = static_cast<unsigned long>(strVals[i].size());
+            binds[i].buffer_type    = MYSQL_TYPE_BLOB;
+            binds[i].buffer         = strVals[i].data();
+            binds[i].buffer_length  = strLengths[i];
+            binds[i].length         = &strLengths[i];
+            break;
+        default:
+            strVals[i]              = v.toString().toUtf8();
+            strLengths[i]           = static_cast<unsigned long>(strVals[i].size());
+            binds[i].buffer_type    = MYSQL_TYPE_STRING;
+            binds[i].buffer         = strVals[i].data();
+            binds[i].buffer_length  = strLengths[i];
+            binds[i].length         = &strLengths[i];
+            break;
+        }
+    }
+
+    if (mysql_stmt_bind_param(stmt, binds.data())) {
+        return QString::fromUtf8(mysql_stmt_error(stmt));
+    }
+    return {};
+}
+
+/*!
+ * \brief Fetches all rows from a prepared-statement result set into \a rows.
+ *
+ * Uses a zero-buffer initial bind to discover each column's data length,
+ * then calls mysql_stmt_fetch_column() to retrieve the actual bytes — no
+ * pre-sized buffers needed.
+ *
+ * \return empty optional on success; an error message string on failure.
+ */
+static std::optional<QString> mysqlFetchStmtRows(MYSQL_STMT *stmt,
+                                                  unsigned int numFields,
+                                                  QVariantList &rows)
+{
+    // Bind all result columns with zero-size buffers.  MySQL will set the
+    // `length` indicator to the actual data size and raise the truncation flag.
+    std::vector<MYSQL_BIND> resBind(numFields, MYSQL_BIND{});
+    std::vector<unsigned long> lengths(numFields, 0UL);
+    std::vector<bool> isNull(numFields, false);
+    std::vector<bool> isError(numFields, false);
+    char dummy[1] = {0};
+
+    for (unsigned int i = 0; i < numFields; ++i) {
+        resBind[i].buffer_type   = MYSQL_TYPE_STRING;
+        resBind[i].buffer        = dummy;
+        resBind[i].buffer_length = 0;
+        resBind[i].length        = &lengths[i];
+        resBind[i].is_null       = &isNull[i];
+        resBind[i].error         = &isError[i];
+    }
+
+    if (mysql_stmt_bind_result(stmt, resBind.data())) {
+        return QString::fromUtf8(mysql_stmt_error(stmt));
+    }
+
+    int fetchRet;
+    while ((fetchRet = mysql_stmt_fetch(stmt)) == 0 ||
+           fetchRet == MYSQL_DATA_TRUNCATED) {
+        for (unsigned int i = 0; i < numFields; ++i) {
+            if (isNull[i]) {
+                rows.append(QVariant{});
+                continue;
+            }
+            if (lengths[i] == 0) {
+                rows.append(QString{});
+                continue;
+            }
+            // Fetch the actual column data now that we know its length
+            QByteArray buf(static_cast<int>(lengths[i]), Qt::Uninitialized);
+            MYSQL_BIND colBind{};
+            colBind.buffer_type   = MYSQL_TYPE_STRING;
+            colBind.buffer        = buf.data();
+            colBind.buffer_length = lengths[i];
+            if (mysql_stmt_fetch_column(stmt, &colBind, i, 0) != 0) {
+                rows.append(QVariant{});
+            } else {
+                rows.append(QString::fromUtf8(buf.constData(), static_cast<int>(lengths[i])));
+            }
+        }
+    }
+
+    if (fetchRet != MYSQL_NO_DATA) {
+        return QString::fromUtf8(mysql_stmt_error(stmt));
+    }
+    return {};
+}
+
+// ---------------------------------------------------------------------------
+// AMysqlThread
+// ---------------------------------------------------------------------------
+
+AMysqlThread::AMysqlThread(const QString &connInfo)
+    : m_connInfo(connInfo)
+{
+}
+
+AMysqlThread::~AMysqlThread()
+{
+    if (m_mysql) {
+        // Close any cached prepared statements first
+        for (MYSQL_STMT *stmt : m_preparedQueries) {
+            mysql_stmt_close(stmt);
+        }
+        mysql_close(m_mysql);
+    }
+}
+
+void AMysqlThread::enqueueAndSignal(MysqlQueryPromise &promise)
+{
+    {
+        QMutexLocker _(&m_promisesMutex);
+        m_promisesReady.enqueue(std::move(promise));
+    }
+    Q_EMIT queryReady();
+}
+
+void AMysqlThread::open()
+{
+    m_mysql = mysql_init(nullptr);
+    if (!m_mysql) {
+        Q_EMIT openned(false, u"mysql_init() failed: out of memory"_s);
+        return;
+    }
+
+    QUrl url(m_connInfo);
+    const QByteArray host     = url.host().toUtf8();
+    const QByteArray user     = url.userName().toUtf8();
+    const QByteArray password = url.password().toUtf8();
+    const QByteArray database = url.path().mid(1).toUtf8(); // strip leading '/'
+    const unsigned int port   = (url.port() > 0) ? static_cast<unsigned int>(url.port()) : 3306u;
+
+    MYSQL *conn = mysql_real_connect(m_mysql,
+                                     host.isEmpty() ? nullptr : host.constData(),
+                                     user.isEmpty() ? nullptr : user.constData(),
+                                     password.isEmpty() ? nullptr : password.constData(),
+                                     database.isEmpty() ? nullptr : database.constData(),
+                                     port,
+                                     nullptr, // unix socket
+                                     0        // client flags
+    );
+
+    if (!conn) {
+        const QString error = QString::fromUtf8(mysql_error(m_mysql));
+        mysql_close(m_mysql);
+        m_mysql = nullptr;
+        Q_EMIT openned(false, error);
+        return;
+    }
+
+    Q_EMIT openned(true, {});
+}
+
+MYSQL_STMT *AMysqlThread::prepare(MysqlQueryPromise &promise)
+{
+    MYSQL_STMT *stmt = mysql_stmt_init(m_mysql);
+    if (!stmt) {
+        promise.result->m_error = QString::fromUtf8(mysql_error(m_mysql));
+        return nullptr;
+    }
+
+    const QByteArray &sql = promise.result->m_query;
+    if (mysql_stmt_prepare(stmt,
+                           sql.constData(),
+                           static_cast<unsigned long>(sql.size())) != 0) {
+        promise.result->m_error = QString::fromUtf8(mysql_stmt_error(stmt));
+        mysql_stmt_close(stmt);
+        return nullptr;
+    }
+
+    return stmt;
+}
+
+void AMysqlThread::query(MysqlQueryPromise promise)
+{
+    auto _ = qScopeGuard([&] { enqueueAndSignal(promise); });
+
+    MYSQL_STMT *stmt = prepare(promise);
+    if (!stmt) {
+        return;
+    }
+    auto stmtGuard = qScopeGuard([&] { mysql_stmt_close(stmt); });
+
+    const QVariantList &params = promise.result->m_queryArgs;
+    if (!params.isEmpty()) {
+        std::vector<MYSQL_BIND> binds;
+        std::vector<long long> intVals;
+        std::vector<double> doubleVals;
+        std::vector<bool> nullFlags;
+        std::vector<QByteArray> strVals;
+        std::vector<unsigned long> strLengths;
+
+        auto bindErr =
+            mysqlBindParams(stmt, params, binds, intVals, doubleVals, nullFlags, strVals, strLengths);
+        if (bindErr.has_value()) {
+            promise.result->m_error = bindErr;
+            return;
+        }
+    }
+
+    if (mysql_stmt_execute(stmt) != 0) {
+        promise.result->m_error = QString::fromUtf8(mysql_stmt_error(stmt));
+        return;
+    }
+
+    MYSQL_RES *meta = mysql_stmt_result_metadata(stmt);
+    if (meta) {
+        auto metaGuard = qScopeGuard([&] { mysql_free_result(meta); });
+
+        const unsigned int numFields = mysql_num_fields(meta);
+        MYSQL_FIELD *fields          = mysql_fetch_fields(meta);
+        promise.result->m_fields.reserve(static_cast<int>(numFields));
+        for (unsigned int i = 0; i < numFields; ++i) {
+            promise.result->m_fields.append(QString::fromUtf8(fields[i].name));
+        }
+
+        auto fetchErr = mysqlFetchStmtRows(stmt, numFields, promise.result->m_rows);
+        if (fetchErr.has_value()) {
+            promise.result->m_error = fetchErr;
+            return;
+        }
+    }
+
+    promise.result->m_numRowsAffected =
+        static_cast<qint64>(mysql_stmt_affected_rows(stmt));
+}
+
+void AMysqlThread::queryPrepared(MysqlQueryPromise promise)
+{
+    const int queryId = promise.preparedQuery->identification();
+
+    MYSQL_STMT *stmt = nullptr;
+    auto it          = m_preparedQueries.constFind(queryId);
+    if (it != m_preparedQueries.constEnd()) {
+        stmt = it.value();
+    } else {
+        stmt = prepare(promise);
+        if (!stmt) {
+            enqueueAndSignal(promise);
+            return;
+        }
+        m_preparedQueries.insert(queryId, stmt);
+    }
+
+    auto _ = qScopeGuard([&] {
+        enqueueAndSignal(promise);
+        // Reset the statement so it can be reused
+        if (mysql_stmt_reset(stmt) != 0) {
+            qWarning(ASQL_MYSQL) << "Failed to reset prepared statement:"
+                                 << mysql_stmt_error(stmt);
+            m_preparedQueries.remove(queryId);
+            mysql_stmt_close(stmt);
+        }
+    });
+
+    const QVariantList &params = promise.result->m_queryArgs;
+    if (!params.isEmpty()) {
+        std::vector<MYSQL_BIND> binds;
+        std::vector<long long> intVals;
+        std::vector<double> doubleVals;
+        std::vector<bool> nullFlags;
+        std::vector<QByteArray> strVals;
+        std::vector<unsigned long> strLengths;
+
+        auto bindErr =
+            mysqlBindParams(stmt, params, binds, intVals, doubleVals, nullFlags, strVals, strLengths);
+        if (bindErr.has_value()) {
+            promise.result->m_error = bindErr;
+            return;
+        }
+    }
+
+    if (mysql_stmt_execute(stmt) != 0) {
+        promise.result->m_error = QString::fromUtf8(mysql_stmt_error(stmt));
+        return;
+    }
+
+    MYSQL_RES *meta = mysql_stmt_result_metadata(stmt);
+    if (meta) {
+        auto metaGuard = qScopeGuard([&] { mysql_free_result(meta); });
+
+        const unsigned int numFields = mysql_num_fields(meta);
+        MYSQL_FIELD *fields          = mysql_fetch_fields(meta);
+        promise.result->m_fields.reserve(static_cast<int>(numFields));
+        for (unsigned int i = 0; i < numFields; ++i) {
+            promise.result->m_fields.append(QString::fromUtf8(fields[i].name));
+        }
+
+        auto fetchErr = mysqlFetchStmtRows(stmt, numFields, promise.result->m_rows);
+        if (fetchErr.has_value()) {
+            promise.result->m_error = fetchErr;
+            return;
+        }
+    }
+
+    promise.result->m_numRowsAffected =
+        static_cast<qint64>(mysql_stmt_affected_rows(stmt));
+}
+
+void AMysqlThread::queryExec(MysqlQueryPromise promise)
+{
+    auto _ = qScopeGuard([&] { enqueueAndSignal(promise); });
+
+    const QByteArray &sql = promise.result->m_query;
+    if (mysql_real_query(m_mysql, sql.constData(), static_cast<unsigned long>(sql.size())) != 0) {
+        promise.result->m_error = QString::fromUtf8(mysql_error(m_mysql));
+        return;
+    }
+
+    MYSQL_RES *res = mysql_store_result(m_mysql);
+    if (res) {
+        auto resGuard = qScopeGuard([&] { mysql_free_result(res); });
+
+        const unsigned int numFields = mysql_num_fields(res);
+        MYSQL_FIELD *fields          = mysql_fetch_fields(res);
+        promise.result->m_fields.reserve(static_cast<int>(numFields));
+        for (unsigned int i = 0; i < numFields; ++i) {
+            promise.result->m_fields.append(QString::fromUtf8(fields[i].name));
+        }
+
+        MYSQL_ROW row;
+        while ((row = mysql_fetch_row(res)) != nullptr) {
+            unsigned long *lengths = mysql_fetch_lengths(res);
+            mysqlFillRow(row, numFields, lengths, promise.result->m_rows);
+        }
+    } else if (mysql_field_count(m_mysql) != 0) {
+        // Query should have produced a result set but didn't → error
+        promise.result->m_error = QString::fromUtf8(mysql_error(m_mysql));
+        return;
+    }
+
+    promise.result->m_numRowsAffected =
+        static_cast<qint64>(mysql_affected_rows(m_mysql));
+}
+
+// ---------------------------------------------------------------------------
 // ADriverMysql
 // ---------------------------------------------------------------------------
 
 ADriverMysql::ADriverMysql(const QString &connInfo)
     : ADriver(connInfo)
+    , m_worker(connInfo)
 {
+    m_thread.setObjectName(connInfo);
+    m_worker.moveToThread(&m_thread);
+
+    connect(&m_worker, &AMysqlThread::queryReady, this, [this] {
+        QMutexLocker _(&m_worker.m_promisesMutex);
+        while (!m_worker.m_promisesReady.isEmpty()) {
+            MysqlQueryPromise promise = m_worker.m_promisesReady.dequeue();
+            if (!promise.receiver.has_value() || !promise.receiver->isNull()) {
+                if (promise.cb) {
+                    AResult result{promise.result};
+                    promise.cb.deliverResult(result);
+                }
+            }
+
+            if (promise.result->m_lastResultSet && --m_queueSize == 0) {
+                selfDriver.reset();
+            }
+        }
+    }, Qt::QueuedConnection);
+
+    m_thread.start();
 }
 
 ADriverMysql::~ADriverMysql()
 {
-    if (m_currentResult) {
-        mysql_free_result(m_currentResult);
-        m_currentResult = nullptr;
-    }
-    if (m_mysql) {
-        mysql_close(m_mysql);
-        m_mysql = nullptr;
-    }
+    Q_ASSERT(m_thread.thread() == QThread::currentThread());
+
+    m_thread.requestInterruption();
+    m_thread.quit();
+    m_thread.wait();
 }
 
 QString ADriverMysql::driverName() const
@@ -237,160 +685,45 @@ void ADriverMysql::open(const std::shared_ptr<ADriver> &driver, QObject *receive
         return;
     }
 
-    if (m_state == ADatabase::State::Connecting) {
-        qWarning(ASQL_MYSQL) << "Already connecting";
-        return;
-    }
-
-    qDebug(ASQL_MYSQL) << "Open" << connectionInfo();
-
-    m_mysql = mysql_init(nullptr);
-    if (!m_mysql) {
-        const QString error = u"mysql_init() failed: out of memory"_s;
-        qWarning(ASQL_MYSQL) << error;
-        if (cb) {
-            cb(false, error);
-        }
-        return;
-    }
-
-    // Parse the connection URL: mysql://user:password@host:port/database
-    QUrl url(connectionInfo());
-    m_host     = url.host().toUtf8();
-    m_user     = url.userName().toUtf8();
-    m_password = url.password().toUtf8();
-    m_database = url.path().mid(1).toUtf8(); // strip leading '/'
-    m_port     = (url.port() > 0) ? static_cast<unsigned int>(url.port()) : 3306u;
-
-    m_openCaller         = std::make_unique<OpenCaller>();
-    m_openCaller->driver = driver;
-    m_openCaller->cb     = cb;
-    if (receiver) {
-        m_openCaller->receiverPtr = receiver;
-    }
-
     setState(ADatabase::State::Connecting, {});
+    ++m_queueSize;
+    selfDriver = driver;
 
-    // Start non-blocking connection
-    enum net_async_status status =
-        mysql_real_connect_nonblocking(m_mysql,
-                                       m_host.isEmpty() ? nullptr : m_host.constData(),
-                                       m_user.isEmpty() ? nullptr : m_user.constData(),
-                                       m_password.isEmpty() ? nullptr : m_password.constData(),
-                                       m_database.isEmpty() ? nullptr : m_database.constData(),
-                                       m_port,
-                                       nullptr, // unix socket
-                                       0        // client flags
-        );
-
-    if (status == NET_ASYNC_ERROR) {
-        const QString error = QString::fromUtf8(mysql_error(m_mysql));
-        qWarning(ASQL_MYSQL) << "Connection error:" << error;
-        mysql_close(m_mysql);
-        m_mysql = nullptr;
-        setState(ADatabase::State::Disconnected, error);
-        if (m_openCaller) {
-            m_openCaller->emit(false, error);
-            m_openCaller.reset();
-        }
-        return;
-    }
-
-    // Get the socket fd - valid even for immediately-complete connections
-    const int fd = static_cast<int>(m_mysql->net.fd);
-    if (fd < 0) {
-        const QString error = u"Failed to obtain socket descriptor"_s;
-        qWarning(ASQL_MYSQL) << error;
-        mysql_close(m_mysql);
-        m_mysql = nullptr;
-        setState(ADatabase::State::Disconnected, error);
-        if (m_openCaller) {
-            m_openCaller->emit(false, error);
-            m_openCaller.reset();
-        }
-        return;
-    }
-
-    m_writeNotify = std::make_unique<QSocketNotifier>(fd, QSocketNotifier::Write);
-    m_readNotify  = std::make_unique<QSocketNotifier>(fd, QSocketNotifier::Read);
-
-    if (status == NET_ASYNC_COMPLETE) {
-        // Connected immediately: set up notifiers for query execution
-        qDebug(ASQL_MYSQL) << "Connected immediately";
-        connect(m_writeNotify.get(), &QSocketNotifier::activated, this, [this] {
-            handleQueryProgress();
-        });
-        connect(m_readNotify.get(), &QSocketNotifier::activated, this, [this] {
-            handleQueryProgress();
-        });
-        m_writeNotify->setEnabled(false);
-        m_readNotify->setEnabled(false);
-
-        setState(ADatabase::State::Connected, {});
-        if (m_openCaller) {
-            m_openCaller->emit(true, {});
-            m_openCaller.reset();
-        }
-        nextQuery();
-        return;
-    }
-
-    // NET_ASYNC_NOT_READY - poll the connection via socket notifiers
-    auto connFn = [this] {
-        enum net_async_status s =
-            mysql_real_connect_nonblocking(m_mysql,
-                                           m_host.isEmpty() ? nullptr : m_host.constData(),
-                                           m_user.isEmpty() ? nullptr : m_user.constData(),
-                                           m_password.isEmpty() ? nullptr : m_password.constData(),
-                                           m_database.isEmpty() ? nullptr : m_database.constData(),
-                                           m_port,
-                                           nullptr,
-                                           0);
-
-        if (s == NET_ASYNC_NOT_READY) {
-            return; // keep waiting
-        }
-
-        // Connection finished - switch notifiers from connection polling to query handling
-        disconnect(m_writeNotify.get(), nullptr, this, nullptr);
-        disconnect(m_readNotify.get(), nullptr, this, nullptr);
-        connect(m_writeNotify.get(), &QSocketNotifier::activated, this, [this] {
-            handleQueryProgress();
-        });
-        connect(m_readNotify.get(), &QSocketNotifier::activated, this, [this] {
-            handleQueryProgress();
-        });
-        m_writeNotify->setEnabled(false);
-        m_readNotify->setEnabled(false);
-
-        if (s == NET_ASYNC_COMPLETE) {
-            qDebug(ASQL_MYSQL) << "Connected";
-            setState(ADatabase::State::Connected, {});
-            if (m_openCaller) {
-                m_openCaller->emit(true, {});
-                m_openCaller.reset();
-            }
-            nextQuery();
-        } else {
-            const QString error = QString::fromUtf8(mysql_error(m_mysql));
-            qWarning(ASQL_MYSQL) << "Connection failed:" << error;
-            mysql_close(m_mysql);
-            m_mysql = nullptr;
-            setState(ADatabase::State::Disconnected, error);
-            if (m_openCaller) {
-                m_openCaller->emit(false, error);
-                m_openCaller.reset();
-            }
-        }
+    OpenPromise promise{
+        .cb = cb,
     };
+    if (receiver) {
+        promise.receiver = receiver;
+    }
 
-    connect(m_writeNotify.get(), &QSocketNotifier::activated, this, connFn);
-    connect(m_readNotify.get(), &QSocketNotifier::activated, this, connFn);
+    connect(&m_worker, &AMysqlThread::openned, this, [this, promise](bool isOpen, QString error) {
+        if (isOpen) {
+            setState(ADatabase::State::Connected, {});
+        } else {
+            setState(ADatabase::State::Disconnected, error);
+        }
+
+        if (!promise.receiver.has_value() || !promise.receiver->isNull()) {
+            if (promise.cb) {
+                promise.cb(isOpen, error);
+            }
+        }
+
+        if (--m_queueSize == 0) {
+            selfDriver.reset();
+        }
+    }, Qt::SingleShotConnection);
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    QMetaObject::invokeMethod(&m_worker, &AMysqlThread::open, Qt::QueuedConnection);
+#else
+    QMetaObject::invokeMethod(&m_worker, "open", Qt::QueuedConnection);
+#endif
 }
 
 bool ADriverMysql::isOpen() const
 {
-    return isConnected();
+    return m_state == ADatabase::State::Connected;
 }
 
 void ADriverMysql::setState(ADatabase::State state, const QString &status)
@@ -431,29 +764,32 @@ void ADriverMysql::rollback(const std::shared_ptr<ADriver> &db, QObject *receive
     exec(db, u8"ROLLBACK", receiver, std::move(cb));
 }
 
-void ADriverMysql::setupCheckReceiver(AMysqlQuery &mysqlQuery, QObject *receiver)
+void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
+                        QUtf8StringView query,
+                        QObject *receiver,
+                        ACoroDataRef cb)
 {
+    ++m_queueSize;
+    selfDriver = db;
+
+    MysqlQueryPromise data{
+        .cb     = std::move(cb),
+        .result = std::make_shared<AResultMysql>(),
+    };
     if (receiver) {
-        mysqlQuery.receiver      = receiver;
-        mysqlQuery.checkReceiver = receiver;
+        data.receiver = receiver;
     }
-}
+    data.result->m_query.setRawData(query.data(), query.size());
 
-void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
-                        QUtf8StringView query,
-                        QObject *receiver,
-                        ACoroDataRef cb)
-{
-    AMysqlQuery mysqlQuery;
-    mysqlQuery.query.setRawData(query.data(), query.size());
-    mysqlQuery.cb     = std::move(cb);
-    mysqlQuery.result = std::make_shared<AResultMysql>();
-
-    setupCheckReceiver(mysqlQuery, receiver);
-
-    selfDriver = db;
-    m_queuedQueries.emplace(std::move(mysqlQuery));
-    nextQuery();
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    QMetaObject::invokeMethod(
+        &m_worker, &AMysqlThread::queryExec, Qt::QueuedConnection, std::move(data));
+#else
+    QMetaObject::invokeMethod(&m_worker,
+                              "queryExec",
+                              Qt::QueuedConnection,
+                              Q_ARG(ASql::MysqlQueryPromise, std::move(data)));
+#endif
 }
 
 void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
@@ -461,16 +797,27 @@ void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
                         QObject *receiver,
                         ACoroDataRef cb)
 {
-    AMysqlQuery mysqlQuery;
-    mysqlQuery.query  = query.toUtf8();
-    mysqlQuery.cb     = std::move(cb);
-    mysqlQuery.result = std::make_shared<AResultMysql>();
-
-    setupCheckReceiver(mysqlQuery, receiver);
-
+    ++m_queueSize;
     selfDriver = db;
-    m_queuedQueries.emplace(std::move(mysqlQuery));
-    nextQuery();
+
+    MysqlQueryPromise data{
+        .cb     = std::move(cb),
+        .result = std::make_shared<AResultMysql>(),
+    };
+    if (receiver) {
+        data.receiver = receiver;
+    }
+    data.result->m_query = query.toUtf8();
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    QMetaObject::invokeMethod(
+        &m_worker, &AMysqlThread::queryExec, Qt::QueuedConnection, std::move(data));
+#else
+    QMetaObject::invokeMethod(&m_worker,
+                              "queryExec",
+                              Qt::QueuedConnection,
+                              Q_ARG(ASql::MysqlQueryPromise, std::move(data)));
+#endif
 }
 
 void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
@@ -479,17 +826,28 @@ void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
                         QObject *receiver,
                         ACoroDataRef cb)
 {
-    AMysqlQuery mysqlQuery;
-    mysqlQuery.query.setRawData(query.data(), query.size());
-    mysqlQuery.params = params;
-    mysqlQuery.cb     = std::move(cb);
-    mysqlQuery.result = std::make_shared<AResultMysql>();
-
-    setupCheckReceiver(mysqlQuery, receiver);
-
+    ++m_queueSize;
     selfDriver = db;
-    m_queuedQueries.emplace(std::move(mysqlQuery));
-    nextQuery();
+
+    MysqlQueryPromise data{
+        .cb     = std::move(cb),
+        .result = std::make_shared<AResultMysql>(),
+    };
+    if (receiver) {
+        data.receiver = receiver;
+    }
+    data.result->m_query.setRawData(query.data(), query.size());
+    data.result->m_queryArgs = params;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    QMetaObject::invokeMethod(
+        &m_worker, &AMysqlThread::query, Qt::QueuedConnection, std::move(data));
+#else
+    QMetaObject::invokeMethod(&m_worker,
+                              "query",
+                              Qt::QueuedConnection,
+                              Q_ARG(ASql::MysqlQueryPromise, std::move(data)));
+#endif
 }
 
 void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
@@ -498,17 +856,28 @@ void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
                         QObject *receiver,
                         ACoroDataRef cb)
 {
-    AMysqlQuery mysqlQuery;
-    mysqlQuery.query  = query.toUtf8();
-    mysqlQuery.params = params;
-    mysqlQuery.cb     = std::move(cb);
-    mysqlQuery.result = std::make_shared<AResultMysql>();
-
-    setupCheckReceiver(mysqlQuery, receiver);
-
+    ++m_queueSize;
     selfDriver = db;
-    m_queuedQueries.emplace(std::move(mysqlQuery));
-    nextQuery();
+
+    MysqlQueryPromise data{
+        .cb     = std::move(cb),
+        .result = std::make_shared<AResultMysql>(),
+    };
+    if (receiver) {
+        data.receiver = receiver;
+    }
+    data.result->m_query     = query.toUtf8();
+    data.result->m_queryArgs = params;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    QMetaObject::invokeMethod(
+        &m_worker, &AMysqlThread::query, Qt::QueuedConnection, std::move(data));
+#else
+    QMetaObject::invokeMethod(&m_worker,
+                              "query",
+                              Qt::QueuedConnection,
+                              Q_ARG(ASql::MysqlQueryPromise, std::move(data)));
+#endif
 }
 
 void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
@@ -517,23 +886,34 @@ void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
                         QObject *receiver,
                         ACoroDataRef cb)
 {
-    AMysqlQuery mysqlQuery;
-    mysqlQuery.preparedQuery = query;
-    mysqlQuery.query         = query.query();
-    mysqlQuery.params        = params;
-    mysqlQuery.cb            = std::move(cb);
-    mysqlQuery.result        = std::make_shared<AResultMysql>();
-
-    setupCheckReceiver(mysqlQuery, receiver);
-
+    ++m_queueSize;
     selfDriver = db;
-    m_queuedQueries.emplace(std::move(mysqlQuery));
-    nextQuery();
+
+    MysqlQueryPromise data{
+        .preparedQuery = query,
+        .cb            = std::move(cb),
+        .result        = std::make_shared<AResultMysql>(),
+    };
+    if (receiver) {
+        data.receiver = receiver;
+    }
+    data.result->m_query     = query.query();
+    data.result->m_queryArgs = params;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    QMetaObject::invokeMethod(
+        &m_worker, &AMysqlThread::queryPrepared, Qt::QueuedConnection, std::move(data));
+#else
+    QMetaObject::invokeMethod(&m_worker,
+                              "queryPrepared",
+                              Qt::QueuedConnection,
+                              Q_ARG(ASql::MysqlQueryPromise, std::move(data)));
+#endif
 }
 
 void ADriverMysql::setLastQuerySingleRowMode()
 {
-    // Not supported for MySQL driver yet
+    // Not supported for MySQL driver
 }
 
 bool ADriverMysql::enterPipelineMode(std::chrono::milliseconds timeout)
@@ -559,7 +939,7 @@ bool ADriverMysql::pipelineSync()
 
 int ADriverMysql::queueSize() const
 {
-    return static_cast<int>(m_queuedQueries.size());
+    return m_queueSize;
 }
 
 void ADriverMysql::subscribeToNotification(const std::shared_ptr<ADriver> &db,
@@ -585,388 +965,4 @@ void ADriverMysql::unsubscribeFromNotification(const std::shared_ptr<ADriver> &d
     Q_UNUSED(db)
     Q_UNUSED(name)
     // MySQL does not support server-side notifications
-}
-
-// ---------------------------------------------------------------------------
-// Private helpers
-// ---------------------------------------------------------------------------
-
-/*!
- * \brief Interpolates \a params into a query template that uses \c ? placeholders.
- *
- * Each \c ? in \a query (outside quoted strings) is replaced by the properly
- * escaped and quoted representation of the corresponding element of \a params.
- * The result is a self-contained SQL string that can be sent via
- * mysql_real_query_nonblocking() without a separate bind step.
- *
- * Type mapping:
- *  - QMetaType::Nullptr / isNull()  → NULL
- *  - Bool                           → 1 / 0
- *  - Int / UInt                     → decimal integer literal
- *  - LongLong / ULongLong           → decimal integer literal
- *  - Double / Float                 → decimal floating-point literal
- *  - QByteArray                     → X'<hex>' hex literal
- *  - everything else                → 'escaped UTF-8 string'
- */
-
-// Significant digits retained when converting a floating-point param to text.
-// 15 is the number of significant decimal digits that round-trips a double (DBL_DIG).
-static constexpr int kFloatPrecision = 15;
-
-static QByteArray
-    buildQueryWithParams(MYSQL *mysql, const QByteArray &query, const QVariantList &params)
-{
-    if (params.isEmpty()) {
-        return query;
-    }
-
-    QByteArray result;
-    result.reserve(query.size() + params.size() * 16);
-
-    int paramIdx  = 0;
-    const int len = query.size();
-    for (int i = 0; i < len; ++i) {
-        const char c = query[i];
-
-        // Skip over single-quoted strings so we don't mistake a literal '?' for a placeholder
-        if (c == '\'') {
-            result.append(c);
-            ++i;
-            while (i < len) {
-                const char sc = query[i];
-                result.append(sc);
-                if (sc == '\\') {
-                    // escaped character - consume the next char raw
-                    ++i;
-                    if (i < len) {
-                        result.append(query[i]);
-                    }
-                } else if (sc == '\'') {
-                    // check for doubled-quote escape: ''
-                    if (i + 1 < len && query[i + 1] == '\'') {
-                        ++i;
-                        result.append(query[i]);
-                    } else {
-                        break; // end of quoted string
-                    }
-                }
-                ++i;
-            }
-            continue;
-        }
-
-        if (c != '?') {
-            result.append(c);
-            continue;
-        }
-
-        // Placeholder found — check that a param is available
-        if (paramIdx >= params.size()) {
-            qWarning(ASQL_MYSQL) << "More ? placeholders than params supplied; "
-                                    "leaving remaining ? unsubstituted";
-            result.append(c);
-            continue;
-        }
-
-        const QVariant &v = params.at(paramIdx++);
-        if (v.isNull()) {
-            result.append("NULL");
-            continue;
-        }
-
-        switch (v.userType()) {
-        case QMetaType::Bool:
-            result.append(v.toBool() ? "1" : "0");
-            break;
-        case QMetaType::Int:
-            result.append(QByteArray::number(v.toInt()));
-            break;
-        case QMetaType::UInt:
-            result.append(QByteArray::number(v.toUInt()));
-            break;
-        case QMetaType::LongLong:
-            result.append(QByteArray::number(v.toLongLong()));
-            break;
-        case QMetaType::ULongLong:
-            result.append(QByteArray::number(v.toULongLong()));
-            break;
-        case QMetaType::Double:
-        case QMetaType::Float:
-            // kFloatPrecision matches DBL_DIG — enough digits for a lossless round-trip
-            result.append(QByteArray::number(v.toDouble(), 'g', kFloatPrecision));
-            break;
-        case QMetaType::QByteArray:
-        {
-            // Use hex literal X'...' for binary data - no charset issues
-            const QByteArray ba = v.toByteArray();
-            result.append("X'");
-            result.append(ba.toHex());
-            result.append('\'');
-            break;
-        }
-        default:
-        {
-            // Treat as string: convert to UTF-8 and escape.
-            // mysql_real_escape_string() requires a buffer of at least length*2+1 bytes
-            // (per MySQL docs) where length is the byte length of the source string.
-            const QByteArray str = v.toString().toUtf8();
-            QByteArray escaped(static_cast<int>(str.size()) * 2 + 1, Qt::Uninitialized);
-            const unsigned long escapedLen = mysql_real_escape_string(
-                mysql, escaped.data(), str.constData(), static_cast<unsigned long>(str.size()));
-            escaped.resize(static_cast<int>(escapedLen));
-            result.append('\'');
-            result.append(escaped);
-            result.append('\'');
-            break;
-        }
-        }
-    }
-
-    return result;
-}
-
-bool ADriverMysql::isConnected() const
-{
-    return m_state == ADatabase::State::Connected && m_mysql != nullptr;
-}
-
-/*!
- * \brief Removes cancelled and callback-less queries from the front of the queue.
- * \return true if there is at least one valid query left to process.
- */
-bool ADriverMysql::skipInvalidQueries()
-{
-    while (!m_queuedQueries.empty()) {
-        const AMysqlQuery &front = m_queuedQueries.front();
-        if ((front.checkReceiver && front.receiver.isNull()) || !front.cb) {
-            m_queuedQueries.pop();
-        } else {
-            return true;
-        }
-    }
-    return false;
-}
-
-void ADriverMysql::nextQuery()
-{
-    if (!isConnected() || m_queryRunning || m_queuedQueries.empty()) {
-        return;
-    }
-
-    if (!skipInvalidQueries()) {
-        selfDriver.reset();
-        return;
-    }
-
-    // Build the final SQL text, substituting any ? placeholders with escaped values
-    AMysqlQuery &front = m_queuedQueries.front();
-    if (!front.params.isEmpty()) {
-        front.query = buildQueryWithParams(m_mysql, front.query, front.params);
-    }
-
-    m_queryRunning = true;
-    m_queryPhase   = QueryPhase::Sending;
-    handleQueryProgress();
-}
-
-void ADriverMysql::handleQueryProgress()
-{
-    // Guard against spurious notifier calls after a query has already completed
-    if (m_queryPhase == QueryPhase::None || m_queuedQueries.empty()) {
-        return;
-    }
-
-    // Disable notifiers immediately to prevent re-entrant calls while we process
-    m_readNotify->setEnabled(false);
-    m_writeNotify->setEnabled(false);
-
-    while (true) {
-        switch (m_queryPhase) {
-        case QueryPhase::None:
-            return;
-
-        case QueryPhase::Sending:
-        {
-            const QByteArray &sql         = m_queuedQueries.front().query;
-            const enum net_async_status s = mysql_real_query_nonblocking(
-                m_mysql, sql.constData(), static_cast<unsigned long>(sql.size()));
-
-            if (s == NET_ASYNC_NOT_READY) {
-                // Wait for the socket to be ready for the next send chunk
-                m_readNotify->setEnabled(true);
-                m_writeNotify->setEnabled(true);
-                return;
-            }
-
-            if (s == NET_ASYNC_ERROR) {
-                const QString error = QString::fromUtf8(mysql_error(m_mysql));
-                qWarning(ASQL_MYSQL) << "Query send error:" << error;
-                finishCurrentQuery(error);
-                return;
-            }
-
-            // NET_ASYNC_COMPLETE: query sent, move on to reading the result
-            m_queryPhase = QueryPhase::StoringResult;
-            continue;
-        }
-
-        case QueryPhase::StoringResult:
-        {
-            MYSQL_RES *res                = nullptr;
-            const enum net_async_status s = mysql_store_result_nonblocking(m_mysql, &res);
-
-            if (s == NET_ASYNC_NOT_READY) {
-                m_readNotify->setEnabled(true);
-                m_writeNotify->setEnabled(true);
-                return;
-            }
-
-            if (s == NET_ASYNC_ERROR) {
-                const QString error = QString::fromUtf8(mysql_error(m_mysql));
-                qWarning(ASQL_MYSQL) << "Store result error:" << error;
-                finishCurrentQuery(error);
-                return;
-            }
-
-            // NET_ASYNC_COMPLETE
-            if (res) {
-                m_currentResult = res;
-
-                // Read field names (synchronous, cheap metadata access)
-                const unsigned int numFields = mysql_num_fields(res);
-                MYSQL_FIELD *fields          = mysql_fetch_fields(res);
-                auto &q                      = m_queuedQueries.front();
-                q.result->m_fields.reserve(static_cast<int>(numFields));
-                for (unsigned int i = 0; i < numFields; ++i) {
-                    q.result->m_fields.append(QString::fromUtf8(fields[i].name));
-                }
-
-                m_queryPhase = QueryPhase::FetchingRows;
-                continue;
-            } else {
-                // No result set: INSERT/UPDATE/DELETE or error
-                auto &q = m_queuedQueries.front();
-                if (mysql_field_count(m_mysql) == 0) {
-                    q.result->m_numRowsAffected = static_cast<qint64>(mysql_affected_rows(m_mysql));
-                } else {
-                    // mysql_store_result() returned NULL despite having fields → error
-                    q.result->m_errorString = QString::fromUtf8(mysql_error(m_mysql));
-                    q.result->m_error       = true;
-                }
-                finishCurrentQuery();
-                return;
-            }
-        }
-
-        case QueryPhase::FetchingRows:
-        {
-            MYSQL_ROW row                 = nullptr;
-            const enum net_async_status s = mysql_fetch_row_nonblocking(m_currentResult, &row);
-
-            if (s == NET_ASYNC_NOT_READY) {
-                m_readNotify->setEnabled(true);
-                m_writeNotify->setEnabled(true);
-                return;
-            }
-
-            if (s == NET_ASYNC_ERROR) {
-                const QString error = QString::fromUtf8(mysql_error(m_mysql));
-                qWarning(ASQL_MYSQL) << "Fetch row error:" << error;
-                mysql_free_result(m_currentResult);
-                m_currentResult = nullptr;
-                finishCurrentQuery(error);
-                return;
-            }
-
-            // NET_ASYNC_COMPLETE
-            if (row == nullptr) {
-                // All rows received
-                m_queuedQueries.front().result->m_numRowsAffected =
-                    static_cast<qint64>(mysql_affected_rows(m_mysql));
-                mysql_free_result(m_currentResult);
-                m_currentResult = nullptr;
-                finishCurrentQuery();
-                return;
-            }
-
-            // Append the row data
-            const unsigned int numFields = mysql_num_fields(m_currentResult);
-            unsigned long *lengths       = mysql_fetch_lengths(m_currentResult);
-            QVariantList rowData;
-            rowData.reserve(static_cast<int>(numFields));
-            for (unsigned int i = 0; i < numFields; ++i) {
-                if (row[i] == nullptr) {
-                    rowData.append(QVariant{});
-                } else {
-                    rowData.append(QString::fromUtf8(row[i], static_cast<int>(lengths[i])));
-                }
-            }
-            m_queuedQueries.front().result->m_rows.append(std::move(rowData));
-
-            // Try to fetch the next row immediately without re-entering the event loop
-            continue;
-        }
-        }
-    }
-}
-
-void ADriverMysql::finishCurrentQuery()
-{
-    m_queryRunning = false;
-    m_queryPhase   = QueryPhase::None;
-
-    AMysqlQuery q = std::move(m_queuedQueries.front());
-    m_queuedQueries.pop();
-    q.done();
-
-    if (!m_queuedQueries.empty()) {
-        nextQuery();
-    } else {
-        selfDriver.reset();
-    }
-}
-
-void ADriverMysql::finishCurrentQuery(const QString &error)
-{
-    m_queryRunning = false;
-    m_queryPhase   = QueryPhase::None;
-
-    AMysqlQuery q = std::move(m_queuedQueries.front());
-    m_queuedQueries.pop();
-    q.doneError(error);
-
-    if (!m_queuedQueries.empty()) {
-        nextQuery();
-    } else {
-        selfDriver.reset();
-    }
-}
-
-void ADriverMysql::finishConnection(const QString &error)
-{
-    m_readNotify.reset();
-    m_writeNotify.reset();
-
-    if (m_currentResult) {
-        mysql_free_result(m_currentResult);
-        m_currentResult = nullptr;
-    }
-
-    if (m_mysql) {
-        mysql_close(m_mysql);
-        m_mysql = nullptr;
-    }
-
-    m_queryRunning = false;
-    m_queryPhase   = QueryPhase::None;
-
-    setState(ADatabase::State::Disconnected, error);
-
-    while (!m_queuedQueries.empty()) {
-        AMysqlQuery mysqlQuery = std::move(m_queuedQueries.front());
-        m_queuedQueries.pop();
-        mysqlQuery.doneError(error);
-    }
-
-    selfDriver.reset();
 }
