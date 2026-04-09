@@ -82,8 +82,7 @@ QString AOdbcThread::odbcError(SQLSMALLINT handleType, SQLHANDLE handle)
                           &nativeError,
                           msg,
                           SQL_MAX_MESSAGE_LENGTH,
-                          &msgLen)
-           != SQL_NO_DATA) {
+                          &msgLen) != SQL_NO_DATA) {
         if (!result.isEmpty()) {
             result += u'\n';
         }
@@ -105,7 +104,8 @@ void AOdbcThread::open()
     }
 
     // Set ODBC version
-    ret = SQLSetEnvAttr(m_env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
+    ret =
+        SQLSetEnvAttr(m_env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0);
     if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
         const QString error = u"Failed to set ODBC version: "_s + odbcError(SQL_HANDLE_ENV, m_env);
         SQLFreeHandle(SQL_HANDLE_ENV, m_env);
@@ -207,8 +207,9 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
     SQLLEN indicator = 0;
 
     switch (sqlType) {
-    case SQL_BIT: {
-        SQLCHAR val = 0;
+    case SQL_BIT:
+    {
+        SQLCHAR val   = 0;
         SQLRETURN ret = SQLGetData(stmt, col, SQL_C_BIT, &val, sizeof(val), &indicator);
         if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
             return QVariant(QMetaType::fromType<bool>());
@@ -216,8 +217,9 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
         return val != 0;
     }
 
-    case SQL_TINYINT: {
-        SQLSCHAR val = 0;
+    case SQL_TINYINT:
+    {
+        SQLSCHAR val  = 0;
         SQLRETURN ret = SQLGetData(stmt, col, SQL_C_STINYINT, &val, sizeof(val), &indicator);
         if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
             return QVariant(QMetaType::fromType<int>());
@@ -225,7 +227,8 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
         return static_cast<int>(val);
     }
 
-    case SQL_SMALLINT: {
+    case SQL_SMALLINT:
+    {
         SQLSMALLINT val = 0;
         SQLRETURN ret   = SQLGetData(stmt, col, SQL_C_SSHORT, &val, sizeof(val), &indicator);
         if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
@@ -234,7 +237,8 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
         return static_cast<int>(val);
     }
 
-    case SQL_INTEGER: {
+    case SQL_INTEGER:
+    {
         SQLINTEGER val = 0;
         SQLRETURN ret  = SQLGetData(stmt, col, SQL_C_SLONG, &val, sizeof(val), &indicator);
         if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
@@ -243,7 +247,8 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
         return static_cast<int>(val);
     }
 
-    case SQL_BIGINT: {
+    case SQL_BIGINT:
+    {
         SQLBIGINT val = 0;
         SQLRETURN ret = SQLGetData(stmt, col, SQL_C_SBIGINT, &val, sizeof(val), &indicator);
         if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
@@ -252,7 +257,8 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
         return static_cast<qint64>(val);
     }
 
-    case SQL_REAL: {
+    case SQL_REAL:
+    {
         SQLREAL val   = 0;
         SQLRETURN ret = SQLGetData(stmt, col, SQL_C_FLOAT, &val, sizeof(val), &indicator);
         if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
@@ -262,7 +268,8 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
     }
 
     case SQL_FLOAT:
-    case SQL_DOUBLE: {
+    case SQL_DOUBLE:
+    {
         SQLDOUBLE val = 0;
         SQLRETURN ret = SQLGetData(stmt, col, SQL_C_DOUBLE, &val, sizeof(val), &indicator);
         if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
@@ -273,7 +280,8 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
 
     case SQL_BINARY:
     case SQL_VARBINARY:
-    case SQL_LONGVARBINARY: {
+    case SQL_LONGVARBINARY:
+    {
         // Get data length first
         SQLRETURN ret = SQLGetData(stmt, col, SQL_C_BINARY, nullptr, 0, &indicator);
         if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
@@ -285,14 +293,12 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
             constexpr SQLLEN CHUNK = 4096;
             QByteArray chunk(CHUNK, Qt::Uninitialized);
             do {
-                ret = SQLGetData(
-                    stmt, col, SQL_C_BINARY, chunk.data(), CHUNK, &indicator);
+                ret = SQLGetData(stmt, col, SQL_C_BINARY, chunk.data(), CHUNK, &indicator);
                 if (ret == SQL_ERROR) {
                     break;
                 }
-                const SQLLEN got = (ret == SQL_SUCCESS_WITH_INFO)
-                    ? CHUNK
-                    : (indicator > 0 ? indicator : 0);
+                const SQLLEN got =
+                    (ret == SQL_SUCCESS_WITH_INFO) ? CHUNK : (indicator > 0 ? indicator : 0);
                 result.append(chunk.constData(), static_cast<qsizetype>(got));
             } while (ret == SQL_SUCCESS_WITH_INFO);
             return result;
@@ -302,7 +308,8 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
         return data;
     }
 
-    case SQL_TYPE_DATE: {
+    case SQL_TYPE_DATE:
+    {
         DATE_STRUCT ds{};
         SQLRETURN ret = SQLGetData(stmt, col, SQL_C_TYPE_DATE, &ds, sizeof(ds), &indicator);
         if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
@@ -311,7 +318,8 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
         return QDate(ds.year, ds.month, ds.day);
     }
 
-    case SQL_TYPE_TIME: {
+    case SQL_TYPE_TIME:
+    {
         TIME_STRUCT ts{};
         SQLRETURN ret = SQLGetData(stmt, col, SQL_C_TYPE_TIME, &ts, sizeof(ts), &indicator);
         if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
@@ -320,7 +328,8 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
         return QTime(ts.hour, ts.minute, ts.second);
     }
 
-    case SQL_TYPE_TIMESTAMP: {
+    case SQL_TYPE_TIMESTAMP:
+    {
         TIMESTAMP_STRUCT tss{};
         SQLRETURN ret = SQLGetData(stmt, col, SQL_C_TYPE_TIMESTAMP, &tss, sizeof(tss), &indicator);
         if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
@@ -349,7 +358,8 @@ void AOdbcThread::fetchResults(SQLHSTMT stmt, OdbcQueryPromise &promise)
     SQLSMALLINT numCols = 0;
     SQLRETURN ret       = SQLNumResultCols(stmt, &numCols);
     if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
-        promise.result->m_error = u"Failed to get column count: "_s + odbcError(SQL_HANDLE_STMT, stmt);
+        promise.result->m_error =
+            u"Failed to get column count: "_s + odbcError(SQL_HANDLE_STMT, stmt);
         return;
     }
 
@@ -357,11 +367,11 @@ void AOdbcThread::fetchResults(SQLHSTMT stmt, OdbcQueryPromise &promise)
     QVector<SQLSMALLINT> colTypes(numCols);
     for (SQLSMALLINT i = 1; i <= numCols; ++i) {
         SQLWCHAR colName[256];
-        SQLSMALLINT colNameLen  = 0;
-        SQLSMALLINT colType     = 0;
-        SQLULEN colSize         = 0;
-        SQLSMALLINT decDigits   = 0;
-        SQLSMALLINT nullable    = 0;
+        SQLSMALLINT colNameLen = 0;
+        SQLSMALLINT colType    = 0;
+        SQLULEN colSize        = 0;
+        SQLSMALLINT decDigits  = 0;
+        SQLSMALLINT nullable   = 0;
 
         ret = SQLDescribeColW(stmt,
                               static_cast<SQLUSMALLINT>(i),
@@ -394,15 +404,13 @@ void AOdbcThread::fetchResults(SQLHSTMT stmt, OdbcQueryPromise &promise)
             break;
         }
         if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
-            promise.result->m_error =
-                u"Failed to fetch row: "_s + odbcError(SQL_HANDLE_STMT, stmt);
+            promise.result->m_error = u"Failed to fetch row: "_s + odbcError(SQL_HANDLE_STMT, stmt);
             return;
         }
 
         for (SQLSMALLINT i = 0; i < numCols; ++i) {
-            promise.result->m_rows << columnValue(stmt,
-                                                  static_cast<SQLUSMALLINT>(i + 1),
-                                                  colTypes[i]);
+            promise.result->m_rows
+                << columnValue(stmt, static_cast<SQLUSMALLINT>(i + 1), colTypes[i]);
         }
     }
 
@@ -424,174 +432,183 @@ void AOdbcThread::bindParameters(SQLHSTMT stmt,
     indicators.resize(params.size());
 
     for (int i = 0; i < params.size(); ++i) {
-        const QVariant &val = params.at(i);
+        const QVariant &val   = params.at(i);
         SQLUSMALLINT paramNum = static_cast<SQLUSMALLINT>(i + 1);
         SQLRETURN ret         = SQL_SUCCESS;
 
         if (val.isNull()) {
             indicators[i] = SQL_NULL_DATA;
             ret           = SQLBindParameter(stmt,
-                                   paramNum,
-                                   SQL_PARAM_INPUT,
-                                   SQL_C_DEFAULT,
-                                   SQL_VARCHAR,
-                                   0,
-                                   0,
-                                   nullptr,
-                                   0,
-                                   &indicators[i]);
+                                             paramNum,
+                                             SQL_PARAM_INPUT,
+                                             SQL_C_DEFAULT,
+                                             SQL_VARCHAR,
+                                             0,
+                                             0,
+                                             nullptr,
+                                             0,
+                                             &indicators[i]);
         } else {
             switch (val.typeId()) {
-            case QMetaType::Bool: {
-                SQLCHAR bval        = val.toBool() ? 1 : 0;
-                buffers[i]          = QByteArray(reinterpret_cast<const char *>(&bval), sizeof(bval));
-                indicators[i]       = sizeof(SQLCHAR);
-                ret                 = SQLBindParameter(stmt,
-                                         paramNum,
-                                         SQL_PARAM_INPUT,
-                                         SQL_C_BIT,
-                                         SQL_BIT,
-                                         1,
-                                         0,
-                                         reinterpret_cast<SQLCHAR *>(buffers[i].data()),
-                                         sizeof(SQLCHAR),
-                                         &indicators[i]);
+            case QMetaType::Bool:
+            {
+                SQLCHAR bval  = val.toBool() ? 1 : 0;
+                buffers[i]    = QByteArray(reinterpret_cast<const char *>(&bval), sizeof(bval));
+                indicators[i] = sizeof(SQLCHAR);
+                ret           = SQLBindParameter(stmt,
+                                                 paramNum,
+                                                 SQL_PARAM_INPUT,
+                                                 SQL_C_BIT,
+                                                 SQL_BIT,
+                                                 1,
+                                                 0,
+                                                 reinterpret_cast<SQLCHAR *>(buffers[i].data()),
+                                                 sizeof(SQLCHAR),
+                                                 &indicators[i]);
                 break;
             }
             case QMetaType::Int:
             case QMetaType::Short:
-            case QMetaType::UShort: {
+            case QMetaType::UShort:
+            {
                 const SQLINTEGER ival = static_cast<SQLINTEGER>(val.toInt());
                 buffers[i]    = QByteArray(reinterpret_cast<const char *>(&ival), sizeof(ival));
                 indicators[i] = 0;
                 ret           = SQLBindParameter(stmt,
-                                       paramNum,
-                                       SQL_PARAM_INPUT,
-                                       SQL_C_SLONG,
-                                       SQL_INTEGER,
-                                       10,
-                                       0,
-                                       reinterpret_cast<SQLPOINTER>(buffers[i].data()),
-                                       sizeof(SQLINTEGER),
-                                       &indicators[i]);
+                                                 paramNum,
+                                                 SQL_PARAM_INPUT,
+                                                 SQL_C_SLONG,
+                                                 SQL_INTEGER,
+                                                 10,
+                                                 0,
+                                                 reinterpret_cast<SQLPOINTER>(buffers[i].data()),
+                                                 sizeof(SQLINTEGER),
+                                                 &indicators[i]);
                 break;
             }
             case QMetaType::UInt:
             case QMetaType::LongLong:
-            case QMetaType::ULongLong: {
+            case QMetaType::ULongLong:
+            {
                 const SQLBIGINT bival = static_cast<SQLBIGINT>(val.toLongLong());
                 buffers[i]    = QByteArray(reinterpret_cast<const char *>(&bival), sizeof(bival));
                 indicators[i] = 0;
                 ret           = SQLBindParameter(stmt,
-                                       paramNum,
-                                       SQL_PARAM_INPUT,
-                                       SQL_C_SBIGINT,
-                                       SQL_BIGINT,
-                                       19,
-                                       0,
-                                       reinterpret_cast<SQLPOINTER>(buffers[i].data()),
-                                       sizeof(SQLBIGINT),
-                                       &indicators[i]);
+                                                 paramNum,
+                                                 SQL_PARAM_INPUT,
+                                                 SQL_C_SBIGINT,
+                                                 SQL_BIGINT,
+                                                 19,
+                                                 0,
+                                                 reinterpret_cast<SQLPOINTER>(buffers[i].data()),
+                                                 sizeof(SQLBIGINT),
+                                                 &indicators[i]);
                 break;
             }
             case QMetaType::Float:
-            case QMetaType::Double: {
+            case QMetaType::Double:
+            {
                 const SQLDOUBLE dval = val.toDouble();
                 buffers[i]    = QByteArray(reinterpret_cast<const char *>(&dval), sizeof(dval));
                 indicators[i] = 0;
                 ret           = SQLBindParameter(stmt,
-                                       paramNum,
-                                       SQL_PARAM_INPUT,
-                                       SQL_C_DOUBLE,
-                                       SQL_DOUBLE,
-                                       15,
-                                       0,
-                                       reinterpret_cast<SQLPOINTER>(buffers[i].data()),
-                                       sizeof(SQLDOUBLE),
-                                       &indicators[i]);
+                                                 paramNum,
+                                                 SQL_PARAM_INPUT,
+                                                 SQL_C_DOUBLE,
+                                                 SQL_DOUBLE,
+                                                 15,
+                                                 0,
+                                                 reinterpret_cast<SQLPOINTER>(buffers[i].data()),
+                                                 sizeof(SQLDOUBLE),
+                                                 &indicators[i]);
                 break;
             }
-            case QMetaType::QByteArray: {
+            case QMetaType::QByteArray:
+            {
                 const QByteArray &ba = *static_cast<const QByteArray *>(val.constData());
                 buffers[i]           = ba;
                 indicators[i]        = static_cast<SQLLEN>(ba.size());
-                ret                  = SQLBindParameter(stmt,
-                                        paramNum,
-                                        SQL_PARAM_INPUT,
-                                        SQL_C_BINARY,
-                                        SQL_VARBINARY,
-                                        static_cast<SQLULEN>(ba.size()),
-                                        0,
-                                        reinterpret_cast<SQLPOINTER>(buffers[i].data()),
-                                        static_cast<SQLLEN>(ba.size()),
-                                        &indicators[i]);
+                ret = SQLBindParameter(stmt,
+                                       paramNum,
+                                       SQL_PARAM_INPUT,
+                                       SQL_C_BINARY,
+                                       SQL_VARBINARY,
+                                       static_cast<SQLULEN>(ba.size()),
+                                       0,
+                                       reinterpret_cast<SQLPOINTER>(buffers[i].data()),
+                                       static_cast<SQLLEN>(ba.size()),
+                                       &indicators[i]);
                 break;
             }
-            case QMetaType::QDate: {
+            case QMetaType::QDate:
+            {
                 const QDate date = val.toDate();
                 DATE_STRUCT ds{};
-                ds.year  = static_cast<SQLSMALLINT>(date.year());
-                ds.month = static_cast<SQLUSMALLINT>(date.month());
-                ds.day   = static_cast<SQLUSMALLINT>(date.day());
+                ds.year       = static_cast<SQLSMALLINT>(date.year());
+                ds.month      = static_cast<SQLUSMALLINT>(date.month());
+                ds.day        = static_cast<SQLUSMALLINT>(date.day());
                 buffers[i]    = QByteArray(reinterpret_cast<const char *>(&ds), sizeof(ds));
                 indicators[i] = sizeof(DATE_STRUCT);
                 ret           = SQLBindParameter(stmt,
-                                       paramNum,
-                                       SQL_PARAM_INPUT,
-                                       SQL_C_TYPE_DATE,
-                                       SQL_TYPE_DATE,
-                                       10,
-                                       0,
-                                       reinterpret_cast<SQLPOINTER>(buffers[i].data()),
-                                       sizeof(DATE_STRUCT),
-                                       &indicators[i]);
+                                                 paramNum,
+                                                 SQL_PARAM_INPUT,
+                                                 SQL_C_TYPE_DATE,
+                                                 SQL_TYPE_DATE,
+                                                 10,
+                                                 0,
+                                                 reinterpret_cast<SQLPOINTER>(buffers[i].data()),
+                                                 sizeof(DATE_STRUCT),
+                                                 &indicators[i]);
                 break;
             }
-            case QMetaType::QTime: {
+            case QMetaType::QTime:
+            {
                 const QTime time = val.toTime();
                 TIME_STRUCT ts{};
-                ts.hour   = static_cast<SQLUSMALLINT>(time.hour());
-                ts.minute = static_cast<SQLUSMALLINT>(time.minute());
-                ts.second = static_cast<SQLUSMALLINT>(time.second());
+                ts.hour       = static_cast<SQLUSMALLINT>(time.hour());
+                ts.minute     = static_cast<SQLUSMALLINT>(time.minute());
+                ts.second     = static_cast<SQLUSMALLINT>(time.second());
                 buffers[i]    = QByteArray(reinterpret_cast<const char *>(&ts), sizeof(ts));
                 indicators[i] = sizeof(TIME_STRUCT);
                 ret           = SQLBindParameter(stmt,
-                                       paramNum,
-                                       SQL_PARAM_INPUT,
-                                       SQL_C_TYPE_TIME,
-                                       SQL_TYPE_TIME,
-                                       8,
-                                       0,
-                                       reinterpret_cast<SQLPOINTER>(buffers[i].data()),
-                                       sizeof(TIME_STRUCT),
-                                       &indicators[i]);
+                                                 paramNum,
+                                                 SQL_PARAM_INPUT,
+                                                 SQL_C_TYPE_TIME,
+                                                 SQL_TYPE_TIME,
+                                                 8,
+                                                 0,
+                                                 reinterpret_cast<SQLPOINTER>(buffers[i].data()),
+                                                 sizeof(TIME_STRUCT),
+                                                 &indicators[i]);
                 break;
             }
-            case QMetaType::QDateTime: {
+            case QMetaType::QDateTime:
+            {
                 const QDateTime dt = val.toDateTime();
                 TIMESTAMP_STRUCT tss{};
-                tss.year     = static_cast<SQLSMALLINT>(dt.date().year());
-                tss.month    = static_cast<SQLUSMALLINT>(dt.date().month());
-                tss.day      = static_cast<SQLUSMALLINT>(dt.date().day());
-                tss.hour     = static_cast<SQLUSMALLINT>(dt.time().hour());
-                tss.minute   = static_cast<SQLUSMALLINT>(dt.time().minute());
-                tss.second   = static_cast<SQLUSMALLINT>(dt.time().second());
-                tss.fraction = static_cast<SQLUINTEGER>(dt.time().msec()) * 1000000u;
-                buffers[i]   = QByteArray(reinterpret_cast<const char *>(&tss), sizeof(tss));
+                tss.year      = static_cast<SQLSMALLINT>(dt.date().year());
+                tss.month     = static_cast<SQLUSMALLINT>(dt.date().month());
+                tss.day       = static_cast<SQLUSMALLINT>(dt.date().day());
+                tss.hour      = static_cast<SQLUSMALLINT>(dt.time().hour());
+                tss.minute    = static_cast<SQLUSMALLINT>(dt.time().minute());
+                tss.second    = static_cast<SQLUSMALLINT>(dt.time().second());
+                tss.fraction  = static_cast<SQLUINTEGER>(dt.time().msec()) * 1000000u;
+                buffers[i]    = QByteArray(reinterpret_cast<const char *>(&tss), sizeof(tss));
                 indicators[i] = sizeof(TIMESTAMP_STRUCT);
                 ret           = SQLBindParameter(stmt,
-                                       paramNum,
-                                       SQL_PARAM_INPUT,
-                                       SQL_C_TYPE_TIMESTAMP,
-                                       SQL_TYPE_TIMESTAMP,
-                                       23,
-                                       3,
-                                       reinterpret_cast<SQLPOINTER>(buffers[i].data()),
-                                       sizeof(TIMESTAMP_STRUCT),
-                                       &indicators[i]);
+                                                 paramNum,
+                                                 SQL_PARAM_INPUT,
+                                                 SQL_C_TYPE_TIMESTAMP,
+                                                 SQL_TYPE_TIMESTAMP,
+                                                 23,
+                                                 3,
+                                                 reinterpret_cast<SQLPOINTER>(buffers[i].data()),
+                                                 sizeof(TIMESTAMP_STRUCT),
+                                                 &indicators[i]);
                 break;
             }
-            default: {
+            default:
+            {
                 // Fallback: convert to string
                 const QString str = val.toString();
                 // Store as UTF-16 in buffer; QByteArray stores bytes
@@ -615,8 +632,8 @@ void AOdbcThread::bindParameters(SQLHSTMT stmt,
         }
 
         if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
-            promise.result->m_error = u"Failed to bind parameter %1: "_s.arg(i + 1)
-                + odbcError(SQL_HANDLE_STMT, stmt);
+            promise.result->m_error =
+                u"Failed to bind parameter %1: "_s.arg(i + 1) + odbcError(SQL_HANDLE_STMT, stmt);
             return;
         }
     }
@@ -644,9 +661,8 @@ void AOdbcThread::query(OdbcQueryPromise promise)
 
     // Prepare the statement
     const QString queryStr = QString::fromUtf8(promise.result->m_query);
-    ret = SQLPrepareW(stmt,
-                      reinterpret_cast<SQLWCHAR *>(const_cast<QChar *>(queryStr.unicode())),
-                      SQL_NTS);
+    ret                    = SQLPrepareW(
+        stmt, reinterpret_cast<SQLWCHAR *>(const_cast<QChar *>(queryStr.unicode())), SQL_NTS);
     if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
         promise.result->m_error =
             u"Failed to prepare statement: "_s + odbcError(SQL_HANDLE_STMT, stmt);
@@ -708,9 +724,8 @@ void AOdbcThread::queryPrepared(OdbcQueryPromise promise)
         }
 
         const QString queryStr = QString::fromUtf8(promise.preparedQuery->query());
-        ret = SQLPrepareW(stmt,
-                          reinterpret_cast<SQLWCHAR *>(const_cast<QChar *>(queryStr.unicode())),
-                          SQL_NTS);
+        ret                    = SQLPrepareW(
+            stmt, reinterpret_cast<SQLWCHAR *>(const_cast<QChar *>(queryStr.unicode())), SQL_NTS);
         if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
             promise.result->m_error =
                 u"Failed to prepare statement: "_s + odbcError(SQL_HANDLE_STMT, stmt);
@@ -765,9 +780,8 @@ void AOdbcThread::queryExec(OdbcQueryPromise promise)
     auto stmtGuard = qScopeGuard([&] { SQLFreeHandle(SQL_HANDLE_STMT, stmt); });
 
     const QString queryStr = QString::fromUtf8(promise.result->m_query);
-    ret = SQLExecDirectW(stmt,
-                         reinterpret_cast<SQLWCHAR *>(const_cast<QChar *>(queryStr.unicode())),
-                         SQL_NTS);
+    ret                    = SQLExecDirectW(
+        stmt, reinterpret_cast<SQLWCHAR *>(const_cast<QChar *>(queryStr.unicode())), SQL_NTS);
     if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
         promise.result->m_error =
             u"Failed to execute statement: "_s + odbcError(SQL_HANDLE_STMT, stmt);
@@ -891,7 +905,7 @@ ADatabase::State ADriverOdbc::state() const
 }
 
 void ADriverOdbc::onStateChanged(QObject *receiver,
-                                  std::function<void(ADatabase::State, const QString &)> cb)
+                                 std::function<void(ADatabase::State, const QString &)> cb)
 {
     m_stateChangedCb = cb;
     if (receiver) {
@@ -915,9 +929,9 @@ void ADriverOdbc::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver
 }
 
 void ADriverOdbc::exec(const std::shared_ptr<ADriver> &db,
-                        QUtf8StringView query,
-                        QObject *receiver,
-                        ACoroDataRef cb)
+                       QUtf8StringView query,
+                       QObject *receiver,
+                       ACoroDataRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
@@ -943,9 +957,9 @@ void ADriverOdbc::exec(const std::shared_ptr<ADriver> &db,
 }
 
 void ADriverOdbc::exec(const std::shared_ptr<ADriver> &db,
-                        QStringView query,
-                        QObject *receiver,
-                        ACoroDataRef cb)
+                       QStringView query,
+                       QObject *receiver,
+                       ACoroDataRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
@@ -971,10 +985,10 @@ void ADriverOdbc::exec(const std::shared_ptr<ADriver> &db,
 }
 
 void ADriverOdbc::exec(const std::shared_ptr<ADriver> &db,
-                        QUtf8StringView query,
-                        const QVariantList &params,
-                        QObject *receiver,
-                        ACoroDataRef cb)
+                       QUtf8StringView query,
+                       const QVariantList &params,
+                       QObject *receiver,
+                       ACoroDataRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
@@ -993,18 +1007,16 @@ void ADriverOdbc::exec(const std::shared_ptr<ADriver> &db,
     QMetaObject::invokeMethod(
         &m_worker, &AOdbcThread::query, Qt::QueuedConnection, std::move(data));
 #else
-    QMetaObject::invokeMethod(&m_worker,
-                              "query",
-                              Qt::QueuedConnection,
-                              Q_ARG(ASql::OdbcQueryPromise, std::move(data)));
+    QMetaObject::invokeMethod(
+        &m_worker, "query", Qt::QueuedConnection, Q_ARG(ASql::OdbcQueryPromise, std::move(data)));
 #endif
 }
 
 void ADriverOdbc::exec(const std::shared_ptr<ADriver> &db,
-                        QStringView query,
-                        const QVariantList &params,
-                        QObject *receiver,
-                        ACoroDataRef cb)
+                       QStringView query,
+                       const QVariantList &params,
+                       QObject *receiver,
+                       ACoroDataRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
@@ -1023,18 +1035,16 @@ void ADriverOdbc::exec(const std::shared_ptr<ADriver> &db,
     QMetaObject::invokeMethod(
         &m_worker, &AOdbcThread::query, Qt::QueuedConnection, std::move(data));
 #else
-    QMetaObject::invokeMethod(&m_worker,
-                              "query",
-                              Qt::QueuedConnection,
-                              Q_ARG(ASql::OdbcQueryPromise, std::move(data)));
+    QMetaObject::invokeMethod(
+        &m_worker, "query", Qt::QueuedConnection, Q_ARG(ASql::OdbcQueryPromise, std::move(data)));
 #endif
 }
 
 void ADriverOdbc::exec(const std::shared_ptr<ADriver> &db,
-                        const APreparedQuery &query,
-                        const QVariantList &params,
-                        QObject *receiver,
-                        ACoroDataRef cb)
+                       const APreparedQuery &query,
+                       const QVariantList &params,
+                       QObject *receiver,
+                       ACoroDataRef cb)
 {
     ++m_queueSize;
     selfDriver = db;
@@ -1091,9 +1101,9 @@ int ADriverOdbc::queueSize() const
 }
 
 void ADriverOdbc::subscribeToNotification(const std::shared_ptr<ADriver> &,
-                                           const QString &,
-                                           QObject *,
-                                           ANotificationFn)
+                                          const QString &,
+                                          QObject *,
+                                          ANotificationFn)
 {
 }
 

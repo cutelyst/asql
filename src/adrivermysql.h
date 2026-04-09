@@ -4,13 +4,13 @@
  */
 #pragma once
 
-#include "adriver.h"
+#include "acoroexpected.h"
 #include "apreparedquery.h"
 #include "aresult.h"
 
+#include <adriver.h>
+#include <mysql/mysql.h>
 #include <optional>
-#include <sql.h>
-#include <sqlext.h>
 
 #include <QHash>
 #include <QMutex>
@@ -20,11 +20,11 @@
 
 namespace ASql {
 
-class AResultOdbc final : public AResultPrivate
+class AResultMysql final : public AResultPrivate
 {
 public:
-    AResultOdbc()          = default;
-    virtual ~AResultOdbc() = default;
+    AResultMysql()          = default;
+    virtual ~AResultMysql() = default;
 
     bool lastResultSet() const override;
     bool hasError() const override;
@@ -39,7 +39,7 @@ public:
 
     int indexOfField(QLatin1String name) const override;
     QString fieldName(int column) const override;
-    inline QVariant value(int row, int column) const override;
+    QVariant value(int row, int column) const override;
 
     bool isNull(int row, int column) const override;
     bool toBool(int row, int column) const override;
@@ -53,74 +53,66 @@ public:
     QDate toDate(int row, int column) const override;
     QTime toTime(int row, int column) const override;
     QDateTime toDateTime(int row, int column) const override;
-    QJsonValue toJsonValue(int row, int column) const final;
-    QCborValue toCborValue(int row, int column) const final;
+    QJsonValue toJsonValue(int row, int column) const override;
+    QCborValue toCborValue(int row, int column) const override;
     QByteArray toByteArray(int row, int column) const override;
 
     QByteArray m_query;
     QVariantList m_queryArgs;
-    QVariantList m_rows;
-    std::optional<QString> m_error;
     QStringList m_fields;
+    QVariantList m_rows; // flat: row*fields+col
     qint64 m_numRowsAffected = -1;
-    bool m_lastResultSet     = true;
+    std::optional<QString> m_error;
+    bool m_lastResultSet = true;
 };
 
-struct OdbcOpenPromise {
+struct OpenPromise {
     AOpenFn cb;
     std::optional<QPointer<QObject>> receiver;
 };
 
-struct OdbcQueryPromise {
+struct MysqlQueryPromise {
     std::optional<APreparedQuery> preparedQuery;
     ACoroDataRef cb;
-    std::shared_ptr<AResultOdbc> result;
+    std::shared_ptr<AResultMysql> result;
     std::optional<QPointer<QObject>> receiver;
 };
 
-class AOdbcThread final : public QThread
+class AMysqlThread final : public QThread
 {
     Q_OBJECT
 public:
-    AOdbcThread(const QString &connInfo);
-    ~AOdbcThread();
+    AMysqlThread(const QString &connInfo);
+    ~AMysqlThread();
 
     QMutex m_promisesMutex;
-    QQueue<ASql::OdbcQueryPromise> m_promisesReady;
+    QQueue<ASql::MysqlQueryPromise> m_promisesReady;
 
 public Q_SLOTS:
     void open();
-    void query(ASql::OdbcQueryPromise promise);
-    void queryPrepared(ASql::OdbcQueryPromise promise);
-    void queryExec(ASql::OdbcQueryPromise promise);
+    void query(ASql::MysqlQueryPromise promise);
+    void queryPrepared(ASql::MysqlQueryPromise promise);
+    void queryExec(ASql::MysqlQueryPromise promise);
 
 Q_SIGNALS:
     void openned(bool isOpen, QString error);
     void queryReady();
 
 private:
-    QString odbcError(SQLSMALLINT handleType, SQLHANDLE handle);
-    void fetchResults(SQLHSTMT stmt, OdbcQueryPromise &promise);
-    QVariant columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT sqlType);
-    QString readWCharColumn(SQLHSTMT stmt, SQLUSMALLINT col);
-    void bindParameters(SQLHSTMT stmt,
-                        const QVariantList &params,
-                        OdbcQueryPromise &promise,
-                        QList<QByteArray> &buffers,
-                        QList<SQLLEN> &indicators);
+    MYSQL_STMT *prepare(MysqlQueryPromise &promise);
+    void enqueueAndSignal(MysqlQueryPromise &promise);
 
-    QHash<int, SQLHSTMT> m_preparedStmts;
-    QString m_connString;
-    SQLHENV m_env = SQL_NULL_HENV;
-    SQLHDBC m_dbc = SQL_NULL_HDBC;
+    QHash<int, MYSQL_STMT *> m_preparedQueries;
+    QString m_connInfo;
+    MYSQL *m_mysql = nullptr;
 };
 
-class ADriverOdbc final : public ADriver
+class ADriverMysql final : public ADriver
 {
     Q_OBJECT
 public:
-    ADriverOdbc(const QString &connInfo);
-    virtual ~ADriverOdbc();
+    ADriverMysql(const QString &connInfo);
+    virtual ~ADriverMysql() override;
 
     QString driverName() const override;
 
@@ -153,11 +145,13 @@ public:
               const QVariantList &params,
               QObject *receiver,
               ACoroDataRef cb) override;
+
     void exec(const std::shared_ptr<ADriver> &db,
               QStringView query,
               const QVariantList &params,
               QObject *receiver,
               ACoroDataRef cb) override;
+
     void exec(const std::shared_ptr<ADriver> &db,
               const APreparedQuery &query,
               const QVariantList &params,
@@ -188,7 +182,7 @@ private:
     std::optional<QPointer<QObject>> m_stateChangedReceiver;
     std::function<void(ADatabase::State, const QString &)> m_stateChangedCb;
     std::shared_ptr<ADriver> selfDriver;
-    AOdbcThread m_worker;
+    AMysqlThread m_worker;
     QThread m_thread;
     ADatabase::State m_state = ADatabase::State::Disconnected;
     int m_queueSize          = 0;
@@ -196,5 +190,5 @@ private:
 
 } // namespace ASql
 
-Q_DECLARE_METATYPE(ASql::OdbcOpenPromise)
-Q_DECLARE_METATYPE(ASql::OdbcQueryPromise)
+Q_DECLARE_METATYPE(ASql::OpenPromise)
+Q_DECLARE_METATYPE(ASql::MysqlQueryPromise)

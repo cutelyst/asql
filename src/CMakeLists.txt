@@ -212,6 +212,71 @@ if (ASQL_DRIVER_POSTGRES)
     )
 endif() # End Postgres Driver
 
+## MySQL Driver
+if (DRIVER_MYSQL)
+    set(asql_mysql_SRC
+        adrivermysql.cpp
+        adrivermysql.h
+        amysql.cpp
+    )
+
+    set(asql_mysql_HEADERS
+        amysql.h
+    )
+
+    add_library(ASqlQt${QT_VERSION_MAJOR}Mysql
+        ${asql_mysql_SRC}
+        ${asql_mysql_HEADERS}
+    )
+
+    generate_export_header(ASqlQt${QT_VERSION_MAJOR}Mysql
+        BASE_NAME ASQL_MYSQL
+    )
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/asql_mysql_export.h
+        DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
+    )
+
+    add_library(ASql::Mysql ALIAS ASqlQt${QT_VERSION_MAJOR}Mysql)
+    project_target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}Mysql)
+
+    if (CMAKE_GENERATOR MATCHES "Visual Studio")
+        set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Mysql PROPERTY DEBUG_POSTFIX "d")
+    endif()
+
+    target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}Mysql
+        PRIVATE
+            PLUGINS_PREFER_DEBUG_POSTFIX=$<CONFIG:Debug>
+    )
+
+    target_include_directories(ASqlQt${QT_VERSION_MAJOR}Mysql PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
+    )
+
+    set_target_properties(ASqlQt${QT_VERSION_MAJOR}Mysql PROPERTIES
+        EXPORT_NAME Mysql
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 0
+    )
+
+    target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Mysql
+        PUBLIC
+            Qt::Core
+            ASql::Core
+        PRIVATE
+            MySQL::MySQL
+    )
+
+    set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Mysql PROPERTY PUBLIC_HEADER ${asql_mysql_HEADERS})
+    install(TARGETS ASqlQt${QT_VERSION_MAJOR}Mysql
+        EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION bin COMPONENT runtime
+        ARCHIVE DESTINATION lib COMPONENT devel
+        PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
+    )
+endif() # End MySQL Driver
+
 ## Sqlite Driver
 if (ASQL_DRIVER_SQLITE)
     set(asql_sqlite_SRC
@@ -348,12 +413,16 @@ if (ASQL_MIGRATION_TOOL)
         target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_POSTGRES)
     endif()
     if (ASQL_DRIVER_SQLITE)
-      target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Sqlite)
-      target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_SQLITE)
+        target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Sqlite)
+        target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_SQLITE)
     endif()
     if (ASQL_DRIVER_ODBC)
-      target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Odbc)
-      target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_ODBC)
+        target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Odbc)
+        target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_ODBC)
+    endif()
+    if (DRIVER_MYSQL)
+        target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Mysql)
+        target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_MYSQL)
     endif()
     project_target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD})
     install(TARGETS ${TARGET_ASQL_MIGRATION_CMD} DESTINATION ${CMAKE_INSTALL_BINDIR})

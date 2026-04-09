@@ -8,3 +8,7 @@ endif()
 if (ASQL_DRIVER_SQLITE)
     add_subdirectory(sqlite)
 endif()
+
+if (DRIVER_MYSQL)
+    add_subdirectory(mysql)
+endif()
