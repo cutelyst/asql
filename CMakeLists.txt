@@ -37,22 +37,48 @@ endif()
 option(ASQL_ENABLE_MAINTAINER_CFLAGS "Enable maintainer CFlags" OFF)
 option(ASQL_DRIVER_SQLITE "Enable Sqlite Driver" ON)
 if (ASQL_DRIVER_SQLITE)
-    find_package(SQLite3)
+    find_package(SQLite3 QUIET)
     if (NOT SQLite3_FOUND)
         set(ASQL_SQLITE3_SUBMODULE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/sqlite")
         if (EXISTS "${ASQL_SQLITE3_SUBMODULE_DIR}/sqlite3.c")
-            message(STATUS "SQLite3 not found via find_package, using bundled submodule")
+            message(STATUS "SQLite3: using bundled amalgamation from submodule")
             enable_language(C)
             add_library(SQLite3_bundled STATIC "${ASQL_SQLITE3_SUBMODULE_DIR}/sqlite3.c")
             target_include_directories(SQLite3_bundled PUBLIC "${ASQL_SQLITE3_SUBMODULE_DIR}")
             add_library(SQLite::SQLite3 ALIAS SQLite3_bundled)
+        elseif (EXISTS "${ASQL_SQLITE3_SUBMODULE_DIR}/VERSION")
+            # Submodule is checked out but sqlite3.c has not been generated yet.
+            # Download the official pre-built amalgamation from sqlite.org.
+            file(STRINGS "${ASQL_SQLITE3_SUBMODULE_DIR}/VERSION" _sqlite_ver LIMIT_COUNT 1)
+            string(STRIP "${_sqlite_ver}" _sqlite_ver)
+            string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+).*$" "\\1;\\2;\\3"
+                   _sqlite_ver_parts "${_sqlite_ver}")
+            list(GET _sqlite_ver_parts 0 _sqlite_major)
+            list(GET _sqlite_ver_parts 1 _sqlite_minor)
+            list(GET _sqlite_ver_parts 2 _sqlite_patch)
+            math(EXPR _sqlite_ver_num
+                "${_sqlite_major} * 1000000 + ${_sqlite_minor} * 1000 + ${_sqlite_patch} * 100")
+            string(TIMESTAMP _sqlite_year "%Y")
+            math(EXPR _sqlite_prev_year "${_sqlite_year} - 1")
+            message(STATUS "SQLite3: submodule version ${_sqlite_ver}, downloading amalgamation from sqlite.org")
+            include(FetchContent)
+            FetchContent_Declare(
+                sqlite3_amalgamation
+                URL
+                    "https://www.sqlite.org/${_sqlite_year}/sqlite-amalgamation-${_sqlite_ver_num}.zip"
+                    "https://www.sqlite.org/${_sqlite_prev_year}/sqlite-amalgamation-${_sqlite_ver_num}.zip"
+                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            )
+            FetchContent_MakeAvailable(sqlite3_amalgamation)
+            enable_language(C)
+            add_library(SQLite3_bundled STATIC "${sqlite3_amalgamation_SOURCE_DIR}/sqlite3.c")
+            target_include_directories(SQLite3_bundled PUBLIC "${sqlite3_amalgamation_SOURCE_DIR}")
+            add_library(SQLite::SQLite3 ALIAS SQLite3_bundled)
         else()
             message(FATAL_ERROR
-                "SQLite3 not found and 3rdparty/sqlite/sqlite3.c is not available.\n"
-                "Either install the SQLite3 development package or provide the amalgamation:\n"
-                "  1. Initialize the submodule: git submodule update --init 3rdparty/sqlite\n"
-                "  2. Generate the amalgamation (requires tclsh): cd 3rdparty/sqlite && make sqlite3.c\n"
-                "     See https://www.sqlite.org/howtocompile.html for details.")
+                "SQLite3 not found and the 3rdparty/sqlite submodule is not initialized.\n"
+                "Either install the SQLite3 development package or initialize the submodule:\n"
+                "  git submodule update --init 3rdparty/sqlite")
         endif()
     endif()
 endif ()

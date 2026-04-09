@@ -10,6 +10,9 @@
 
 #include <mysql/mysql.h>
 
+#include <type_traits>
+#include <vector>
+
 #include <QCborValue>
 #include <QDate>
 #include <QJsonArray>
@@ -25,6 +28,11 @@ Q_LOGGING_CATEGORY(ASQL_MYSQL, "asql.mysql", QtInfoMsg)
 
 using namespace ASql;
 using namespace Qt::StringLiterals;
+
+// std::vector<bool> uses bit-packing, so operator[] returns a proxy and &vec[i]
+// is not a valid bool*.  Deduce the actual element type from MYSQL_BIND::is_null
+// so the code works with both MySQL 8.0+ (bool*) and MariaDB (my_bool* = char*).
+using MysqlBool = std::remove_pointer_t<decltype(std::declval<MYSQL_BIND>().is_null)>;
 
 // ---------------------------------------------------------------------------
 // AResultMysql
@@ -228,7 +236,7 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
                                               std::vector<MYSQL_BIND> &binds,
                                               std::vector<long long> &intVals,
                                               std::vector<double> &doubleVals,
-                                              std::vector<bool> &nullFlags,
+                                              std::vector<MysqlBool> &nullFlags,
                                               std::vector<QByteArray> &strVals,
                                               std::vector<unsigned long> &strLengths)
 {
@@ -236,7 +244,7 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
     binds.assign(n, MYSQL_BIND{});
     intVals.assign(n, 0LL);
     doubleVals.assign(n, 0.0);
-    nullFlags.assign(n, false);
+    nullFlags.assign(n, 0);
     strVals.resize(n);
     strLengths.assign(n, 0UL);
 
@@ -244,7 +252,7 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
         const QVariant &v = params.at(i);
 
         if (v.isNull()) {
-            nullFlags[i]         = true;
+            nullFlags[i]         = 1;
             binds[i].buffer_type = MYSQL_TYPE_NULL;
             binds[i].is_null     = &nullFlags[i];
             continue;
@@ -327,8 +335,8 @@ static std::optional<QString>
     // `length` indicator to the actual data size and raise the truncation flag.
     std::vector<MYSQL_BIND> resBind(numFields, MYSQL_BIND{});
     std::vector<unsigned long> lengths(numFields, 0UL);
-    std::vector<bool> isNull(numFields, false);
-    std::vector<bool> isError(numFields, false);
+    std::vector<MysqlBool> isNull(numFields, 0);
+    std::vector<MysqlBool> isError(numFields, 0);
     char dummy[1] = {0};
 
     for (unsigned int i = 0; i < numFields; ++i) {
@@ -473,7 +481,7 @@ void AMysqlThread::query(MysqlQueryPromise promise)
         std::vector<MYSQL_BIND> binds;
         std::vector<long long> intVals;
         std::vector<double> doubleVals;
-        std::vector<bool> nullFlags;
+        std::vector<MysqlBool> nullFlags;
         std::vector<QByteArray> strVals;
         std::vector<unsigned long> strLengths;
 
@@ -543,7 +551,7 @@ void AMysqlThread::queryPrepared(MysqlQueryPromise promise)
         std::vector<MYSQL_BIND> binds;
         std::vector<long long> intVals;
         std::vector<double> doubleVals;
-        std::vector<bool> nullFlags;
+        std::vector<MysqlBool> nullFlags;
         std::vector<QByteArray> strVals;
         std::vector<unsigned long> strLengths;
 
