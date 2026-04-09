@@ -148,7 +148,7 @@ install(TARGETS ASqlQt${QT_VERSION_MAJOR}Migrations
 # End Migrations Library
 
 ## Postgres Driver
-if (DRIVER_POSTGRES)
+if (ASQL_DRIVER_POSTGRES)
     set(asql_pg_SRC
         adriverpg.cpp
         adriverpg.h
@@ -213,10 +213,8 @@ if (DRIVER_POSTGRES)
 endif() # End Postgres Driver
 
 ## Sqlite Driver
-if (DRIVER_SQLITE)
+if (ASQL_DRIVER_SQLITE)
     set(asql_sqlite_SRC
-        sqlite/sqlite3.c
-        sqlite/sqlite3.h
         ADriverSqlite.cpp
         ADriverSqlite.hpp
         ASqlite.cpp
@@ -261,6 +259,8 @@ if (DRIVER_SQLITE)
         PUBLIC
             Qt::Core
             ASql::Core
+        PRIVATE
+            SQLite3::SQLite3
     )
 
     set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Sqlite PROPERTY PUBLIC_HEADER ${asql_sqlite_HEADERS})
@@ -281,11 +281,11 @@ target_link_libraries(${TARGET_ASQL_MIGRATION_CMD}
         ASql::Core
         ASql::Migrations
 )
-if (DRIVER_POSTGRES)
+if (ASQL_DRIVER_POSTGRES)
     target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Pg)
     target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_POSTGRES)
 endif()
-if (DRIVER_SQLITE)
+if (ASQL_DRIVER_SQLITE)
   target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Sqlite)
   target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_SQLITE)
 endif()
