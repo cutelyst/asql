@@ -203,10 +203,8 @@ QByteArray AResultMysql::toByteArray(int row, int column) const
  * Each column value is appended to \a rows as a QString (or a null QVariant
  * for SQL NULL).  \a numFields must equal mysql_num_fields(res).
  */
-static void mysqlFillRow(MYSQL_ROW row,
-                         unsigned int numFields,
-                         unsigned long *lengths,
-                         QVariantList &rows)
+static void
+    mysqlFillRow(MYSQL_ROW row, unsigned int numFields, unsigned long *lengths, QVariantList &rows)
 {
     for (unsigned int i = 0; i < numFields; ++i) {
         if (row[i] == nullptr) {
@@ -289,20 +287,20 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
             binds[i].buffer      = &doubleVals[i];
             break;
         case QMetaType::QByteArray:
-            strVals[i]              = v.toByteArray();
-            strLengths[i]           = static_cast<unsigned long>(strVals[i].size());
-            binds[i].buffer_type    = MYSQL_TYPE_BLOB;
-            binds[i].buffer         = strVals[i].data();
-            binds[i].buffer_length  = strLengths[i];
-            binds[i].length         = &strLengths[i];
+            strVals[i]             = v.toByteArray();
+            strLengths[i]          = static_cast<unsigned long>(strVals[i].size());
+            binds[i].buffer_type   = MYSQL_TYPE_BLOB;
+            binds[i].buffer        = strVals[i].data();
+            binds[i].buffer_length = strLengths[i];
+            binds[i].length        = &strLengths[i];
             break;
         default:
-            strVals[i]              = v.toString().toUtf8();
-            strLengths[i]           = static_cast<unsigned long>(strVals[i].size());
-            binds[i].buffer_type    = MYSQL_TYPE_STRING;
-            binds[i].buffer         = strVals[i].data();
-            binds[i].buffer_length  = strLengths[i];
-            binds[i].length         = &strLengths[i];
+            strVals[i]             = v.toString().toUtf8();
+            strLengths[i]          = static_cast<unsigned long>(strVals[i].size());
+            binds[i].buffer_type   = MYSQL_TYPE_STRING;
+            binds[i].buffer        = strVals[i].data();
+            binds[i].buffer_length = strLengths[i];
+            binds[i].length        = &strLengths[i];
             break;
         }
     }
@@ -322,9 +320,8 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
  *
  * \return empty optional on success; an error message string on failure.
  */
-static std::optional<QString> mysqlFetchStmtRows(MYSQL_STMT *stmt,
-                                                  unsigned int numFields,
-                                                  QVariantList &rows)
+static std::optional<QString>
+    mysqlFetchStmtRows(MYSQL_STMT *stmt, unsigned int numFields, QVariantList &rows)
 {
     // Bind all result columns with zero-size buffers.  MySQL will set the
     // `length` indicator to the actual data size and raise the truncation flag.
@@ -348,8 +345,7 @@ static std::optional<QString> mysqlFetchStmtRows(MYSQL_STMT *stmt,
     }
 
     int fetchRet;
-    while ((fetchRet = mysql_stmt_fetch(stmt)) == 0 ||
-           fetchRet == MYSQL_DATA_TRUNCATED) {
+    while ((fetchRet = mysql_stmt_fetch(stmt)) == 0 || fetchRet == MYSQL_DATA_TRUNCATED) {
         for (unsigned int i = 0; i < numFields; ++i) {
             if (isNull[i]) {
                 rows.append(QVariant{});
@@ -453,9 +449,7 @@ MYSQL_STMT *AMysqlThread::prepare(MysqlQueryPromise &promise)
     }
 
     const QByteArray &sql = promise.result->m_query;
-    if (mysql_stmt_prepare(stmt,
-                           sql.constData(),
-                           static_cast<unsigned long>(sql.size())) != 0) {
+    if (mysql_stmt_prepare(stmt, sql.constData(), static_cast<unsigned long>(sql.size())) != 0) {
         promise.result->m_error = QString::fromUtf8(mysql_stmt_error(stmt));
         mysql_stmt_close(stmt);
         return nullptr;
@@ -483,8 +477,8 @@ void AMysqlThread::query(MysqlQueryPromise promise)
         std::vector<QByteArray> strVals;
         std::vector<unsigned long> strLengths;
 
-        auto bindErr =
-            mysqlBindParams(stmt, params, binds, intVals, doubleVals, nullFlags, strVals, strLengths);
+        auto bindErr = mysqlBindParams(
+            stmt, params, binds, intVals, doubleVals, nullFlags, strVals, strLengths);
         if (bindErr.has_value()) {
             promise.result->m_error = bindErr;
             return;
@@ -514,8 +508,7 @@ void AMysqlThread::query(MysqlQueryPromise promise)
         }
     }
 
-    promise.result->m_numRowsAffected =
-        static_cast<qint64>(mysql_stmt_affected_rows(stmt));
+    promise.result->m_numRowsAffected = static_cast<qint64>(mysql_stmt_affected_rows(stmt));
 }
 
 void AMysqlThread::queryPrepared(MysqlQueryPromise promise)
@@ -539,8 +532,7 @@ void AMysqlThread::queryPrepared(MysqlQueryPromise promise)
         enqueueAndSignal(promise);
         // Reset the statement so it can be reused
         if (mysql_stmt_reset(stmt) != 0) {
-            qWarning(ASQL_MYSQL) << "Failed to reset prepared statement:"
-                                 << mysql_stmt_error(stmt);
+            qWarning(ASQL_MYSQL) << "Failed to reset prepared statement:" << mysql_stmt_error(stmt);
             m_preparedQueries.remove(queryId);
             mysql_stmt_close(stmt);
         }
@@ -555,8 +547,8 @@ void AMysqlThread::queryPrepared(MysqlQueryPromise promise)
         std::vector<QByteArray> strVals;
         std::vector<unsigned long> strLengths;
 
-        auto bindErr =
-            mysqlBindParams(stmt, params, binds, intVals, doubleVals, nullFlags, strVals, strLengths);
+        auto bindErr = mysqlBindParams(
+            stmt, params, binds, intVals, doubleVals, nullFlags, strVals, strLengths);
         if (bindErr.has_value()) {
             promise.result->m_error = bindErr;
             return;
@@ -586,8 +578,7 @@ void AMysqlThread::queryPrepared(MysqlQueryPromise promise)
         }
     }
 
-    promise.result->m_numRowsAffected =
-        static_cast<qint64>(mysql_stmt_affected_rows(stmt));
+    promise.result->m_numRowsAffected = static_cast<qint64>(mysql_stmt_affected_rows(stmt));
 }
 
 void AMysqlThread::queryExec(MysqlQueryPromise promise)
@@ -622,8 +613,7 @@ void AMysqlThread::queryExec(MysqlQueryPromise promise)
         return;
     }
 
-    promise.result->m_numRowsAffected =
-        static_cast<qint64>(mysql_affected_rows(m_mysql));
+    promise.result->m_numRowsAffected = static_cast<qint64>(mysql_affected_rows(m_mysql));
 }
 
 // ---------------------------------------------------------------------------
@@ -843,10 +833,8 @@ void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
     QMetaObject::invokeMethod(
         &m_worker, &AMysqlThread::query, Qt::QueuedConnection, std::move(data));
 #else
-    QMetaObject::invokeMethod(&m_worker,
-                              "query",
-                              Qt::QueuedConnection,
-                              Q_ARG(ASql::MysqlQueryPromise, std::move(data)));
+    QMetaObject::invokeMethod(
+        &m_worker, "query", Qt::QueuedConnection, Q_ARG(ASql::MysqlQueryPromise, std::move(data)));
 #endif
 }
 
@@ -873,10 +861,8 @@ void ADriverMysql::exec(const std::shared_ptr<ADriver> &db,
     QMetaObject::invokeMethod(
         &m_worker, &AMysqlThread::query, Qt::QueuedConnection, std::move(data));
 #else
-    QMetaObject::invokeMethod(&m_worker,
-                              "query",
-                              Qt::QueuedConnection,
-                              Q_ARG(ASql::MysqlQueryPromise, std::move(data)));
+    QMetaObject::invokeMethod(
+        &m_worker, "query", Qt::QueuedConnection, Q_ARG(ASql::MysqlQueryPromise, std::move(data)));
 #endif
 }
 
