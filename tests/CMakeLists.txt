@@ -21,6 +21,6 @@ function(asql_test _testname _driver)
     target_link_libraries(${_testname} PUBLIC ${_driver} coverage_test)
 endfunction()
 
-if (DRIVER_SQLITE)
+if (ASQL_DRIVER_SQLITE)
     asql_test(sqlite_tst ASql::Sqlite)
 endif()

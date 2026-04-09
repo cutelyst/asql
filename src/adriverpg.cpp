@@ -665,7 +665,7 @@ void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, 
     }
 }
 
-ACoroTerminator ADriverPg::listenCoro(std::shared_ptr<ADriver> db, const QString &name)
+ACoroTerminator ADriverPg::listenCoro(std::shared_ptr<ADriver> db, QString name)
 {
     co_yield this;
 
@@ -680,7 +680,7 @@ ACoroTerminator ADriverPg::listenCoro(std::shared_ptr<ADriver> db, const QString
     }
 }
 
-ACoroTerminator ADriverPg::unlistenCoro(std::shared_ptr<ADriver> db, const QString &name)
+ACoroTerminator ADriverPg::unlistenCoro(std::shared_ptr<ADriver> db, QString name)
 {
     co_yield this;
 

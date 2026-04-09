@@ -148,7 +148,7 @@ install(TARGETS ASqlQt${QT_VERSION_MAJOR}Migrations
 # End Migrations Library
 
 ## Postgres Driver
-if (DRIVER_POSTGRES)
+if (ASQL_DRIVER_POSTGRES)
     set(asql_pg_SRC
         adriverpg.cpp
         adriverpg.h
@@ -278,10 +278,8 @@ if (DRIVER_MYSQL)
 endif() # End MySQL Driver
 
 ## Sqlite Driver
-if (DRIVER_SQLITE)
+if (ASQL_DRIVER_SQLITE)
     set(asql_sqlite_SRC
-        sqlite/sqlite3.c
-        sqlite/sqlite3.h
         ADriverSqlite.cpp
         ADriverSqlite.hpp
         ASqlite.cpp
@@ -326,6 +324,8 @@ if (DRIVER_SQLITE)
         PUBLIC
             Qt::Core
             ASql::Core
+        PRIVATE
+            SQLite3::SQLite3
     )
 
     set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Sqlite PROPERTY PUBLIC_HEADER ${asql_sqlite_HEADERS})
@@ -338,25 +338,92 @@ if (DRIVER_SQLITE)
 
 endif () # End Sqlite Driver
 
-set(TARGET_ASQL_MIGRATION_CMD asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR})
-add_executable(${TARGET_ASQL_MIGRATION_CMD} asql_migration.cpp)
-target_link_libraries(${TARGET_ASQL_MIGRATION_CMD}
-    PUBLIC
-        Qt::Core
-        ASql::Core
-        ASql::Migrations
-)
-if (DRIVER_POSTGRES)
-    target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Pg)
-    target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_POSTGRES)
-endif()
-if (DRIVER_SQLITE)
-  target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Sqlite)
-  target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_SQLITE)
-endif()
-if (DRIVER_MYSQL)
-    target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Mysql)
-    target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_MYSQL)
-endif()
-project_target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD})
-install(TARGETS ${TARGET_ASQL_MIGRATION_CMD} DESTINATION ${CMAKE_INSTALL_BINDIR})
+## ODBC Driver
+if (ASQL_DRIVER_ODBC)
+    set(asql_odbc_SRC
+        ADriverOdbc.cpp
+        ADriverOdbc.hpp
+        AOdbc.cpp
+    )
+
+    set(asql_odbc_HEADERS
+        AOdbc.hpp
+    )
+
+    add_library(ASqlQt${QT_VERSION_MAJOR}Odbc
+        ${asql_odbc_SRC}
+        ${asql_odbc_HEADERS}
+    )
+
+    generate_export_header(ASqlQt${QT_VERSION_MAJOR}Odbc
+        BASE_NAME ASQL_ODBC
+    )
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/asql_odbc_export.h
+        DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
+    )
+
+    add_library(ASql::Odbc ALIAS ASqlQt${QT_VERSION_MAJOR}Odbc)
+    project_target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}Odbc)
+
+    if (CMAKE_GENERATOR MATCHES "Visual Studio")
+        set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Odbc PROPERTY DEBUG_POSTFIX "d")
+    endif()
+
+    target_include_directories(ASqlQt${QT_VERSION_MAJOR}Odbc PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
+    )
+
+    set_target_properties(ASqlQt${QT_VERSION_MAJOR}Odbc PROPERTIES
+        EXPORT_NAME Odbc
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 0
+    )
+
+    target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Odbc
+        PUBLIC
+            Qt::Core
+            ASql::Core
+        PRIVATE
+            ${ODBC_LIBRARIES}
+    )
+
+    set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Odbc PROPERTY PUBLIC_HEADER ${asql_odbc_HEADERS})
+    install(TARGETS ASqlQt${QT_VERSION_MAJOR}Odbc
+        EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION bin COMPONENT runtime
+        ARCHIVE DESTINATION lib COMPONENT devel
+        PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
+    )
+
+endif () # End ODBC Driver
+
+if (ASQL_MIGRATION_TOOL)
+    set(TARGET_ASQL_MIGRATION_CMD asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR})
+    add_executable(${TARGET_ASQL_MIGRATION_CMD} asql_migration.cpp)
+    target_link_libraries(${TARGET_ASQL_MIGRATION_CMD}
+        PUBLIC
+            Qt::Core
+            ASql::Core
+            ASql::Migrations
+    )
+    if (ASQL_DRIVER_POSTGRES)
+        target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Pg)
+        target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_POSTGRES)
+    endif()
+    if (ASQL_DRIVER_SQLITE)
+        target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Sqlite)
+        target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_SQLITE)
+    endif()
+    if (ASQL_DRIVER_ODBC)
+        target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Odbc)
+        target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_ODBC)
+    endif()
+    if (DRIVER_MYSQL)
+        target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Mysql)
+        target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_MYSQL)
+    endif()
+    project_target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD})
+    install(TARGETS ${TARGET_ASQL_MIGRATION_CMD} DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif () # End Migration Tool

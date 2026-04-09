@@ -265,7 +265,7 @@ ACoroTerminator AMigrations::migrate(int targetVersion,
         co_return;
     }
 
-    auto t = co_await d->db.beginTransaction();
+    auto t = co_await d->db.begin();
     if (!t) {
         cb(true, t.error());
         co_return;

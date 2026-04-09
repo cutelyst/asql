@@ -122,7 +122,7 @@ bool ADatabase::isOpen() const
     return d != nullptr && d->isOpen();
 }
 
-AExpectedResult ADatabase::begin(QObject *receiver)
+AExpectedResult beginHelper(const std::shared_ptr<ADriver> &d, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
@@ -130,12 +130,12 @@ AExpectedResult ADatabase::begin(QObject *receiver)
     return coro;
 }
 
-AExpectedTransaction ADatabase::beginTransaction(QObject *receiver)
+AExpectedTransaction ADatabase::begin(QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedTransaction coro(receiver);
     [](auto chainData, ADatabase db, QObject *receiver) -> ACoroTerminator {
-        auto result = co_await db.begin(receiver);
+        auto result = co_await beginHelper(db.d, receiver);
         if (result.has_value()) {
             chainData->deliverDirect(ATransaction::fromStarted(db));
         } else {
