@@ -6,10 +6,24 @@
 
 #include <asql_export.h>
 #include <memory>
+#include <optional>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 
 #include <QVariant>
 
 namespace ASql {
+
+namespace detail {
+
+template <typename T>
+struct is_optional : std::false_type {};
+
+template <typename T>
+struct is_optional<std::optional<T>> : std::true_type {};
+
+} // namespace detail
 
 class ASQL_EXPORT AResultPrivate
 {
@@ -220,6 +234,56 @@ public:
         [[nodiscard]] QJsonValue toJsonValue() const;
         [[nodiscard]] QCborValue toCborValue() const;
         [[nodiscard]] inline QByteArray toByteArray() const { return d->toByteArray(row, column); }
+
+        /*!
+         * \brief as converts the column value to the requested type T.
+         *
+         * Supported types: bool, int, qint64, quint64, double, QString, std::string,
+         * QUuid, QDate, QTime, QDateTime, QJsonValue, QCborValue, QByteArray, QVariant,
+         * and std::optional<U> for any supported type U (returns std::nullopt when null).
+         * Any other type falls back to QVariant::value<T>().
+         */
+        template <typename T>
+        [[nodiscard]] inline T as() const
+        {
+            if constexpr (detail::is_optional<T>::value) {
+                if (isNull())
+                    return T{};
+                return T{as<typename T::value_type>()};
+            } else if constexpr (std::is_same_v<T, bool>) {
+                return toBool();
+            } else if constexpr (std::is_same_v<T, int>) {
+                return toInt();
+            } else if constexpr (std::is_same_v<T, qint64>) {
+                return toLongLong();
+            } else if constexpr (std::is_same_v<T, quint64>) {
+                return toULongLong();
+            } else if constexpr (std::is_same_v<T, double>) {
+                return toDouble();
+            } else if constexpr (std::is_same_v<T, QString>) {
+                return toString();
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                return toStdString();
+            } else if constexpr (std::is_same_v<T, QUuid>) {
+                return toUuid();
+            } else if constexpr (std::is_same_v<T, QDate>) {
+                return toDate();
+            } else if constexpr (std::is_same_v<T, QTime>) {
+                return toTime();
+            } else if constexpr (std::is_same_v<T, QDateTime>) {
+                return toDateTime();
+            } else if constexpr (std::is_same_v<T, QJsonValue>) {
+                return toJsonValue();
+            } else if constexpr (std::is_same_v<T, QCborValue>) {
+                return toCborValue();
+            } else if constexpr (std::is_same_v<T, QByteArray>) {
+                return toByteArray();
+            } else if constexpr (std::is_same_v<T, QVariant>) {
+                return value();
+            } else {
+                return value().template value<T>();
+            }
+        }
     };
 
     class ASQL_EXPORT ARow
@@ -293,6 +357,26 @@ public:
         [[nodiscard]] inline AColumn operator[](QStringView name) const
         {
             return AColumn(d, row, d->indexOfField(name));
+        }
+
+        /*!
+         * \brief args returns a tuple of column values converted to the requested types.
+         *
+         * This enables C++17-style structured bindings over a row:
+         * \code
+         * auto [id, name] = row.args<int, QString>();
+         * \endcode
+         *
+         * Each type in the pack is converted via AColumn::as<T>().
+         * Supports the same types as AColumn::as(), including std::optional<U>
+         * for nullable columns.
+         */
+        template <typename... Ts>
+        [[nodiscard]] inline std::tuple<Ts...> args() const
+        {
+            return [this]<std::size_t... Is>(std::index_sequence<Is...>) {
+                return std::make_tuple((*this)[static_cast<int>(Is)].template as<Ts>()...);
+            }(std::index_sequence_for<Ts...>{});
         }
     };
 
