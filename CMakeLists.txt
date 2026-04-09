@@ -57,6 +57,8 @@ if (ASQL_DRIVER_SQLITE)
             list(GET _sqlite_ver_parts 1 _sqlite_minor)
             list(GET _sqlite_ver_parts 2 _sqlite_patch)
             math(EXPR _sqlite_ver_num
+                # SQLite version number format: M*1000000 + X*1000 + Y*100
+                # e.g. 3.45.1 -> 3045100, 3.54.0 -> 3054000
                 "${_sqlite_major} * 1000000 + ${_sqlite_minor} * 1000 + ${_sqlite_patch} * 100")
             string(TIMESTAMP _sqlite_year "%Y")
             math(EXPR _sqlite_prev_year "${_sqlite_year} - 1")
