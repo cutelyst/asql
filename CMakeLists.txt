@@ -73,6 +73,7 @@ set(CMAKE_INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_LIBRARY_ARCHITECTU
 
 option(BUILD_SHARED_LIBS "Build in shared lib mode" ON)
 option(ASQL_BUILD_DEMOS "Build the demos" ON)
+option(ASQL_MIGRATION_TOOL "Build the migration tool executable" ON)
 
 #
 # Custom C flags

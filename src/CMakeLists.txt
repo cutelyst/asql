@@ -273,21 +273,23 @@ if (ASQL_DRIVER_SQLITE)
 
 endif () # End Sqlite Driver
 
-set(TARGET_ASQL_MIGRATION_CMD asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR})
-add_executable(${TARGET_ASQL_MIGRATION_CMD} asql_migration.cpp)
-target_link_libraries(${TARGET_ASQL_MIGRATION_CMD}
-    PUBLIC
-        Qt::Core
-        ASql::Core
-        ASql::Migrations
-)
-if (ASQL_DRIVER_POSTGRES)
-    target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Pg)
-    target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_POSTGRES)
-endif()
-if (ASQL_DRIVER_SQLITE)
-  target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Sqlite)
-  target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_SQLITE)
-endif()
-project_target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD})
-install(TARGETS ${TARGET_ASQL_MIGRATION_CMD} DESTINATION ${CMAKE_INSTALL_BINDIR})
+if (ASQL_MIGRATION_TOOL)
+    set(TARGET_ASQL_MIGRATION_CMD asql-migration${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR})
+    add_executable(${TARGET_ASQL_MIGRATION_CMD} asql_migration.cpp)
+    target_link_libraries(${TARGET_ASQL_MIGRATION_CMD}
+        PUBLIC
+            Qt::Core
+            ASql::Core
+            ASql::Migrations
+    )
+    if (ASQL_DRIVER_POSTGRES)
+        target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Pg)
+        target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_POSTGRES)
+    endif()
+    if (ASQL_DRIVER_SQLITE)
+      target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Sqlite)
+      target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_SQLITE)
+    endif()
+    project_target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD})
+    install(TARGETS ${TARGET_ASQL_MIGRATION_CMD} DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif () # End Migration Tool
