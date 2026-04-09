@@ -26,7 +26,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update -qq
-          sudo apt install -y doxygen graphviz postgresql-server-dev-16 unixodbc-dev
+          sudo apt install -y doxygen graphviz postgresql-server-dev-16 unixodbc-dev libsqlite3-dev
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
 
@@ -68,6 +68,7 @@ jobs:
           -DBUILD_SHARED_LIBS=ON
           -DDRIVER_MYSQL=${{ runner.os == 'Linux' }}
           -DASQL_DRIVER_ODBC=${{ runner.os != 'macOS' }}
+          -DASQL_DRIVER_SQLITE=${{ runner.os != 'Windows' }}
 
       - name: Build project
         run: cmake --build ./build-shared
@@ -91,6 +92,7 @@ jobs:
           -DBUILD_SHARED_LIBS=OFF
           -DDRIVER_MYSQL=${{ runner.os == 'Linux' }}
           -DASQL_DRIVER_ODBC=${{ runner.os != 'macOS' }}
+          -DASQL_DRIVER_SQLITE=${{ runner.os != 'Windows' }}
 
       - name: Build project
         run: cmake --build ./build-static
