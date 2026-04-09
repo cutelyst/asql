@@ -9,15 +9,14 @@
 #include "aresult.h"
 
 #include <optional>
+#include <sql.h>
+#include <sqlext.h>
 
 #include <QHash>
 #include <QMutex>
 #include <QPointer>
 #include <QQueue>
 #include <QThread>
-
-#include <sql.h>
-#include <sqlext.h>
 
 namespace ASql {
 

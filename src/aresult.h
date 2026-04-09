@@ -18,10 +18,12 @@ namespace ASql {
 namespace detail {
 
 template <typename T>
-struct is_optional : std::false_type {};
+struct is_optional : std::false_type {
+};
 
 template <typename T>
-struct is_optional<std::optional<T>> : std::true_type {};
+struct is_optional<std::optional<T>> : std::true_type {
+};
 
 } // namespace detail
 
@@ -247,8 +249,9 @@ public:
         [[nodiscard]] inline T as() const
         {
             if constexpr (detail::is_optional<T>::value) {
-                if (isNull())
+                if (isNull()) {
                     return T{};
+                }
                 return T{as<typename T::value_type>()};
             } else if constexpr (std::is_same_v<T, bool>) {
                 return toBool();

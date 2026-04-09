@@ -613,9 +613,8 @@ void ADriverMysql::unsubscribeFromNotification(const std::shared_ptr<ADriver> &d
 // 15 is the number of significant decimal digits that round-trips a double (DBL_DIG).
 static constexpr int kFloatPrecision = 15;
 
-static QByteArray buildQueryWithParams(MYSQL *mysql,
-                                       const QByteArray &query,
-                                       const QVariantList &params)
+static QByteArray
+    buildQueryWithParams(MYSQL *mysql, const QByteArray &query, const QVariantList &params)
 {
     if (params.isEmpty()) {
         return query;
@@ -624,7 +623,7 @@ static QByteArray buildQueryWithParams(MYSQL *mysql,
     QByteArray result;
     result.reserve(query.size() + params.size() * 16);
 
-    int paramIdx = 0;
+    int paramIdx  = 0;
     const int len = query.size();
     for (int i = 0; i < len; ++i) {
         const char c = query[i];
@@ -696,7 +695,8 @@ static QByteArray buildQueryWithParams(MYSQL *mysql,
             // kFloatPrecision matches DBL_DIG — enough digits for a lossless round-trip
             result.append(QByteArray::number(v.toDouble(), 'g', kFloatPrecision));
             break;
-        case QMetaType::QByteArray: {
+        case QMetaType::QByteArray:
+        {
             // Use hex literal X'...' for binary data - no charset issues
             const QByteArray ba = v.toByteArray();
             result.append("X'");
@@ -704,15 +704,15 @@ static QByteArray buildQueryWithParams(MYSQL *mysql,
             result.append('\'');
             break;
         }
-        default: {
+        default:
+        {
             // Treat as string: convert to UTF-8 and escape.
             // mysql_real_escape_string() requires a buffer of at least length*2+1 bytes
             // (per MySQL docs) where length is the byte length of the source string.
             const QByteArray str = v.toString().toUtf8();
             QByteArray escaped(static_cast<int>(str.size()) * 2 + 1, Qt::Uninitialized);
-            const unsigned long escapedLen =
-                mysql_real_escape_string(mysql, escaped.data(), str.constData(),
-                                         static_cast<unsigned long>(str.size()));
+            const unsigned long escapedLen = mysql_real_escape_string(
+                mysql, escaped.data(), str.constData(), static_cast<unsigned long>(str.size()));
             escaped.resize(static_cast<int>(escapedLen));
             result.append('\'');
             result.append(escaped);
