@@ -38,20 +38,14 @@ option(ASQL_ENABLE_MAINTAINER_CFLAGS "Enable maintainer CFlags" OFF)
 option(ASQL_DRIVER_SQLITE "Enable Sqlite Driver" ON)
 if (ASQL_DRIVER_SQLITE)
     find_package(SQLite3)
-    if (SQLite3_FOUND)
-        # cmake's FindSQLite3 creates SQLite::SQLite3; provide the SQLite3::SQLite3
-        # alias used throughout this project for a consistent target name.
-        if (NOT TARGET SQLite3::SQLite3 AND TARGET SQLite::SQLite3)
-            add_library(SQLite3::SQLite3 ALIAS SQLite::SQLite3)
-        endif()
-    else()
+    if (NOT SQLite3_FOUND)
         set(ASQL_SQLITE3_SUBMODULE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/sqlite")
         if (EXISTS "${ASQL_SQLITE3_SUBMODULE_DIR}/sqlite3.c")
             message(STATUS "SQLite3 not found via find_package, using bundled submodule")
             enable_language(C)
             add_library(SQLite3_bundled STATIC "${ASQL_SQLITE3_SUBMODULE_DIR}/sqlite3.c")
             target_include_directories(SQLite3_bundled PUBLIC "${ASQL_SQLITE3_SUBMODULE_DIR}")
-            add_library(SQLite3::SQLite3 ALIAS SQLite3_bundled)
+            add_library(SQLite::SQLite3 ALIAS SQLite3_bundled)
         else()
             message(FATAL_ERROR
                 "SQLite3 not found and 3rdparty/sqlite/sqlite3.c is not available.\n"

@@ -325,7 +325,7 @@ if (ASQL_DRIVER_SQLITE)
             Qt::Core
             ASql::Core
         PRIVATE
-            SQLite3::SQLite3
+            SQLite::SQLite3
     )
 
     set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Sqlite PROPERTY PUBLIC_HEADER ${asql_sqlite_HEADERS})
