@@ -34,14 +34,31 @@ endif()
 #
 # Options
 #
-option(ENABLE_MAINTAINER_CFLAGS "Enable maintainer CFlags" OFF)
-option(DRIVER_SQLITE "Enable Sqlite Driver" ON)
-if (DRIVER_SQLITE)
-    enable_language(C)
+option(ASQL_ENABLE_MAINTAINER_CFLAGS "Enable maintainer CFlags" OFF)
+option(ASQL_DRIVER_SQLITE "Enable Sqlite Driver" ON)
+if (ASQL_DRIVER_SQLITE)
+    find_package(SQLite3)
+    if (NOT SQLite3_FOUND)
+        set(ASQL_SQLITE3_SUBMODULE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/sqlite")
+        if (EXISTS "${ASQL_SQLITE3_SUBMODULE_DIR}/sqlite3.c")
+            message(STATUS "SQLite3 not found via find_package, using bundled submodule")
+            enable_language(C)
+            add_library(SQLite3_bundled STATIC "${ASQL_SQLITE3_SUBMODULE_DIR}/sqlite3.c")
+            target_include_directories(SQLite3_bundled PUBLIC "${ASQL_SQLITE3_SUBMODULE_DIR}")
+            add_library(SQLite3::SQLite3 ALIAS SQLite3_bundled)
+        else()
+            message(FATAL_ERROR
+                "SQLite3 not found and 3rdparty/sqlite/sqlite3.c is not available.\n"
+                "Either install the SQLite3 development package or provide the amalgamation:\n"
+                "  1. Initialize the submodule: git submodule update --init 3rdparty/sqlite\n"
+                "  2. Generate the amalgamation (requires tclsh): cd 3rdparty/sqlite && make sqlite3.c\n"
+                "     See https://www.sqlite.org/howtocompile.html for details.")
+        endif()
+    endif()
 endif ()
 
-option(DRIVER_POSTGRES "Enable PostgreSql Driver" ON)
-if (DRIVER_POSTGRES)
+option(ASQL_DRIVER_POSTGRES "Enable PostgreSql Driver" ON)
+if (ASQL_DRIVER_POSTGRES)
     find_package(PostgreSQL REQUIRED)
 endif ()
 
@@ -55,12 +72,13 @@ endif()
 set(CMAKE_INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_LIBRARY_ARCHITECTURE}" CACHE PATH "Output directory for libraries")
 
 option(BUILD_SHARED_LIBS "Build in shared lib mode" ON)
-option(BUILD_DEMOS "Build the demos" ON)
+option(ASQL_BUILD_DEMOS "Build the demos" ON)
+option(ASQL_MIGRATION_TOOL "Build the migration tool executable" ON)
 
 #
 # Custom C flags
 #
-if (ENABLE_MAINTAINER_CFLAGS)
+if (ASQL_ENABLE_MAINTAINER_CFLAGS)
     set (MAINTAINER_CFLAGS "-Werror -Wall -Wcast-align -Wno-uninitialized -Wempty-body -Wformat-security -Wformat -Winit-self")
     add_definitions(${MAINTAINER_CFLAGS}
         -DQT_DEPRECATED_WARNINGS
@@ -107,7 +125,7 @@ install(EXPORT ASqlTargets
 )
 
 add_subdirectory(src)
-if (BUILD_DEMOS)
+if (ASQL_BUILD_DEMOS)
     add_subdirectory(demos)
 endif ()
 
