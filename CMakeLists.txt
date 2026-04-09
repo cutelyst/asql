@@ -45,8 +45,8 @@ if (DRIVER_POSTGRES)
     find_package(PostgreSQL REQUIRED)
 endif ()
 
-option(DRIVER_ODBC "Enable unixODBC Driver" ON)
-if (DRIVER_ODBC)
+option(ASQL_DRIVER_ODBC "Enable unixODBC Driver" ON)
+if (ASQL_DRIVER_ODBC)
     find_package(ODBC REQUIRED)
 endif ()
 

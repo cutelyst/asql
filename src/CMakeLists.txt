@@ -274,7 +274,7 @@ if (DRIVER_SQLITE)
 endif () # End Sqlite Driver
 
 ## ODBC Driver
-if (DRIVER_ODBC)
+if (ASQL_DRIVER_ODBC)
     set(asql_odbc_SRC
         ADriverOdbc.cpp
         ADriverOdbc.hpp
@@ -350,7 +350,7 @@ if (DRIVER_SQLITE)
   target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Sqlite)
   target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_SQLITE)
 endif()
-if (DRIVER_ODBC)
+if (ASQL_DRIVER_ODBC)
   target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Odbc)
   target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_ODBC)
 endif()
