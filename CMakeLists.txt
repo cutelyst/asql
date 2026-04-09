@@ -36,11 +36,6 @@ endif()
 #
 option(ASQL_ENABLE_MAINTAINER_CFLAGS "Enable maintainer CFlags" OFF)
 option(ASQL_DRIVER_SQLITE "Enable Sqlite Driver" ON)
-option(ASQL_DRIVER_POSTGRES "Enable PostgreSql Driver" ON)
-if (ASQL_DRIVER_POSTGRES)
-    find_package(PostgreSQL REQUIRED)
-endif ()
-
 if (ASQL_DRIVER_SQLITE)
     find_package(SQLite3)
     if (NOT SQLite3_FOUND)
@@ -56,9 +51,15 @@ if (ASQL_DRIVER_SQLITE)
                 "SQLite3 not found and 3rdparty/sqlite/sqlite3.c is not available.\n"
                 "Either install the SQLite3 development package or provide the amalgamation:\n"
                 "  1. Initialize the submodule: git submodule update --init 3rdparty/sqlite\n"
-                "  2. Generate the amalgamation: cd 3rdparty/sqlite && make sqlite3.c")
+                "  2. Generate the amalgamation (requires tclsh): cd 3rdparty/sqlite && make sqlite3.c\n"
+                "     See https://www.sqlite.org/howtocompile.html for details.")
         endif()
     endif()
+endif ()
+
+option(ASQL_DRIVER_POSTGRES "Enable PostgreSql Driver" ON)
+if (ASQL_DRIVER_POSTGRES)
+    find_package(PostgreSQL REQUIRED)
 endif ()
 
 # NONE
