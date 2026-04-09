@@ -4,7 +4,7 @@
 #include "adriver.h"
 #include "apreparedquery.h"
 #include "aresult.h"
-#include "sqlite/sqlite3.h"
+#include "sqlite3.h"
 
 #include <chrono>
 #include <optional>

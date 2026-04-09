@@ -1,0 +1,3 @@
+[submodule "3rdparty/sqlite"]
+	path = 3rdparty/sqlite
+	url = https://github.com/sqlite/sqlite
