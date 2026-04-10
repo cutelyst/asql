@@ -11,6 +11,11 @@
 #include <type_traits>
 #include <utility>
 
+#include <QCborValue>
+#include <QDate>
+#include <QDateTime>
+#include <QJsonValue>
+#include <QTime>
 #include <QVariant>
 
 namespace ASql {

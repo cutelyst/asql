@@ -37,23 +37,30 @@ endif()
 option(ASQL_ENABLE_MAINTAINER_CFLAGS "Enable maintainer CFlags" OFF)
 option(ASQL_DRIVER_SQLITE "Enable Sqlite Driver" ON)
 if (ASQL_DRIVER_SQLITE)
-    find_package(SQLite3)
+    find_package(SQLite3 QUIET)
     if (NOT SQLite3_FOUND)
-        set(ASQL_SQLITE3_SUBMODULE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/sqlite")
-        if (EXISTS "${ASQL_SQLITE3_SUBMODULE_DIR}/sqlite3.c")
-            message(STATUS "SQLite3 not found via find_package, using bundled submodule")
-            enable_language(C)
-            add_library(SQLite3_bundled STATIC "${ASQL_SQLITE3_SUBMODULE_DIR}/sqlite3.c")
-            target_include_directories(SQLite3_bundled PUBLIC "${ASQL_SQLITE3_SUBMODULE_DIR}")
-            add_library(SQLite3::SQLite3 ALIAS SQLite3_bundled)
-        else()
-            message(FATAL_ERROR
-                "SQLite3 not found and 3rdparty/sqlite/sqlite3.c is not available.\n"
-                "Either install the SQLite3 development package or provide the amalgamation:\n"
-                "  1. Initialize the submodule: git submodule update --init 3rdparty/sqlite\n"
-                "  2. Generate the amalgamation (requires tclsh): cd 3rdparty/sqlite && make sqlite3.c\n"
-                "     See https://www.sqlite.org/howtocompile.html for details.")
-        endif()
+        # No system SQLite3 package found; download the pre-built amalgamation from
+        # sqlite.org via FetchContent.  The version and year are exposed as cache
+        # variables so they can be overridden when a newer release is available.
+        # Version number format: M*1000000 + X*1000 + Y*100 (e.g. 3.49.1 -> 3049100)
+        set(ASQL_SQLITE3_VERSION "3490100" CACHE STRING
+            "SQLite3 amalgamation version number for FetchContent (see https://www.sqlite.org/download.html)")
+        set(ASQL_SQLITE3_YEAR "2025" CACHE STRING
+            "Release year of ASQL_SQLITE3_VERSION (required for the sqlite.org download URL)")
+        message(STATUS "SQLite3: system package not found; fetching amalgamation ${ASQL_SQLITE3_VERSION} from sqlite.org")
+        include(FetchContent)
+        FetchContent_Declare(
+            sqlite3_amalgamation
+            URL "https://www.sqlite.org/${ASQL_SQLITE3_YEAR}/sqlite-amalgamation-${ASQL_SQLITE3_VERSION}.zip"
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        )
+        FetchContent_MakeAvailable(sqlite3_amalgamation)
+        enable_language(C)
+        # Store paths as variables so src/CMakeLists.txt can compile sqlite3.c
+        # directly into the plugin target instead of creating a separate library
+        # (a separate library would need to be exported alongside the plugin).
+        set(ASQL_SQLITE3_BUNDLED_SRC "${sqlite3_amalgamation_SOURCE_DIR}/sqlite3.c")
+        set(ASQL_SQLITE3_BUNDLED_INC "${sqlite3_amalgamation_SOURCE_DIR}")
     endif()
 endif ()
 
