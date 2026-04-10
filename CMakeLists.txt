@@ -56,9 +56,11 @@ if (ASQL_DRIVER_SQLITE)
         )
         FetchContent_MakeAvailable(sqlite3_amalgamation)
         enable_language(C)
-        add_library(SQLite3_bundled STATIC "${sqlite3_amalgamation_SOURCE_DIR}/sqlite3.c")
-        target_include_directories(SQLite3_bundled PUBLIC "${sqlite3_amalgamation_SOURCE_DIR}")
-        add_library(SQLite::SQLite3 ALIAS SQLite3_bundled)
+        # Store paths as variables so src/CMakeLists.txt can compile sqlite3.c
+        # directly into the plugin target instead of creating a separate library
+        # (a separate library would need to be exported alongside the plugin).
+        set(ASQL_SQLITE3_BUNDLED_SRC "${sqlite3_amalgamation_SOURCE_DIR}/sqlite3.c")
+        set(ASQL_SQLITE3_BUNDLED_INC "${sqlite3_amalgamation_SOURCE_DIR}")
     endif()
 endif ()
 

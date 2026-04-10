@@ -30,9 +30,10 @@ using namespace ASql;
 using namespace Qt::StringLiterals;
 
 // std::vector<bool> uses bit-packing, so operator[] returns a proxy and &vec[i]
-// is not a valid bool*.  Deduce the actual element type from MYSQL_BIND::is_null
-// so the code works with both MySQL 8.0+ (bool*) and MariaDB (my_bool* = char*).
-using MysqlBool = std::remove_pointer_t<decltype(std::declval<MYSQL_BIND>().is_null)>;
+// is not a valid pointer.  Use unsigned char as storage (same size as bool/my_bool)
+// and reinterpret_cast when assigning to MYSQL_BIND fields that expect bool* (MySQL 8+)
+// or my_bool* = char* (MariaDB).
+using MysqlBool = unsigned char;
 
 // ---------------------------------------------------------------------------
 // AResultMysql
@@ -254,11 +255,11 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
         if (v.isNull()) {
             nullFlags[i]         = 1;
             binds[i].buffer_type = MYSQL_TYPE_NULL;
-            binds[i].is_null     = &nullFlags[i];
+            binds[i].is_null     = reinterpret_cast<decltype(binds[i].is_null)>(&nullFlags[i]);
             continue;
         }
 
-        binds[i].is_null = &nullFlags[i];
+        binds[i].is_null = reinterpret_cast<decltype(binds[i].is_null)>(&nullFlags[i]);
 
         switch (v.userType()) {
         case QMetaType::Bool:
@@ -344,8 +345,8 @@ static std::optional<QString>
         resBind[i].buffer        = dummy;
         resBind[i].buffer_length = 0;
         resBind[i].length        = &lengths[i];
-        resBind[i].is_null       = &isNull[i];
-        resBind[i].error         = &isError[i];
+        resBind[i].is_null       = reinterpret_cast<decltype(resBind[i].is_null)>(&isNull[i]);
+        resBind[i].error         = reinterpret_cast<decltype(resBind[i].error)>(&isError[i]);
     }
 
     if (mysql_stmt_bind_result(stmt, resBind.data())) {

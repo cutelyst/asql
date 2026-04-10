@@ -289,6 +289,12 @@ if (ASQL_DRIVER_SQLITE)
         ASqlite.hpp
     )
 
+    if (ASQL_SQLITE3_BUNDLED_SRC)
+        # Compile sqlite3.c directly into the plugin to avoid creating a separate
+        # static library that would need to be included in the cmake install export.
+        list(APPEND asql_sqlite_SRC "${ASQL_SQLITE3_BUNDLED_SRC}")
+    endif()
+
     add_library(ASqlQt${QT_VERSION_MAJOR}Sqlite
         ${asql_sqlite_SRC}
         ${asql_sqlite_HEADERS}
@@ -314,6 +320,10 @@ if (ASQL_DRIVER_SQLITE)
         $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
     )
 
+    if (ASQL_SQLITE3_BUNDLED_SRC)
+        target_include_directories(ASqlQt${QT_VERSION_MAJOR}Sqlite PRIVATE "${ASQL_SQLITE3_BUNDLED_INC}")
+    endif()
+
     set_target_properties(ASqlQt${QT_VERSION_MAJOR}Sqlite PROPERTIES
         EXPORT_NAME Sqlite
         VERSION ${PROJECT_VERSION}
@@ -324,9 +334,11 @@ if (ASQL_DRIVER_SQLITE)
         PUBLIC
             Qt::Core
             ASql::Core
-        PRIVATE
-            SQLite::SQLite3
     )
+
+    if (NOT ASQL_SQLITE3_BUNDLED_SRC)
+        target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Sqlite PRIVATE SQLite::SQLite3)
+    endif()
 
     set_property(TARGET ASqlQt${QT_VERSION_MAJOR}Sqlite PROPERTY PUBLIC_HEADER ${asql_sqlite_HEADERS})
     install(TARGETS ASqlQt${QT_VERSION_MAJOR}Sqlite
