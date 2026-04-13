@@ -64,7 +64,7 @@ jobs:
           -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/postgresql@16;C:\Program Files\PostgreSQL\16"
           -DENABLE_MAINTAINER_CFLAGS=${{ matrix.build_type == 'Debug' }}
           -DBUILD_SHARED_LIBS=ON
-          -DDRIVER_MYSQL=${{ runner.os == 'Linux' }}
+          -DASQL_DRIVER_MYSQL=${{ runner.os == 'Linux' }}
           -DASQL_DRIVER_ODBC=${{ runner.os == 'Linux' }}
 
       - name: Build project
@@ -87,7 +87,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug
           -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/postgresql@16;C:\Program Files\PostgreSQL\16"
           -DBUILD_SHARED_LIBS=OFF
-          -DDRIVER_MYSQL=${{ runner.os == 'Linux' }}
+          -DASQL_DRIVER_MYSQL=${{ runner.os == 'Linux' }}
           -DASQL_DRIVER_ODBC=${{ runner.os == 'Linux' }}
 
       - name: Build project

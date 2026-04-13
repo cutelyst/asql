@@ -213,7 +213,7 @@ if (ASQL_DRIVER_POSTGRES)
 endif() # End Postgres Driver
 
 ## MySQL Driver
-if (DRIVER_MYSQL)
+if (ASQL_DRIVER_MYSQL)
     set(asql_mysql_SRC
         adrivermysql.cpp
         adrivermysql.h
@@ -432,7 +432,7 @@ if (ASQL_MIGRATION_TOOL)
         target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Odbc)
         target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_ODBC)
     endif()
-    if (DRIVER_MYSQL)
+    if (ASQL_DRIVER_MYSQL)
         target_link_libraries(${TARGET_ASQL_MIGRATION_CMD} PRIVATE ASql::Mysql)
         target_compile_definitions(${TARGET_ASQL_MIGRATION_CMD} PRIVATE DRIVER_MYSQL)
     endif()
