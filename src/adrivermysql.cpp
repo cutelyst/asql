@@ -9,7 +9,6 @@
 #include "aresult.h"
 
 #include <mysql/mysql.h>
-
 #include <type_traits>
 #include <vector>
 
