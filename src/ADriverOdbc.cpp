@@ -6,6 +6,7 @@
 
 #include <QCborValue>
 #include <QDateTime>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
