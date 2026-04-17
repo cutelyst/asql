@@ -160,7 +160,12 @@ QTime AResultMysql::toTime(int row, int column) const
     if (v.typeId() == QMetaType::QTime) {
         return v.toTime();
     }
-    return QTime::fromString(v.toString(), Qt::ISODate);
+    const QString s = v.toString();
+    QTime t         = QTime::fromString(s, u"hh:mm:ss.zzz"_s);
+    if (!t.isValid()) {
+        t = QTime::fromString(s, Qt::ISODate);
+    }
+    return t;
 }
 
 QDateTime AResultMysql::toDateTime(int row, int column) const
@@ -169,7 +174,12 @@ QDateTime AResultMysql::toDateTime(int row, int column) const
     if (v.typeId() == QMetaType::QDateTime) {
         return v.toDateTime();
     }
-    return QDateTime::fromString(v.toString(), Qt::ISODate);
+    const QString s = v.toString();
+    QDateTime dt    = QDateTime::fromString(s, Qt::ISODateWithMs);
+    if (!dt.isValid()) {
+        dt = QDateTime::fromString(s, Qt::ISODate);
+    }
+    return dt;
 }
 
 QJsonValue AResultMysql::toJsonValue(int row, int column) const
@@ -236,7 +246,7 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
                                               std::vector<MYSQL_BIND> &binds,
                                               std::vector<long long> &intVals,
                                               std::vector<double> &doubleVals,
-                                              std::vector<MysqlBool> &nullFlags,
+                                              std::unique_ptr<bool[]> &nullFlags,
                                               std::vector<QByteArray> &strVals,
                                               std::vector<unsigned long> &strLengths)
 {
@@ -244,7 +254,7 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
     binds.assign(n, MYSQL_BIND{});
     intVals.assign(n, 0LL);
     doubleVals.assign(n, 0.0);
-    nullFlags.assign(n, 0);
+    nullFlags = std::make_unique<bool[]>(n); // value-initialized to false
     strVals.resize(n);
     strLengths.assign(n, 0UL);
 
@@ -252,13 +262,13 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
         const QVariant &v = params.at(i);
 
         if (v.isNull()) {
-            nullFlags[i]         = 1;
+            nullFlags[i]         = true;
             binds[i].buffer_type = MYSQL_TYPE_NULL;
-            binds[i].is_null     = reinterpret_cast<decltype(binds[i].is_null)>(&nullFlags[i]);
+            binds[i].is_null     = &nullFlags[i];
             continue;
         }
 
-        binds[i].is_null = reinterpret_cast<decltype(binds[i].is_null)>(&nullFlags[i]);
+        binds[i].is_null = &nullFlags[i]; // points to false (not null)
 
         switch (v.userType()) {
         case QMetaType::Bool:
@@ -302,14 +312,48 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
             binds[i].buffer_length = strLengths[i];
             binds[i].length        = &strLengths[i];
             break;
-        default:
-            strVals[i]             = v.toString().toUtf8();
+        case QMetaType::QDate:
+            strVals[i]             = v.value<QDate>().toString(Qt::ISODate).toUtf8();
             strLengths[i]          = static_cast<unsigned long>(strVals[i].size());
             binds[i].buffer_type   = MYSQL_TYPE_STRING;
             binds[i].buffer        = strVals[i].data();
             binds[i].buffer_length = strLengths[i];
             binds[i].length        = &strLengths[i];
             break;
+        case QMetaType::QTime:
+            strVals[i]             = v.value<QTime>().toString(u"hh:mm:ss.zzz"_s).toUtf8();
+            strLengths[i]          = static_cast<unsigned long>(strVals[i].size());
+            binds[i].buffer_type   = MYSQL_TYPE_STRING;
+            binds[i].buffer        = strVals[i].data();
+            binds[i].buffer_length = strLengths[i];
+            binds[i].length        = &strLengths[i];
+            break;
+        case QMetaType::QDateTime:
+            strVals[i]             = v.value<QDateTime>().toString(Qt::ISODateWithMs).toUtf8();
+            strLengths[i]          = static_cast<unsigned long>(strVals[i].size());
+            binds[i].buffer_type   = MYSQL_TYPE_STRING;
+            binds[i].buffer        = strVals[i].data();
+            binds[i].buffer_length = strLengths[i];
+            binds[i].length        = &strLengths[i];
+            break;
+        default:
+        {
+            // For QJsonObject / QJsonValue serialize to compact JSON; for all
+            // other types fall back to toString().
+            const int typeId = v.userType();
+            if (typeId == QMetaType::QJsonObject || typeId == QMetaType::QJsonValue ||
+                typeId == QMetaType::QJsonArray) {
+                strVals[i] = QJsonDocument::fromVariant(v).toJson(QJsonDocument::Compact);
+            } else {
+                strVals[i] = v.toString().toUtf8();
+            }
+            strLengths[i]          = static_cast<unsigned long>(strVals[i].size());
+            binds[i].buffer_type   = MYSQL_TYPE_STRING;
+            binds[i].buffer        = strVals[i].data();
+            binds[i].buffer_length = strLengths[i];
+            binds[i].length        = &strLengths[i];
+            break;
+        }
         }
     }
 
@@ -322,30 +366,50 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
 /*!
  * \brief Fetches all rows from a prepared-statement result set into \a rows.
  *
- * Uses a zero-buffer initial bind to discover each column's data length,
- * then calls mysql_stmt_fetch_column() to retrieve the actual bytes — no
- * pre-sized buffers needed.
+ * Binds all result columns with a 256-byte initial buffer (large enough for
+ * typical scalar values).  If a value is truncated, mysql_stmt_fetch_column()
+ * is used to retrieve the full data.  Binary/BLOB columns are returned as
+ * QByteArray; all other columns are returned as QString (UTF-8 decoded).
  *
  * \return empty optional on success; an error message string on failure.
  */
-static std::optional<QString>
-    mysqlFetchStmtRows(MYSQL_STMT *stmt, unsigned int numFields, QVariantList &rows)
+static std::optional<QString> mysqlFetchStmtRows(MYSQL_STMT *stmt,
+                                                 unsigned int numFields,
+                                                 MYSQL_FIELD *fields,
+                                                 QVariantList &rows)
 {
-    // Bind all result columns with zero-size buffers.  MySQL will set the
-    // `length` indicator to the actual data size and raise the truncation flag.
+    // Initial buffer per column — covers nearly all scalar values without a
+    // second fetch, but is small enough to avoid excessive allocation for
+    // wide SELECT results.
+    constexpr unsigned long kInitBufSize = 256;
+
     std::vector<MYSQL_BIND> resBind(numFields, MYSQL_BIND{});
     std::vector<unsigned long> lengths(numFields, 0UL);
-    std::vector<MysqlBool> isNull(numFields, 0);
-    std::vector<MysqlBool> isError(numFields, 0);
-    char dummy[1] = {0};
+    // Use proper bool arrays so mysql_stmt_fetch() can write bool values
+    // without triggering undefined behaviour through type-punning.
+    auto isNull  = std::make_unique<bool[]>(numFields); // value-initialized to false
+    auto isError = std::make_unique<bool[]>(numFields);
+    // Allocate per-column storage on the heap.
+    std::vector<QByteArray> bufs(numFields, QByteArray(kInitBufSize, Qt::Uninitialized));
 
     for (unsigned int i = 0; i < numFields; ++i) {
-        resBind[i].buffer_type   = MYSQL_TYPE_STRING;
-        resBind[i].buffer        = dummy;
-        resBind[i].buffer_length = 0;
+        // MariaDB/MySQL set BINARY_FLAG on ALL numeric types too, so we must
+        // NOT rely on BINARY_FLAG alone.  Only treat a column as binary when
+        // it is a genuine blob/binary type or a string column with the binary
+        // charset (charset number 63 == binary in MySQL protocol).
+        const enum_field_types ft = fields[i].type;
+        const bool isBlobType     = ft == MYSQL_TYPE_BLOB || ft == MYSQL_TYPE_TINY_BLOB ||
+                                    ft == MYSQL_TYPE_MEDIUM_BLOB || ft == MYSQL_TYPE_LONG_BLOB;
+        const bool isBinaryString =
+            (ft == MYSQL_TYPE_STRING || ft == MYSQL_TYPE_VAR_STRING || ft == MYSQL_TYPE_VARCHAR) &&
+            fields[i].charsetnr == 63; // binary pseudo-charset
+        const bool isBinary      = isBlobType || isBinaryString;
+        resBind[i].buffer_type   = isBinary ? MYSQL_TYPE_BLOB : MYSQL_TYPE_STRING;
+        resBind[i].buffer        = bufs[i].data();
+        resBind[i].buffer_length = kInitBufSize;
         resBind[i].length        = &lengths[i];
-        resBind[i].is_null       = reinterpret_cast<decltype(resBind[i].is_null)>(&isNull[i]);
-        resBind[i].error         = reinterpret_cast<decltype(resBind[i].error)>(&isError[i]);
+        resBind[i].is_null       = &isNull[i];
+        resBind[i].error         = &isError[i];
     }
 
     if (mysql_stmt_bind_result(stmt, resBind.data())) {
@@ -359,20 +423,33 @@ static std::optional<QString>
                 rows.append(QVariant{});
                 continue;
             }
-            if (lengths[i] == 0) {
-                rows.append(QString{});
-                continue;
-            }
-            // Fetch the actual column data now that we know its length
-            QByteArray buf(static_cast<int>(lengths[i]), Qt::Uninitialized);
-            MYSQL_BIND colBind{};
-            colBind.buffer_type   = MYSQL_TYPE_STRING;
-            colBind.buffer        = buf.data();
-            colBind.buffer_length = lengths[i];
-            if (mysql_stmt_fetch_column(stmt, &colBind, i, 0) != 0) {
-                rows.append(QVariant{});
+
+            const bool isBinary  = resBind[i].buffer_type == MYSQL_TYPE_BLOB;
+            const auto actualLen = static_cast<int>(lengths[i]);
+
+            if (isError[i]) {
+                // Value was truncated — fetch the full data now that we know its length.
+                QByteArray bigBuf(actualLen, Qt::Uninitialized);
+                MYSQL_BIND colBind{};
+                colBind.buffer_type   = resBind[i].buffer_type;
+                colBind.buffer        = bigBuf.data();
+                colBind.buffer_length = lengths[i];
+                if (mysql_stmt_fetch_column(stmt, &colBind, i, 0) != 0) {
+                    rows.append(QVariant{});
+                    continue;
+                }
+                if (isBinary) {
+                    rows.append(bigBuf);
+                } else {
+                    rows.append(QString::fromUtf8(bigBuf.constData(), actualLen));
+                }
             } else {
-                rows.append(QString::fromUtf8(buf.constData(), static_cast<int>(lengths[i])));
+                // Data fits in the initial buffer.
+                if (isBinary) {
+                    rows.append(bufs[i].left(actualLen));
+                } else {
+                    rows.append(QString::fromUtf8(bufs[i].constData(), actualLen));
+                }
             }
         }
     }
@@ -477,14 +554,16 @@ void AMysqlThread::query(MysqlQueryPromise promise)
     auto stmtGuard = qScopeGuard([&] { mysql_stmt_close(stmt); });
 
     const QVariantList &params = promise.result->m_queryArgs;
-    if (!params.isEmpty()) {
-        std::vector<MYSQL_BIND> binds;
-        std::vector<long long> intVals;
-        std::vector<double> doubleVals;
-        std::vector<MysqlBool> nullFlags;
-        std::vector<QByteArray> strVals;
-        std::vector<unsigned long> strLengths;
+    // Bind data must outlive mysql_stmt_execute() since MySQL stores pointers
+    // into these buffers.  Declare outside the if-block intentionally.
+    std::vector<MYSQL_BIND> binds;
+    std::vector<long long> intVals;
+    std::vector<double> doubleVals;
+    std::unique_ptr<bool[]> nullFlags;
+    std::vector<QByteArray> strVals;
+    std::vector<unsigned long> strLengths;
 
+    if (!params.isEmpty()) {
         auto bindErr = mysqlBindParams(
             stmt, params, binds, intVals, doubleVals, nullFlags, strVals, strLengths);
         if (bindErr.has_value()) {
@@ -509,7 +588,7 @@ void AMysqlThread::query(MysqlQueryPromise promise)
             promise.result->m_fields.append(QString::fromUtf8(fields[i].name));
         }
 
-        auto fetchErr = mysqlFetchStmtRows(stmt, numFields, promise.result->m_rows);
+        auto fetchErr = mysqlFetchStmtRows(stmt, numFields, fields, promise.result->m_rows);
         if (fetchErr.has_value()) {
             promise.result->m_error = fetchErr;
             return;
@@ -547,14 +626,16 @@ void AMysqlThread::queryPrepared(MysqlQueryPromise promise)
     });
 
     const QVariantList &params = promise.result->m_queryArgs;
-    if (!params.isEmpty()) {
-        std::vector<MYSQL_BIND> binds;
-        std::vector<long long> intVals;
-        std::vector<double> doubleVals;
-        std::vector<MysqlBool> nullFlags;
-        std::vector<QByteArray> strVals;
-        std::vector<unsigned long> strLengths;
+    // Bind data must outlive mysql_stmt_execute() since MySQL stores pointers
+    // into these buffers.  Declare outside the if-block intentionally.
+    std::vector<MYSQL_BIND> binds;
+    std::vector<long long> intVals;
+    std::vector<double> doubleVals;
+    std::unique_ptr<bool[]> nullFlags;
+    std::vector<QByteArray> strVals;
+    std::vector<unsigned long> strLengths;
 
+    if (!params.isEmpty()) {
         auto bindErr = mysqlBindParams(
             stmt, params, binds, intVals, doubleVals, nullFlags, strVals, strLengths);
         if (bindErr.has_value()) {
@@ -579,7 +660,7 @@ void AMysqlThread::queryPrepared(MysqlQueryPromise promise)
             promise.result->m_fields.append(QString::fromUtf8(fields[i].name));
         }
 
-        auto fetchErr = mysqlFetchStmtRows(stmt, numFields, promise.result->m_rows);
+        auto fetchErr = mysqlFetchStmtRows(stmt, numFields, fields, promise.result->m_rows);
         if (fetchErr.has_value()) {
             promise.result->m_error = fetchErr;
             return;
