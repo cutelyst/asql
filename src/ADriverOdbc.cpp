@@ -126,14 +126,16 @@ void AOdbcThread::open()
         return;
     }
 
-    // Connect using the connection string
-    const std::wstring wDsn = dsn.toStdWString();
+    // Connect using the connection string.
+    // Use dsn.unicode() (QChar*, UTF-16, 2 bytes) cast to SQLWCHAR* — consistent with how
+    // query strings are passed in queryExec/queryPrepared. Do NOT use toStdWString(): on Linux
+    // wchar_t is 4 bytes while SQLWCHAR is 2 bytes, so the cast would produce garbage.
     SQLWCHAR outConnStr[1024];
     SQLSMALLINT outConnStrLen = 0;
 
     ret = SQLDriverConnectW(m_dbc,
                             nullptr,
-                            reinterpret_cast<SQLWCHAR *>(const_cast<wchar_t *>(wDsn.c_str())),
+                            reinterpret_cast<SQLWCHAR *>(const_cast<QChar *>(dsn.unicode())),
                             SQL_NTS,
                             outConnStr,
                             sizeof(outConnStr) / sizeof(SQLWCHAR),
