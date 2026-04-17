@@ -21,6 +21,36 @@ function(asql_test _testname _driver)
     target_link_libraries(${_testname} PUBLIC ${_driver} coverage_test)
 endfunction()
 
+# Shared OBJECT library with type round-trip test implementations.
+# At least one driver must be available for it to be useful; guard accordingly.
+if (ASQL_DRIVER_SQLITE OR ASQL_DRIVER_POSTGRES OR ASQL_DRIVER_MYSQL OR ASQL_DRIVER_ODBC)
+    add_library(types_test_common
+        OBJECT
+            tst_types_common.h
+            tst_types_common.cpp
+    )
+    target_link_libraries(types_test_common PUBLIC coverage_test)
+endif()
+
+function(asql_types_test _testname _driver)
+    add_executable(${_testname} ${_testname}.cpp)
+    add_test(NAME ${_testname} COMMAND ${_testname})
+    target_link_libraries(${_testname} PUBLIC ${_driver} coverage_test types_test_common)
+endfunction()
+
 if (ASQL_DRIVER_SQLITE)
     asql_test(sqlite_tst ASql::Sqlite)
+    asql_types_test(tst_TypesSqlite ASql::Sqlite)
+endif()
+
+if (ASQL_DRIVER_POSTGRES)
+    asql_types_test(tst_TypesPostgres ASql::Pg)
+endif()
+
+if (ASQL_DRIVER_MYSQL)
+    asql_types_test(tst_TypesMysql ASql::Mysql)
+endif()
+
+if (ASQL_DRIVER_ODBC)
+    asql_types_test(tst_TypesOdbc ASql::Odbc)
 endif()
