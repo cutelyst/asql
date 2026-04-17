@@ -341,7 +341,10 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
         const QDate date(tss.year, tss.month, tss.day);
         const QTime time(
             tss.hour, tss.minute, tss.second, static_cast<int>(tss.fraction / 1000000));
-        return QDateTime(date, time, Qt::UTC);
+        // SQL_TYPE_TIMESTAMP (datetime/datetime2) carries no timezone info.
+        // Use Qt::LocalTime to match QSql ODBC behaviour: the value is returned as-is
+        // without any UTC offset, so toString() won't append "Z".
+        return QDateTime(date, time, Qt::LocalTime);
     }
 
     default:
