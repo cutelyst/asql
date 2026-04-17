@@ -4,6 +4,10 @@
  */
 #include "ADriverOdbc.hpp"
 
+#ifdef HAVE_MSODBCSQL_H
+#    include <msodbcsql.h>
+#endif
+
 #include <QCborValue>
 #include <QDateTime>
 #include <QJsonArray>
@@ -285,30 +289,27 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
     case SQL_VARBINARY:
     case SQL_LONGVARBINARY:
     {
-        // Get data length first
-        SQLRETURN ret = SQLGetData(stmt, col, SQL_C_BINARY, nullptr, 0, &indicator);
-        if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
-            return QVariant(QMetaType::fromType<QByteArray>());
-        }
-        if (indicator == SQL_NO_TOTAL || indicator < 0) {
-            // Read in chunks
-            QByteArray result;
-            constexpr SQLLEN CHUNK = 4096;
-            QByteArray chunk(CHUNK, Qt::Uninitialized);
-            do {
-                ret = SQLGetData(stmt, col, SQL_C_BINARY, chunk.data(), CHUNK, &indicator);
-                if (ret == SQL_ERROR) {
-                    break;
-                }
-                const SQLLEN got =
-                    (ret == SQL_SUCCESS_WITH_INFO) ? CHUNK : (indicator > 0 ? indicator : 0);
-                result.append(chunk.constData(), static_cast<qsizetype>(got));
-            } while (ret == SQL_SUCCESS_WITH_INFO);
-            return result;
-        }
-        QByteArray data(static_cast<qsizetype>(indicator), Qt::Uninitialized);
-        SQLGetData(stmt, col, SQL_C_BINARY, data.data(), indicator, &indicator);
-        return data;
+        // Read directly in chunks; avoid a nullptr-probe which some ODBC drivers reject.
+        QByteArray result;
+        constexpr SQLLEN CHUNK = 4096;
+        QByteArray chunk(CHUNK, Qt::Uninitialized);
+        SQLRETURN ret;
+        do {
+            ret = SQLGetData(stmt, col, SQL_C_BINARY, chunk.data(), CHUNK, &indicator);
+            if (ret == SQL_ERROR) {
+                break;
+            }
+            if (indicator == SQL_NULL_DATA) {
+                return QVariant(QMetaType::fromType<QByteArray>());
+            }
+            // When SQL_SUCCESS_WITH_INFO the full CHUNK was written and more data remains.
+            // When SQL_SUCCESS, indicator holds the byte count actually written.
+            const SQLLEN got = (ret == SQL_SUCCESS_WITH_INFO)
+                                   ? CHUNK
+                                   : (indicator > 0 ? qMin(indicator, CHUNK) : 0);
+            result.append(chunk.constData(), static_cast<qsizetype>(got));
+        } while (ret == SQL_SUCCESS_WITH_INFO);
+        return result;
     }
 
     case SQL_TYPE_DATE:
@@ -320,6 +321,19 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
         }
         return QDate(ds.year, ds.month, ds.day);
     }
+
+#ifdef HAVE_MSODBCSQL_H
+    case SQL_SS_TIME2:
+    {
+        // SQL Server time(n) with fractional seconds (n > 0).
+        SQL_SS_TIME2_STRUCT ts{};
+        SQLRETURN ret = SQLGetData(stmt, col, SQL_C_SS_TIME2, &ts, sizeof(ts), &indicator);
+        if (ret == SQL_ERROR || indicator == SQL_NULL_DATA) {
+            return QVariant(QMetaType::fromType<QTime>());
+        }
+        return QTime(ts.hour, ts.minute, ts.second, static_cast<int>(ts.fraction / 1000000));
+    }
+#endif
 
     case SQL_TYPE_TIME:
     {
@@ -570,21 +584,28 @@ void AOdbcThread::bindParameters(SQLHSTMT stmt,
             case QMetaType::QTime:
             {
                 const QTime time = val.toTime();
-                TIME_STRUCT ts{};
-                ts.hour       = static_cast<SQLUSMALLINT>(time.hour());
-                ts.minute     = static_cast<SQLUSMALLINT>(time.minute());
-                ts.second     = static_cast<SQLUSMALLINT>(time.second());
-                buffers[i]    = QByteArray(reinterpret_cast<const char *>(&ts), sizeof(ts));
-                indicators[i] = sizeof(TIME_STRUCT);
+                // SQL_TYPE_TIME (TIME_STRUCT) has no fraction field; to preserve milliseconds
+                // bind as TIMESTAMP with a fixed epoch date. The server returns a TIMESTAMP result
+                // and toTime() extracts the time portion including ms.
+                TIMESTAMP_STRUCT tss{};
+                tss.year      = 1900;
+                tss.month     = 1;
+                tss.day       = 1;
+                tss.hour      = static_cast<SQLUSMALLINT>(time.hour());
+                tss.minute    = static_cast<SQLUSMALLINT>(time.minute());
+                tss.second    = static_cast<SQLUSMALLINT>(time.second());
+                tss.fraction  = static_cast<SQLUINTEGER>(time.msec()) * 1000000u;
+                buffers[i]    = QByteArray(reinterpret_cast<const char *>(&tss), sizeof(tss));
+                indicators[i] = sizeof(TIMESTAMP_STRUCT);
                 ret           = SQLBindParameter(stmt,
                                                  paramNum,
                                                  SQL_PARAM_INPUT,
-                                                 SQL_C_TYPE_TIME,
-                                                 SQL_TYPE_TIME,
-                                                 8,
-                                                 0,
+                                                 SQL_C_TYPE_TIMESTAMP,
+                                                 SQL_TYPE_TIMESTAMP,
+                                                 23,
+                                                 3,
                                                  reinterpret_cast<SQLPOINTER>(buffers[i].data()),
-                                                 sizeof(TIME_STRUCT),
+                                                 sizeof(TIMESTAMP_STRUCT),
                                                  &indicators[i]);
                 break;
             }
@@ -615,23 +636,23 @@ void AOdbcThread::bindParameters(SQLHSTMT stmt,
             }
             default:
             {
-                // Fallback: convert to string
-                const QString str = val.toString();
-                // Store as UTF-16 in buffer; QByteArray stores bytes
+                // Fallback: convert to string and bind as UTF-16 NVARCHAR.
+                const QString str       = val.toString();
                 const qsizetype byteLen = str.size() * static_cast<qsizetype>(sizeof(QChar));
-                buffers[i]    = QByteArray(reinterpret_cast<const char *>(str.unicode()), byteLen);
-                indicators[i] = SQL_NTS;
-                ret           = SQLBindParameter(
-                    stmt,
-                    paramNum,
-                    SQL_PARAM_INPUT,
-                    SQL_C_WCHAR,
-                    SQL_WVARCHAR,
-                    static_cast<SQLULEN>(str.size()),
-                    0,
-                    reinterpret_cast<SQLPOINTER>(buffers[i].data()),
-                    static_cast<SQLLEN>(buffers[i].size() + sizeof(SQLWCHAR)), // + null terminator
-                    &indicators[i]);
+                buffers[i] = QByteArray(reinterpret_cast<const char *>(str.unicode()), byteLen);
+                // Use explicit byte length rather than SQL_NTS: the buffer has no null terminator.
+                // ColumnSize must be at least 1; SQL Server rejects NVARCHAR(0).
+                indicators[i] = static_cast<SQLLEN>(byteLen);
+                ret = SQLBindParameter(stmt,
+                                       paramNum,
+                                       SQL_PARAM_INPUT,
+                                       SQL_C_WCHAR,
+                                       SQL_WVARCHAR,
+                                       static_cast<SQLULEN>(str.isEmpty() ? 1 : str.size()),
+                                       0,
+                                       reinterpret_cast<SQLPOINTER>(buffers[i].data()),
+                                       static_cast<SQLLEN>(byteLen),
+                                       &indicators[i]);
                 break;
             }
             }

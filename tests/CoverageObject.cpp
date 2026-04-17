@@ -71,7 +71,7 @@ void CoverageObject::testPool()
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
 
-        auto testPool = [finished]() -> ACoroTerminator {
+        auto testPool = [](std::shared_ptr<QObject> finished) -> ACoroTerminator {
             auto _ = qScopeGuard(
                 [finished] { qDebug() << "rowsAffected exited" << finished.use_count(); });
 
@@ -94,7 +94,7 @@ void CoverageObject::testPool()
             AVERIFY(db4);
             ACOMPARE_EQ(APool::currentConnections(), 2);
         };
-        testPool();
+        testPool(finished);
     }
     loop.exec();
 }

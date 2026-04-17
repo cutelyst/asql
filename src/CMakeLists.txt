@@ -387,6 +387,20 @@ if (ASQL_DRIVER_ODBC)
         $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
     )
 
+    # Optional: SQL Server ODBC extensions (fractional-second time, etc.)
+    find_file(MSODBCSQL_INCLUDE msodbcsql.h
+        PATHS
+            "/opt/microsoft/msodbcsql18/include"
+            "/opt/microsoft/msodbcsql17/include"
+        NO_DEFAULT_PATH
+    )
+    if (MSODBCSQL_INCLUDE)
+        get_filename_component(MSODBCSQL_DIR "${MSODBCSQL_INCLUDE}" DIRECTORY)
+        target_include_directories(ASqlQt${QT_VERSION_MAJOR}Odbc PRIVATE "${MSODBCSQL_DIR}")
+        target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}Odbc PRIVATE HAVE_MSODBCSQL_H)
+        message(STATUS "ASql ODBC: found msodbcsql.h — SQL_SS_TIME2 support enabled")
+    endif()
+
     set_target_properties(ASqlQt${QT_VERSION_MAJOR}Odbc PROPERTIES
         EXPORT_NAME Odbc
         VERSION ${PROJECT_VERSION}
