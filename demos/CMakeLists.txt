@@ -12,3 +12,7 @@ endif()
 if (ASQL_DRIVER_MYSQL)
     add_subdirectory(mysql)
 endif()
+
+if (ASQL_DRIVER_POSTGRES OR ASQL_DRIVER_SQLITE OR ASQL_DRIVER_MYSQL OR ASQL_DRIVER_ODBC)
+    add_subdirectory(asql-cli)
+endif()
