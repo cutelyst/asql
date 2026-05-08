@@ -246,7 +246,7 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
                                               std::vector<MYSQL_BIND> &binds,
                                               std::vector<long long> &intVals,
                                               std::vector<double> &doubleVals,
-                                              std::unique_ptr<bool[]> &nullFlags,
+                                              std::unique_ptr<MysqlBool[]> &nullFlags,
                                               std::vector<QByteArray> &strVals,
                                               std::vector<unsigned long> &strLengths)
 {
@@ -254,7 +254,7 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
     binds.assign(n, MYSQL_BIND{});
     intVals.assign(n, 0LL);
     doubleVals.assign(n, 0.0);
-    nullFlags = std::make_unique<bool[]>(n); // value-initialized to false
+    nullFlags = std::make_unique<MysqlBool[]>(n); // value-initialized to false
     strVals.resize(n);
     strLengths.assign(n, 0UL);
 
@@ -262,13 +262,13 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
         const QVariant &v = params.at(i);
 
         if (v.isNull()) {
-            nullFlags[i]         = true;
+            nullFlags[i]         = 1;
             binds[i].buffer_type = MYSQL_TYPE_NULL;
-            binds[i].is_null     = &nullFlags[i];
+            binds[i].is_null     = reinterpret_cast<decltype(MYSQL_BIND::is_null)>(&nullFlags[i]);
             continue;
         }
 
-        binds[i].is_null = &nullFlags[i]; // points to false (not null)
+        binds[i].is_null = reinterpret_cast<decltype(MYSQL_BIND::is_null)>(&nullFlags[i]); // points to false (not null)
 
         switch (v.userType()) {
         case QMetaType::Bool:
@@ -385,10 +385,10 @@ static std::optional<QString> mysqlFetchStmtRows(MYSQL_STMT *stmt,
 
     std::vector<MYSQL_BIND> resBind(numFields, MYSQL_BIND{});
     std::vector<unsigned long> lengths(numFields, 0UL);
-    // Use proper bool arrays so mysql_stmt_fetch() can write bool values
-    // without triggering undefined behaviour through type-punning.
-    auto isNull  = std::make_unique<bool[]>(numFields); // value-initialized to false
-    auto isError = std::make_unique<bool[]>(numFields);
+    // Use MysqlBool (unsigned char) so &array[i] is a plain pointer compatible
+    // with both MySQL 8+ (bool *) and MariaDB (my_bool * = char *) via reinterpret_cast.
+    auto isNull  = std::make_unique<MysqlBool[]>(numFields); // value-initialized to 0
+    auto isError = std::make_unique<MysqlBool[]>(numFields);
     // Allocate per-column storage on the heap.
     std::vector<QByteArray> bufs(numFields, QByteArray(kInitBufSize, Qt::Uninitialized));
 
@@ -408,8 +408,8 @@ static std::optional<QString> mysqlFetchStmtRows(MYSQL_STMT *stmt,
         resBind[i].buffer        = bufs[i].data();
         resBind[i].buffer_length = kInitBufSize;
         resBind[i].length        = &lengths[i];
-        resBind[i].is_null       = &isNull[i];
-        resBind[i].error         = &isError[i];
+        resBind[i].is_null       = reinterpret_cast<decltype(MYSQL_BIND::is_null)>(&isNull[i]);
+        resBind[i].error         = reinterpret_cast<decltype(MYSQL_BIND::error)>(&isError[i]);
     }
 
     if (mysql_stmt_bind_result(stmt, resBind.data())) {
@@ -559,7 +559,7 @@ void AMysqlThread::query(MysqlQueryPromise promise)
     std::vector<MYSQL_BIND> binds;
     std::vector<long long> intVals;
     std::vector<double> doubleVals;
-    std::unique_ptr<bool[]> nullFlags;
+    std::unique_ptr<MysqlBool[]> nullFlags;
     std::vector<QByteArray> strVals;
     std::vector<unsigned long> strLengths;
 
@@ -631,7 +631,7 @@ void AMysqlThread::queryPrepared(MysqlQueryPromise promise)
     std::vector<MYSQL_BIND> binds;
     std::vector<long long> intVals;
     std::vector<double> doubleVals;
-    std::unique_ptr<bool[]> nullFlags;
+    std::unique_ptr<MysqlBool[]> nullFlags;
     std::vector<QByteArray> strVals;
     std::vector<unsigned long> strLengths;
 

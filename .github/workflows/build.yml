@@ -15,11 +15,22 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
           - windows-latest
           - macos-latest
         config:
           - qt_version: "6.4.2"
+        include:
+          # Two Linux builds: one against libmysqlclient (MySQL 8+) and one
+          # against libmariadb (MariaDB Connector/C) to catch type-mismatch
+          # errors like the my_bool*/bool* incompatibility.
+          - os: ubuntu-latest
+            config:
+              qt_version: "6.4.2"
+            mysql_lib: libmysqlclient-dev
+          - os: ubuntu-latest
+            config:
+              qt_version: "6.4.2"
+            mysql_lib: libmariadb-dev
 
     steps:
       - name: Install dependencies on Ubuntu
@@ -29,6 +40,14 @@ jobs:
           sudo apt install -y doxygen graphviz postgresql-server-dev-16 unixodbc-dev libsqlite3-dev
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
+          # Install the requested MySQL/MariaDB client development library.
+          # libmariadb-dev conflicts with libmysqlclient-dev (both provide
+          # mysql/mysql.h), so remove the MySQL packages first when building
+          # against MariaDB.
+          if [ "${{ matrix.mysql_lib }}" = "libmariadb-dev" ]; then
+            sudo apt remove -y libmysqlclient-dev libmysqlclient21 || true
+          fi
+          sudo apt install -y ${{ matrix.mysql_lib }}
 
       - name: Install dependencies on macOS
         if: runner.os == 'macOS'
