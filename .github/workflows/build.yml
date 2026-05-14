@@ -77,10 +77,21 @@ jobs:
           # Ensure a database exists for the runner user (required for postgresql:///)
           createdb || true
 
-      - name: Install PostgreSQL 16 with Chocolatey
+      - name: Set up PostgreSQL on Windows
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          choco install postgresql --version=16.0 -y
+          # PostgreSQL 14 is pre-installed on windows-latest but stopped/disabled.
+          # Starting it is instant — no Chocolatey download needed.
+          Set-Service -Name postgresql-x64-14 -StartupType Automatic
+          Start-Service -Name postgresql-x64-14
+          # $env:PGBIN is set by the runner image (C:\Program Files\PostgreSQL\14\bin)
+          & "$env:PGBIN\pg_isready.exe" --host=localhost --port=5432 --timeout=30
+          # postgres user password on GitHub-hosted runners is 'root'
+          $env:PGPASSWORD = 'root'
+          & "$env:PGBIN\createdb.exe" -U postgres asql_test
+          "ASQL_PG_TEST_DB=postgresql://postgres:root@localhost/asql_test" | `
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Install Qt with options and default aqtversion
         uses: jurplel/install-qt-action@v4
@@ -103,7 +114,7 @@ jobs:
         run: >
           cmake -S . -B ./build-shared -G Ninja
           -DCMAKE_BUILD_TYPE=Debug
-          -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/postgresql@16;C:\Program Files\PostgreSQL\16"
+          -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/postgresql@16;C:\Program Files\PostgreSQL\14"
           -DENABLE_MAINTAINER_CFLAGS=${{ matrix.build_type == 'Debug' }}
           -DBUILD_SHARED_LIBS=ON
           -DASQL_DRIVER_MYSQL=${{ runner.os == 'Linux' }}
@@ -127,7 +138,7 @@ jobs:
         run: >
           cmake -S . -B ./build-static -G Ninja
           -DCMAKE_BUILD_TYPE=Debug
-          -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/postgresql@16;C:\Program Files\PostgreSQL\16"
+          -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/postgresql@16;C:\Program Files\PostgreSQL\14"
           -DBUILD_SHARED_LIBS=OFF
           -DASQL_DRIVER_MYSQL=${{ runner.os == 'Linux' }}
           -DASQL_DRIVER_ODBC=${{ runner.os == 'Linux' }}
