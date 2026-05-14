@@ -53,7 +53,7 @@ void TestPreparedBase::testPreparedReuse()
             auto finished = std::make_shared<QObject>();
             connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
             const int capturedSent = sent;
-            [&pq, finished, capturedSent]() -> ACoroTerminator {
+            [pq, finished, capturedSent]() -> ACoroTerminator {
                 auto _      = qScopeGuard([finished] {});
                 auto result = co_await APool::exec(pq, {capturedSent});
                 AVERIFY(result);
@@ -77,7 +77,7 @@ void TestPreparedBase::testPreparedNoParams()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-        [&pq, finished]() -> ACoroTerminator {
+        [pq, finished]() -> ACoroTerminator {
             auto _      = qScopeGuard([finished] {});
             auto result = co_await APool::exec(pq);
             AVERIFY(result);
@@ -92,7 +92,7 @@ void TestPreparedBase::testPreparedNoParams()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop2, &QEventLoop::quit);
-        [&pq, finished]() -> ACoroTerminator {
+        [pq, finished]() -> ACoroTerminator {
             auto _      = qScopeGuard([finished] {});
             auto result = co_await APool::exec(pq);
             AVERIFY(result);
@@ -156,7 +156,7 @@ void TestPreparedBase::testPreparedMultipleConnections()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-        [&pq, finished]() -> ACoroTerminator {
+        [pq, finished]() -> ACoroTerminator {
             auto _ = qScopeGuard([finished] {});
 
             // Acquire two separate connections from the pool.

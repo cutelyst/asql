@@ -33,6 +33,14 @@ protected:
      */
     virtual QString selectParam() const;
 
+    /*!
+     * Returns true if the driver can store and retrieve arbitrary binary data
+     * (including bytes that are not valid UTF-8).  Defaults to true.
+     * MySQL 8+ overrides this to false because \c SELECT ? always decodes the
+     * result with the connection character set, corrupting non-UTF-8 bytes.
+     */
+    virtual bool supportsArbitraryBinary() const { return true; }
+
 private Q_SLOTS:
     void testBool();
     void testInt();

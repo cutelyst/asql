@@ -17,6 +17,7 @@ class TestTypesMysql : public TestTypesBase
 public:
     void initTest() override;
     void cleanupTest() override;
+    bool supportsArbitraryBinary() const override { return false; }
 };
 
 void TestTypesMysql::initTest()

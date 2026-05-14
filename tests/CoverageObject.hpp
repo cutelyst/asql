@@ -30,15 +30,15 @@ private:
     do { \
         if (![](auto &&qt_lhs_arg, auto &&qt_rhs_arg) { \
             /* assumes that op does not actually move from qt_{lhs, rhs}_arg */ \
-            return QTest::reportResult(std::forward<decltype(qt_lhs_arg)>(qt_lhs_arg) \
-                                           op std::forward<decltype(qt_rhs_arg)>(qt_rhs_arg), \
-                                       [&qt_lhs_arg] { return QTest::toString(qt_lhs_arg); }, \
-                                       [&qt_rhs_arg] { return QTest::toString(qt_rhs_arg); }, \
-                                       #lhs, \
-                                       #rhs, \
-                                       QTest::ComparisonOperation::opId, \
-                                       __FILE__, \
-                                       __LINE__); \
+            const bool qt_result = std::forward<decltype(qt_lhs_arg)>(qt_lhs_arg) \
+                op std::forward<decltype(qt_rhs_arg)>(qt_rhs_arg); \
+            QT_WARNING_PUSH \
+            QT_WARNING_DISABLE_DEPRECATED \
+            return QTest::reportResult( \
+                qt_result, [&qt_lhs_arg] { return QTest::toString(qt_lhs_arg); }, [&qt_rhs_arg] { \
+                return QTest::toString(qt_rhs_arg); \
+            }, #lhs, #rhs, QTest::ComparisonOperation::opId, __FILE__, __LINE__); \
+            QT_WARNING_POP \
         }(lhs, rhs)) { \
             co_return; \
         } \
