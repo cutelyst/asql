@@ -23,7 +23,7 @@ Qt Async Sql library
 * Single row mode (useful for very large datasets)
 
 ## Requirements
-* Qt 6.4 or later
+* Qt 6.5 or later
 * C++23 capable compiler (g++-14 or newer is required).
 
 ## Usage

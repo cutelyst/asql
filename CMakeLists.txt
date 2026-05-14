@@ -8,7 +8,7 @@ include(GNUInstallDirs)
 include(GenerateExportHeader)
 
 find_package(QT NAMES Qt6 COMPONENTS Core REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} 6.4.0 COMPONENTS Core REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} 6.5.0 COMPONENTS Core REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 

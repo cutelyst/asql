@@ -11,7 +11,8 @@ behaviour and hard-to-reproduce crashes.
 **Forbidden:**
 ```cpp
 [this, finished, value]() -> ACoroTerminator {
-    auto result = co_await APool::exec(...);  // 'this', 'finished', 'value' are dangling here
+    auto result = co_await APool::exec(...);
+    // 'this', 'finished', 'value' are dangling here
 }();
 ```
 
