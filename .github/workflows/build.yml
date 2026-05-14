@@ -49,10 +49,33 @@ jobs:
           fi
           sudo apt install -y ${{ matrix.mysql_lib }}
 
+          # ── PostgreSQL ────────────────────────────────────────────────────
+          sudo systemctl start postgresql.service
+          # Create a superuser role matching the runner OS user so that
+          # postgresql:/// (peer-auth, db == username) works without a password.
+          sudo -u postgres createuser --superuser "$USER"
+          createdb  # creates database named after $USER
+          echo "ASQL_PG_TEST_DB=postgresql:///" >> "$GITHUB_ENV"
+
+          # ── MySQL / MariaDB ───────────────────────────────────────────────
+          # GitHub-hosted Ubuntu runners ship MySQL with root/root credentials.
+          sudo systemctl start mysql.service
+          mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS asql_test;"
+          mysql -u root -proot -e \
+            "CREATE USER IF NOT EXISTS 'asql'@'localhost' IDENTIFIED BY 'asql';"
+          mysql -u root -proot -e \
+            "GRANT ALL PRIVILEGES ON asql_test.* TO 'asql'@'localhost'; FLUSH PRIVILEGES;"
+          echo "ASQL_MYSQL_TEST_DB=mysql://asql:asql@localhost/asql_test" >> "$GITHUB_ENV"
+
       - name: Install dependencies on macOS
         if: runner.os == 'macOS'
         run: |
           brew install postgresql@16
+          brew services start postgresql@16
+          # Wait until the server accepts connections
+          until pg_isready --host=localhost --port=5432; do sleep 1; done
+          # Ensure a database exists for the runner user (required for postgresql:///)
+          createdb || true
 
       - name: Install PostgreSQL 16 with Chocolatey
         if: runner.os == 'Windows'

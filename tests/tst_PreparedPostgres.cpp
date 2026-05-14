@@ -24,9 +24,9 @@ public:
 
 void TestPreparedPostgres::initTest()
 {
-    const QString url = qEnvironmentVariable("ASQL_POSTGRES_TEST_DB", u"postgresql:///"_s);
+    const QString url = qEnvironmentVariable("ASQL_PG_TEST_DB", u"postgresql:///"_s);
     if (url == u"postgresql:///"_s) {
-        QSKIP("ASQL_POSTGRES_TEST_DB not set; skipping Postgres prepared tests");
+        QSKIP("ASQL_PG_TEST_DB not set; skipping Postgres prepared tests");
     }
     APool::create(APg::factory(url));
     APool::setMaxIdleConnections(2);

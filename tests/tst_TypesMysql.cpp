@@ -22,6 +22,9 @@ public:
 void TestTypesMysql::initTest()
 {
     const QString url = qEnvironmentVariable("ASQL_MYSQL_TEST_DB", u"mysql:///"_s);
+    if (url == u"mysql:///"_s) {
+        QSKIP("ASQL_MYSQL_TEST_DB not set; skipping MySQL types tests");
+    }
     APool::create(AMysql::factory(url));
     APool::setMaxIdleConnections(2);
     APool::setMaxConnections(5);
