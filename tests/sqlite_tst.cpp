@@ -12,6 +12,7 @@
 #include <QObject>
 #include <QStandardPaths>
 #include <QTest>
+#include <QUrl>
 
 using namespace ASql;
 using namespace Qt::Literals::StringLiterals;
@@ -36,11 +37,21 @@ void TestSqlite::initTest()
     const QString tmpDb =
         QStandardPaths::writableLocation(QStandardPaths::TempLocation) + u"/tmp.db"_s;
 
+    // Build a portable SQLite file URL.  On Windows, tmpDb starts with a
+    // drive letter ("C:/...") so naive concatenation "sqlite://" + tmpDb
+    // produces "sqlite://C:/..." where QUrl interprets "C" as the host.
+    // SQLite then receives "file://C:/..." and opens the wrong path.
+    // QUrl::fromLocalFile() always produces the correct three-slash form
+    // ("file:///C:/...") regardless of platform.
+    QUrl fileUrl = QUrl::fromLocalFile(tmpDb);
+    fileUrl.setScheme(u"sqlite"_s); // "sqlite:///C:/..." or "sqlite:///tmp/..."
+    const QString sqliteFileUrl = fileUrl.toString();
+
     APool::create(ASqlite::factory(u"sqlite://?MEMORY"_s));
     APool::setMaxIdleConnections(5);
     APool::setMaxConnections(10);
 
-    APool::create(ASqlite::factory(u"sqlite://"_s + tmpDb), u"file"_s);
+    APool::create(ASqlite::factory(sqliteFileUrl), u"file"_s);
     APool::setMaxIdleConnections(10, u"file");
 
     APool::create(ASqlite::factory(u"sqlite://?MEMORY"_s), u"pool"_s);
