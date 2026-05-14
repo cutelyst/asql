@@ -21,7 +21,6 @@ public:
 
 void TestPreparedMysql::initTest()
 {
-    const QString url = qEnvironmentVariable("ASQL_MYSQL_TEST_DB", u"mysql:///"_s);
     if (!qEnvironmentVariableIsSet("ASQL_MYSQL_TEST_DB")) {
         QSKIP("ASQL_MYSQL_TEST_DB not set; skipping MySQL prepared tests");
     }
