@@ -28,7 +28,7 @@ jobs:
       - name: Install Dependencies on Linux
         run: |
           sudo apt update -qq
-          sudo apt install -y doxygen graphviz postgresql-server-dev-16
+          sudo apt install -y doxygen graphviz postgresql-server-dev-16 unixodbc-dev libsqlite3-dev
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
