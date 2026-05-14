@@ -9,7 +9,11 @@
 #include "aresult.h"
 
 #include <adriver.h>
-#include <mysql/mysql.h>
+#if __has_include(<mariadb/mysql.h>)
+#    include <mariadb/mysql.h>
+#else
+#    include <mysql/mysql.h>
+#endif
 #include <optional>
 
 #include <QHash>

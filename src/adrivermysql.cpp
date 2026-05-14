@@ -8,7 +8,6 @@
 #include "acoroexpected.h"
 #include "aresult.h"
 
-#include <mysql/mysql.h>
 #include <type_traits>
 #include <vector>
 
@@ -268,7 +267,8 @@ static std::optional<QString> mysqlBindParams(MYSQL_STMT *stmt,
             continue;
         }
 
-        binds[i].is_null = reinterpret_cast<decltype(MYSQL_BIND::is_null)>(&nullFlags[i]); // points to false (not null)
+        binds[i].is_null = reinterpret_cast<decltype(MYSQL_BIND::is_null)>(
+            &nullFlags[i]); // points to false (not null)
 
         switch (v.userType()) {
         case QMetaType::Bool:
