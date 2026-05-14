@@ -19,6 +19,14 @@ function(asql_test _testname _driver)
     add_executable(${_testname} ${_testname}.cpp)
     add_test(NAME ${_testname} COMMAND ${_testname})
     target_link_libraries(${_testname} PUBLIC ${_driver} coverage_test)
+    if(WIN32)
+        # On Windows with shared libs the project DLLs (ASqlQt6.dll, driver DLL)
+        # live in CMAKE_RUNTIME_OUTPUT_DIRECTORY alongside the test executable.
+        # Prepend that directory to PATH so the loader finds them.
+        set_tests_properties(${_testname} PROPERTIES
+            ENVIRONMENT_MODIFICATION
+                "PATH=path_list_prepend:$<TARGET_FILE_DIR:${_testname}>")
+    endif()
 endfunction()
 
 # Shared OBJECT library with type round-trip test implementations.
@@ -43,12 +51,22 @@ function(asql_types_test _testname _driver)
     add_executable(${_testname} ${_testname}.cpp)
     add_test(NAME ${_testname} COMMAND ${_testname})
     target_link_libraries(${_testname} PUBLIC ${_driver} coverage_test types_test_common)
+    if(WIN32)
+        set_tests_properties(${_testname} PROPERTIES
+            ENVIRONMENT_MODIFICATION
+                "PATH=path_list_prepend:$<TARGET_FILE_DIR:${_testname}>")
+    endif()
 endfunction()
 
 function(asql_prepared_test _testname _driver)
     add_executable(${_testname} ${_testname}.cpp)
     add_test(NAME ${_testname} COMMAND ${_testname})
     target_link_libraries(${_testname} PUBLIC ${_driver} coverage_test prepared_test_common)
+    if(WIN32)
+        set_tests_properties(${_testname} PROPERTIES
+            ENVIRONMENT_MODIFICATION
+                "PATH=path_list_prepend:$<TARGET_FILE_DIR:${_testname}>")
+    endif()
 endfunction()
 
 if (ASQL_DRIVER_SQLITE)
