@@ -53,13 +53,15 @@ void TestPreparedBase::testPreparedReuse()
             auto finished = std::make_shared<QObject>();
             connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
             const int capturedSent = sent;
-            [pq, finished, capturedSent]() -> ACoroTerminator {
+            [](const APreparedQuery &pq,
+               std::shared_ptr<QObject> finished,
+               int capturedSent) -> ACoroTerminator {
                 auto _      = qScopeGuard([finished] {});
                 auto result = co_await APool::exec(pq, {capturedSent});
                 AVERIFY(result);
                 AVERIFY(result->size() == 1);
                 ACOMPARE_EQ((*result)[0][0].toInt(), capturedSent);
-            }();
+            }(pq, finished, capturedSent);
         }
         loop.exec();
     }
@@ -77,13 +79,13 @@ void TestPreparedBase::testPreparedNoParams()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-        [pq, finished]() -> ACoroTerminator {
+        [](const APreparedQuery &pq, std::shared_ptr<QObject> finished) -> ACoroTerminator {
             auto _      = qScopeGuard([finished] {});
             auto result = co_await APool::exec(pq);
             AVERIFY(result);
             AVERIFY(result->size() == 1);
             ACOMPARE_EQ((*result)[0][0].toInt(), 1);
-        }();
+        }(pq, finished);
     }
     loop.exec();
 
@@ -92,13 +94,13 @@ void TestPreparedBase::testPreparedNoParams()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop2, &QEventLoop::quit);
-        [pq, finished]() -> ACoroTerminator {
+        [](const APreparedQuery &pq, std::shared_ptr<QObject> finished) -> ACoroTerminator {
             auto _      = qScopeGuard([finished] {});
             auto result = co_await APool::exec(pq);
             AVERIFY(result);
             AVERIFY(result->size() == 1);
             ACOMPARE_EQ((*result)[0][0].toInt(), 1);
-        }();
+        }(pq, finished);
     }
     loop2.exec();
 }
@@ -121,7 +123,9 @@ void TestPreparedBase::testPreparedLiteral()
             connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
             const QString capturedSent = sent;
             const APreparedQuery pq    = preparedParamLiteral();
-            [pq, finished, capturedSent]() -> ACoroTerminator {
+            [](const APreparedQuery &pq,
+               std::shared_ptr<QObject> finished,
+               QString capturedSent) -> ACoroTerminator {
                 auto _ = qScopeGuard([finished] {});
                 // pq was built via APreparedQueryLiteral: it carries the same
                 // identity on every call, so only one PREPARE is ever sent.
@@ -129,7 +133,7 @@ void TestPreparedBase::testPreparedLiteral()
                 AVERIFY(result);
                 AVERIFY(result->size() == 1);
                 ACOMPARE_EQ((*result)[0][0].toString(), capturedSent);
-            }();
+            }(pq, finished, capturedSent);
         }
         loop.exec();
     }
@@ -156,7 +160,7 @@ void TestPreparedBase::testPreparedMultipleConnections()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-        [pq, finished]() -> ACoroTerminator {
+        [](const APreparedQuery &pq, std::shared_ptr<QObject> finished) -> ACoroTerminator {
             auto _ = qScopeGuard([finished] {});
 
             // Acquire two separate connections from the pool.
@@ -189,7 +193,7 @@ void TestPreparedBase::testPreparedMultipleConnections()
             AVERIFY(r4);
             AVERIFY(r4->size() == 1);
             ACOMPARE_EQ((*r4)[0][0].toInt(), 40);
-        }();
+        }(pq, finished);
     }
     loop.exec();
 }

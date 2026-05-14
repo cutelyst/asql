@@ -36,14 +36,16 @@ void TestTypesBase::testBool()
             auto finished = std::make_shared<QObject>();
             connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
             const bool capturedSent = sent;
-            [this, finished, capturedSent]() -> ACoroTerminator {
+            [](TestTypesBase *self,
+               std::shared_ptr<QObject> finished,
+               bool capturedSent) -> ACoroTerminator {
                 auto _          = qScopeGuard([finished] {});
-                const QString q = selectParam();
+                const QString q = self->selectParam();
                 auto result     = co_await APool::exec(q, {capturedSent});
                 AVERIFY(result);
                 AVERIFY(result->size() == 1);
                 ACOMPARE_EQ((*result)[0][0].toBool(), capturedSent);
-            }();
+            }(this, finished, capturedSent);
         }
         loop.exec();
     }
@@ -57,14 +59,16 @@ void TestTypesBase::testInt()
             auto finished = std::make_shared<QObject>();
             connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
             const int capturedSent = sent;
-            [this, finished, capturedSent]() -> ACoroTerminator {
+            [](TestTypesBase *self,
+               std::shared_ptr<QObject> finished,
+               int capturedSent) -> ACoroTerminator {
                 auto _          = qScopeGuard([finished] {});
-                const QString q = selectParam();
+                const QString q = self->selectParam();
                 auto result     = co_await APool::exec(q, {capturedSent});
                 AVERIFY(result);
                 AVERIFY(result->size() == 1);
                 ACOMPARE_EQ((*result)[0][0].toInt(), capturedSent);
-            }();
+            }(this, finished, capturedSent);
         }
         loop.exec();
     }
@@ -82,14 +86,16 @@ void TestTypesBase::testLongLong()
             auto finished = std::make_shared<QObject>();
             connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
             const qint64 capturedSent = sent;
-            [this, finished, capturedSent]() -> ACoroTerminator {
+            [](TestTypesBase *self,
+               std::shared_ptr<QObject> finished,
+               qint64 capturedSent) -> ACoroTerminator {
                 auto _          = qScopeGuard([finished] {});
-                const QString q = selectParam();
+                const QString q = self->selectParam();
                 auto result     = co_await APool::exec(q, {capturedSent});
                 AVERIFY(result);
                 AVERIFY(result->size() == 1);
                 ACOMPARE_EQ((*result)[0][0].toLongLong(), capturedSent);
-            }();
+            }(this, finished, capturedSent);
         }
         loop.exec();
     }
@@ -104,14 +110,16 @@ void TestTypesBase::testDouble()
             auto finished = std::make_shared<QObject>();
             connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
             const double capturedSent = sent;
-            [this, finished, capturedSent]() -> ACoroTerminator {
+            [](TestTypesBase *self,
+               std::shared_ptr<QObject> finished,
+               double capturedSent) -> ACoroTerminator {
                 auto _          = qScopeGuard([finished] {});
-                const QString q = selectParam();
+                const QString q = self->selectParam();
                 auto result     = co_await APool::exec(q, {capturedSent});
                 AVERIFY(result);
                 AVERIFY(result->size() == 1);
                 ACOMPARE_EQ((*result)[0][0].toDouble(), capturedSent);
-            }();
+            }(this, finished, capturedSent);
         }
         loop.exec();
     }
@@ -132,14 +140,16 @@ void TestTypesBase::testString()
             auto finished = std::make_shared<QObject>();
             connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
             const QString capturedSent = sent;
-            [this, finished, capturedSent]() -> ACoroTerminator {
+            [](TestTypesBase *self,
+               std::shared_ptr<QObject> finished,
+               QString capturedSent) -> ACoroTerminator {
                 auto _          = qScopeGuard([finished] {});
-                const QString q = selectParam();
+                const QString q = self->selectParam();
                 auto result     = co_await APool::exec(q, {capturedSent});
                 AVERIFY(result);
                 AVERIFY(result->size() == 1);
                 ACOMPARE_EQ((*result)[0][0].toString(), capturedSent);
-            }();
+            }(this, finished, capturedSent);
         }
         loop.exec();
     }
@@ -169,14 +179,16 @@ void TestTypesBase::testByteArray()
             auto finished = std::make_shared<QObject>();
             connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
             const QByteArray capturedSent = sent;
-            [this, finished, capturedSent]() -> ACoroTerminator {
+            [](TestTypesBase *self,
+               std::shared_ptr<QObject> finished,
+               QByteArray capturedSent) -> ACoroTerminator {
                 auto _          = qScopeGuard([finished] {});
-                const QString q = selectParam();
+                const QString q = self->selectParam();
                 auto result     = co_await APool::exec(q, {capturedSent});
                 AVERIFY(result);
                 AVERIFY(result->size() == 1);
                 ACOMPARE_EQ((*result)[0][0].toByteArray(), capturedSent);
-            }();
+            }(this, finished, capturedSent);
         }
         loop.exec();
     }
@@ -189,14 +201,14 @@ void TestTypesBase::testUuid()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-        [this, finished, sent]() -> ACoroTerminator {
+        [](TestTypesBase *self, std::shared_ptr<QObject> finished, QUuid sent) -> ACoroTerminator {
             auto _          = qScopeGuard([finished] {});
-            const QString q = selectParam();
+            const QString q = self->selectParam();
             auto result     = co_await APool::exec(q, {sent});
             AVERIFY(result);
             AVERIFY(result->size() == 1);
             ACOMPARE_EQ((*result)[0][0].toUuid(), sent);
-        }();
+        }(this, finished, sent);
     }
     loop.exec();
 }
@@ -212,16 +224,20 @@ void TestTypesBase::testDateTime()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-        [this, finished, sent, sentDate, sentTime]() -> ACoroTerminator {
+        [](TestTypesBase *self,
+           std::shared_ptr<QObject> finished,
+           QDateTime sent,
+           QDate sentDate,
+           QTime sentTime) -> ACoroTerminator {
             auto _          = qScopeGuard([finished] {});
-            const QString q = selectParam();
+            const QString q = self->selectParam();
             auto result     = co_await APool::exec(q, {sent});
             AVERIFY(result);
             AVERIFY(result->size() == 1);
             const QDateTime got = (*result)[0][0].toDateTime();
             ACOMPARE_EQ(got.date(), sentDate);
             ACOMPARE_EQ(got.time(), sentTime);
-        }();
+        }(this, finished, sent, sentDate, sentTime);
     }
     loop.exec();
 }
@@ -233,14 +249,14 @@ void TestTypesBase::testDate()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-        [this, finished, sent]() -> ACoroTerminator {
+        [](TestTypesBase *self, std::shared_ptr<QObject> finished, QDate sent) -> ACoroTerminator {
             auto _          = qScopeGuard([finished] {});
-            const QString q = selectParam();
+            const QString q = self->selectParam();
             auto result     = co_await APool::exec(q, {sent});
             AVERIFY(result);
             AVERIFY(result->size() == 1);
             ACOMPARE_EQ((*result)[0][0].toDate(), sent);
-        }();
+        }(this, finished, sent);
     }
     loop.exec();
 }
@@ -252,14 +268,14 @@ void TestTypesBase::testTime()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-        [this, finished, sent]() -> ACoroTerminator {
+        [](TestTypesBase *self, std::shared_ptr<QObject> finished, QTime sent) -> ACoroTerminator {
             auto _          = qScopeGuard([finished] {});
-            const QString q = selectParam();
+            const QString q = self->selectParam();
             auto result     = co_await APool::exec(q, {sent});
             AVERIFY(result);
             AVERIFY(result->size() == 1);
             ACOMPARE_EQ((*result)[0][0].toTime(), sent);
-        }();
+        }(this, finished, sent);
     }
     loop.exec();
 }
@@ -274,16 +290,19 @@ void TestTypesBase::testJson()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-        [this, finished, sentStr, sentObj]() -> ACoroTerminator {
+        [](TestTypesBase *self,
+           std::shared_ptr<QObject> finished,
+           QString sentStr,
+           QJsonObject sentObj) -> ACoroTerminator {
             auto _          = qScopeGuard([finished] {});
-            const QString q = selectParam();
+            const QString q = self->selectParam();
             auto result     = co_await APool::exec(q, {sentStr});
             AVERIFY(result);
             AVERIFY(result->size() == 1);
             const QJsonValue got = (*result)[0][0].toJsonValue();
             AVERIFY(got.isObject());
             ACOMPARE_EQ(got.toObject(), sentObj);
-        }();
+        }(this, finished, sentStr, sentObj);
     }
     loop.exec();
 }
@@ -294,14 +313,14 @@ void TestTypesBase::testNull()
     {
         auto finished = std::make_shared<QObject>();
         connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-        [this, finished]() -> ACoroTerminator {
+        [](TestTypesBase *self, std::shared_ptr<QObject> finished) -> ACoroTerminator {
             auto _          = qScopeGuard([finished] {});
-            const QString q = selectParam();
+            const QString q = self->selectParam();
             auto result     = co_await APool::exec(q, {QVariant{}});
             AVERIFY(result);
             AVERIFY(result->size() == 1);
             AVERIFY((*result)[0][0].isNull());
-        }();
+        }(this, finished);
     }
     loop.exec();
 }

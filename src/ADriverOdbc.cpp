@@ -360,7 +360,7 @@ QVariant AOdbcThread::columnValue(SQLHSTMT stmt, SQLUSMALLINT col, SQLSMALLINT s
         // SQL_TYPE_TIMESTAMP (datetime/datetime2) carries no timezone info.
         // Use Qt::LocalTime to match QSql ODBC behaviour: the value is returned as-is
         // without any UTC offset, so toString() won't append "Z".
-        return QDateTime(date, time, Qt::LocalTime);
+        return QDateTime(date, time, QTimeZone::LocalTime);
     }
 
     default:
