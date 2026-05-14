@@ -74,7 +74,7 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure project (Shared Link)
         run: >
