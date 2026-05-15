@@ -13,11 +13,11 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-24.04
 
         config:
           - name: clang-tidy
-            cmake_arg: '-DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_CXX_CLANG_TIDY=clang-tidy-18'
+            cmake_arg: '-DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_CXX_CLANG_TIDY=clang-tidy-18 -DASQL_BUILD_DEMOS=OFF'
             qt_version: "6.11.0"
 
           - name: clazy
