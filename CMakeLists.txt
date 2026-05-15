@@ -158,8 +158,10 @@ if (Doxygen_FOUND)
 
     # Optional Qt tag file — can be provided via -DDOCS_QTDOCSDIR=<path>
     set(DOXYGEN_QT_TAGFILE "")
-    if (DEFINED DOCS_QTDOCSDIR AND EXISTS "${DOCS_QTDOCSDIR}/qtcore/qtcore.tags")
-        set(DOXYGEN_QT_TAGFILE "${DOCS_QTDOCSDIR}/qtcore/qtcore.tags")
+    if (DEFINED DOCS_QTDOCSDIR)
+        if (EXISTS "${DOCS_QTDOCSDIR}/qtcore/qtcore.tags")
+            set(DOXYGEN_QT_TAGFILE "${DOCS_QTDOCSDIR}/qtcore/qtcore.tags")
+        endif()
     endif()
 
     configure_file(
