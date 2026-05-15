@@ -151,4 +151,29 @@ if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
+# ── Doxygen docs target ───────────────────────────────────────────────────────
+find_package(Doxygen QUIET)
+if (Doxygen_FOUND)
+    set(DOXYGEN_OUTPUT_DIR "${CMAKE_BINARY_DIR}/docs")
+
+    # Optional Qt tag file — can be provided via -DDOCS_QTDOCSDIR=<path>
+    set(DOXYGEN_QT_TAGFILE "")
+    if (DEFINED DOCS_QTDOCSDIR AND EXISTS "${DOCS_QTDOCSDIR}/qtcore/qtcore.tags")
+        set(DOXYGEN_QT_TAGFILE "${DOCS_QTDOCSDIR}/qtcore/qtcore.tags")
+    endif()
+
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in"
+        "${CMAKE_BINARY_DIR}/Doxyfile"
+        @ONLY
+    )
+
+    add_custom_target(docs
+        COMMAND ${DOXYGEN_EXECUTABLE} "${CMAKE_BINARY_DIR}/Doxyfile"
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+        COMMENT "Generating API documentation with Doxygen"
+        VERBATIM
+    )
+endif()
+
 include(CPackConfig)

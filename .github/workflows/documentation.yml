@@ -28,7 +28,7 @@ jobs:
       - name: Install Dependencies on Linux
         run: |
           sudo apt update -qq
-          sudo apt install -y doxygen graphviz postgresql-server-dev-16 unixodbc-dev libsqlite3-dev
+          sudo apt install -y doxygen graphviz
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -47,15 +47,20 @@ jobs:
       - name: Configure project
         run: >
           cmake -S . -B ./build
-          -DDOCS_QTDOCSDIR:PATH="${{ runner.workspace }}/Qt/Docs/Qt-6.6.0"
+          -DASQL_DRIVER_POSTGRES=OFF
+          -DASQL_DRIVER_MYSQL=OFF
+          -DASQL_DRIVER_ODBC=OFF
+          -DASQL_BUILD_DEMOS=OFF
+          -DBUILD_TESTING=OFF
+          -DDOCS_QTDOCSDIR="${{ runner.workspace }}/Qt/Docs/Qt-6.6.0"
 
       - name: Create docs
-        run: cmake --build ./build --target webdocs
+        run: cmake --build ./build --target docs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build/webdocs/
+          path: build/docs/html/
 
   # Deployment job, what was uploaded to artifact
   deploy:
