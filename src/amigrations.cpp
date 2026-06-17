@@ -18,13 +18,41 @@ Q_LOGGING_CATEGORY(ASQL_MIG, "asql.migrations", QtInfoMsg)
 
 using namespace Qt::StringLiterals;
 
+namespace {
+
+QString versionUpdateQuery(const ASql::ADatabase &db)
+{
+    if (db.driverName() == u"sqlite") {
+        return uR"V0G0N(
+INSERT INTO asql_migrations
+    (name, version)
+VALUES
+    (?, ?)
+ON CONFLICT (name) DO UPDATE
+SET version = excluded.version
+RETURNING version;
+)V0G0N"_s;
+    }
+
+    return uR"V0G0N(
+INSERT INTO asql_migrations
+    (name, version)
+VALUES
+    ($1, $2)
+ON CONFLICT (name) DO UPDATE
+SET version = EXCLUDED.version
+RETURNING version;
+)V0G0N"_s;
+}
+
+} // namespace
+
 namespace ASql {
 
 class AMigrationsPrivate
 {
 public:
     struct MigQuery {
-        QString versionQuery;
         QString query;
         int version        = 0;
         bool noTransaction = false;
@@ -324,18 +352,22 @@ ACoroTerminator AMigrations::migrate(int targetVersion,
             }
             co_return;
         }
+    }
 
-        result = co_await d->db.exec(migration.versionQuery, this);
-        if (!result) {
-            qCritical(ASQL_MIG) << "Failed to update version" << result.error();
-            cb(true, result.error());
-            co_return;
-        }
+    result = co_await d->db.exec(versionUpdateQuery(d->db),
+                                 {
+                                     d->name,
+                                     migration.version,
+                                 },
+                                 this);
+    if (!result) {
+        qCritical(ASQL_MIG) << "Failed to update version" << result.error();
+        cb(true, result.error());
+        co_return;
     }
 
     ADatabase db   = migration.noTransaction ? d->noTransactionDB : d->db;
-    auto awaitable = db.execMulti(
-        migration.noTransaction ? migration.query : migration.versionQuery + migration.query, this);
+    auto awaitable = db.execMulti(migration.query, this);
     while (true) {
         result = co_await awaitable;
         if (!result) {
@@ -381,25 +413,12 @@ AMigrationsPrivate::MigQuery AMigrationsPrivate::nextQuery(int versionFrom, int 
 {
     AMigrationsPrivate::MigQuery ret;
 
-    QString query = uR"V0G0N(
-INSERT INTO asql_migrations
-    (name, version)
-VALUES
-    ('%1', %2)
-ON CONFLICT (name) DO UPDATE
-SET version = EXCLUDED.version
-RETURNING version;
-)V0G0N"_s;
-
     if (versionFrom < versionTo) {
         // up
         auto it = up.constBegin();
         while (it != up.constEnd()) {
             if (it.key() <= versionTo && it.key() > versionFrom) {
-                ret = {query.arg(name).arg(it.key()),
-                       it.value().query,
-                       it.key(),
-                       it.value().noTransaction};
+                ret = {it.value().query, it.key(), it.value().noTransaction};
                 break;
             }
             ++it;
@@ -409,10 +428,7 @@ RETURNING version;
         auto it = down.constBegin();
         while (it != down.constEnd()) {
             if (it.key() > versionTo && it.key() <= versionFrom) {
-                ret = {query.arg(name).arg(it.key() - 1),
-                       it.value().query,
-                       it.key() - 1,
-                       it.value().noTransaction};
+                ret = {it.value().query, it.key() - 1, it.value().noTransaction};
             }
             ++it;
         }
