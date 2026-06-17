@@ -530,6 +530,8 @@ protected:
     std::shared_ptr<AResultPrivate> d;
 };
 
+[[nodiscard]] ASQL_EXPORT AResult resultError(const QString &message);
+
 #define AColumnIndex(result, columnName) \
     ([result]() Q_DECL_NOEXCEPT -> int { \
         static const int ix = result.indexOfField(columnName); \

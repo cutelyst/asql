@@ -18,6 +18,7 @@
 Q_LOGGING_CATEGORY(ASQL_CACHE, "asql.cache", QtWarningMsg)
 
 using namespace std::chrono;
+using namespace Qt::StringLiterals;
 
 namespace ASql {
 
@@ -56,6 +57,10 @@ public:
                        QObject *receiver,
                        AResultFn cb);
     ACoroTerminator requestData(QString query, QVariantList args, QObject *receiver, AResultFn cb);
+    void failRequest(const QString &query,
+                     const QVariantList &args,
+                     const QString &error,
+                     ACacheReceiverCb cacheReceiver);
 
     QObject *q_ptr;
     QString poolName;
@@ -93,6 +98,13 @@ bool ACachePrivate::searchOrQueue(const QString &query,
                     }
                 }
 
+                if (value.result.hasError()) {
+                    qDebug(ASQL_CACHE)
+                        << "Cached query had error, refetching" << query.left(15) << args;
+                    cache.erase(it);
+                    break;
+                }
+
                 qDebug(ASQL_CACHE) << "Cached query ready" << query.left(15) << args;
                 if (cb) {
                     cb(value.result);
@@ -109,6 +121,28 @@ bool ACachePrivate::searchOrQueue(const QString &query,
     }
 
     return false;
+}
+
+void ACachePrivate::failRequest(const QString &query,
+                                const QVariantList &args,
+                                const QString &error,
+                                ACacheReceiverCb cacheReceiver)
+{
+    const AResult errorResult = resultError(error);
+    auto it                   = cache.constFind(query);
+    while (it != cache.constEnd() && it.key() == query) {
+        if (it.value().args == args) {
+            std::vector<ACacheReceiverCb> receivers = std::move(it.value().receivers);
+            cache.erase(it);
+            for (const ACacheReceiverCb &receiverObj : receivers) {
+                receiverObj.emitResult(errorResult);
+            }
+            return;
+        }
+        ++it;
+    }
+
+    cacheReceiver.emitResult(errorResult);
 }
 
 ACoroTerminator
@@ -129,10 +163,7 @@ ACoroTerminator
         auto dbFromPool = co_await APool::database(q_ptr, poolName);
         if (!dbFromPool) {
             qCritical(ASQL_CACHE) << "Failed to get connection from pool" << dbFromPool.error();
-            if (cb) {
-                AResult result;
-                cb(result);
-            }
+            failRequest(query, args, dbFromPool.error(), cacheReceiver);
             co_return;
         }
         localDb = *dbFromPool;
@@ -140,10 +171,7 @@ ACoroTerminator
     }
     default:
         qCCritical(ASQL_CACHE) << "Cache database source was not set";
-        if (cb) {
-            AResult result;
-            cb(result);
-        }
+        failRequest(query, args, u"Cache database source was not set"_s, cacheReceiver);
         co_return;
     }
 
@@ -154,8 +182,18 @@ ACoroTerminator
     cache.emplace(query, std::move(cacheValue));
 
     auto result = co_await localDb.exec(query, args, q_ptr);
-    bool found  = false;
-    auto it     = cache.constFind(query);
+    if (!result) {
+        failRequest(query, args, result.error(), cacheReceiver);
+        co_return;
+    }
+
+    if (result->hasError()) {
+        failRequest(query, args, result->errorString(), cacheReceiver);
+        co_return;
+    }
+
+    bool found = false;
+    auto it    = cache.constFind(query);
     while (it != cache.constEnd() && it.key() == query) {
         ACacheValue &value = it.value();
         if (value.args == args) {
@@ -182,8 +220,7 @@ ACoroTerminator
 
     if (!found) {
         qWarning(ASQL_CACHE) << "Queued request not found" << query.left(15) << args;
-        AResult result;
-        cacheReceiver.emitResult(result);
+        cacheReceiver.emitResult(resultError(u"Queued cache request not found"_s));
     }
 }
 

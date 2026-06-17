@@ -18,58 +18,9 @@
 #include <QPointer>
 #include <queue>
 
-// FOR AResultError
-#include <QCborValue>
-#include <QDateTime>
-#include <QJsonValue>
-
 Q_LOGGING_CATEGORY(ASQL_POOL, "asql.pool", QtInfoMsg)
 
 using namespace ASql;
-
-class AResultError final : public AResultPrivate
-{
-public:
-    AResultError(const QString &error)
-        : m_error{error}
-    {
-    }
-    virtual ~AResultError() = default;
-
-    bool lastResultSet() const override { return true; }
-    bool hasError() const override { return true; }
-    QString errorString() const override { return m_error; }
-
-    QByteArray query() const override { return {}; }
-    QVariantList queryArgs() const override { return {}; }
-
-    int size() const override { return {}; }
-    int fields() const override { return {}; }
-    qint64 numRowsAffected() const override { return {}; }
-
-    int indexOfField(QLatin1String name) const override { return {}; }
-    QString fieldName(int column) const override { return {}; }
-    inline QVariant value(int row, int column) const override { return {}; }
-
-    bool isNull(int row, int column) const override { return true; }
-    bool toBool(int row, int column) const override { return {}; }
-    int toInt(int row, int column) const override { return {}; }
-    qint64 toLongLong(int row, int column) const override { return {}; }
-    quint64 toULongLong(int row, int column) const override { return {}; }
-    double toDouble(int row, int column) const override { return {}; }
-    QString toString(int row, int column) const override { return {}; }
-    std::string toStdString(int row, int column) const override { return {}; }
-    QUuid toUuid(int row, int column) const final { return {}; }
-    QDate toDate(int row, int column) const override { return {}; }
-    QTime toTime(int row, int column) const override { return {}; }
-    QDateTime toDateTime(int row, int column) const override { return {}; }
-    QJsonValue toJsonValue(int row, int column) const final { return {}; }
-    QCborValue toCborValue(int row, int column) const final { return {}; }
-    QByteArray toByteArray(int row, int column) const override { return {}; }
-
-private:
-    QString m_error;
-};
 
 struct APoolQueuedClient {
     ADatabaseFn cb;
@@ -318,13 +269,13 @@ AExpectedResult APool::exec(QStringView query, QObject *receiver, QStringView po
             if (result) {
                 ref.deliverResult(*result);
             } else {
-                AResult error{std::make_shared<AResultError>(result.error())};
+                AResult error = resultError(result.error());
                 ref.deliverResult(error);
             }
             co_return;
         }
 
-        AResult error{std::make_shared<AResultError>(db.error())};
+        AResult error = resultError(db.error());
         ref.deliverResult(error);
     }(std::move(ref), query, receiver, poolName);
 
@@ -343,13 +294,13 @@ AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringVie
             if (result) {
                 ref.deliverResult(*result);
             } else {
-                AResult error{std::make_shared<AResultError>(result.error())};
+                AResult error = resultError(result.error());
                 ref.deliverResult(error);
             }
             co_return;
         }
 
-        AResult error{std::make_shared<AResultError>(db.error())};
+        AResult error = resultError(db.error());
         ref.deliverResult(error);
     }(std::move(ref), query, receiver, poolName);
 
@@ -376,12 +327,12 @@ AExpectedMultiResult APool::execMulti(QStringView query, QObject *receiver, QStr
                 result = co_await awaiter;
             };
 
-            AResult error{std::make_shared<AResultError>(result.error())};
+            AResult error = resultError(result.error());
             ref.deliverResult(error);
             co_return;
         }
 
-        AResult error{std::make_shared<AResultError>(db.error())};
+        AResult error = resultError(db.error());
         ref.deliverResult(error);
     }(std::move(ref), query, receiver, poolName);
 
@@ -409,12 +360,12 @@ AExpectedMultiResult
                 result = co_await awaiter;
             };
 
-            AResult error{std::make_shared<AResultError>(result.error())};
+            AResult error = resultError(result.error());
             ref.deliverResult(error);
             co_return;
         }
 
-        AResult error{std::make_shared<AResultError>(db.error())};
+        AResult error = resultError(db.error());
         ref.deliverResult(error);
     }(std::move(ref), query, receiver, poolName);
 
@@ -433,13 +384,13 @@ AExpectedResult APool::exec(const APreparedQuery &query, QObject *receiver, QStr
             if (result) {
                 ref.deliverResult(*result);
             } else {
-                AResult error{std::make_shared<AResultError>(result.error())};
+                AResult error = resultError(result.error());
                 ref.deliverResult(error);
             }
             co_return;
         }
 
-        AResult error{std::make_shared<AResultError>(db.error())};
+        AResult error = resultError(db.error());
         ref.deliverResult(error);
     }(std::move(ref), query, receiver, poolName);
 
@@ -463,13 +414,13 @@ AExpectedResult APool::exec(QStringView query,
             if (result) {
                 ref.deliverResult(*result);
             } else {
-                AResult error{std::make_shared<AResultError>(result.error())};
+                AResult error = resultError(result.error());
                 ref.deliverResult(error);
             }
             co_return;
         }
 
-        AResult error{std::make_shared<AResultError>(db.error())};
+        AResult error = resultError(db.error());
         ref.deliverResult(error);
     }(std::move(ref), query, params, receiver, poolName);
 
@@ -492,13 +443,13 @@ AExpectedResult APool::exec(QUtf8StringView query,
             if (result) {
                 ref.deliverResult(*result);
             } else {
-                AResult error{std::make_shared<AResultError>(result.error())};
+                AResult error = resultError(result.error());
                 ref.deliverResult(error);
             }
             co_return;
         }
 
-        AResult error{std::make_shared<AResultError>(db.error())};
+        AResult error = resultError(db.error());
         ref.deliverResult(error);
     }(std::move(ref), query, params, receiver, poolName);
 
@@ -521,13 +472,13 @@ AExpectedResult APool::exec(const APreparedQuery &query,
             if (result) {
                 ref.deliverResult(*result);
             } else {
-                AResult error{std::make_shared<AResultError>(result.error())};
+                AResult error = resultError(result.error());
                 ref.deliverResult(error);
             }
             co_return;
         }
 
-        AResult error{std::make_shared<AResultError>(db.error())};
+        AResult error = resultError(db.error());
         ref.deliverResult(error);
     }(std::move(ref), query, params, receiver, poolName);
 
