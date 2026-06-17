@@ -196,7 +196,7 @@ AExpectedResult ADatabase::exec(QUtf8StringView query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
-    d->exec(d, query, QVariantList(), receiver, coro.ref());
+    d->exec(d, query, receiver, coro.ref());
     return coro;
 }
 
