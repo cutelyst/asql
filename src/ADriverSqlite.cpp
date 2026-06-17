@@ -67,6 +67,19 @@ bool ADriverSqlite::isValid() const
     return true;
 }
 
+void ADriverSqlite::deliverOpenWaiters(bool isOpen, const QString &error)
+{
+    const auto waiters = std::move(m_openWaiters);
+    m_openWaiters.clear();
+    for (const OpenPromise &promise : waiters) {
+        if (!promise.receiver.has_value() || !promise.receiver->isNull()) {
+            if (promise.cb) {
+                promise.cb(isOpen, error);
+            }
+        }
+    }
+}
+
 void ADriverSqlite::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, AOpenFn cb)
 {
     if (m_state == ADatabase::State::Connected) {
@@ -76,30 +89,32 @@ void ADriverSqlite::open(const std::shared_ptr<ADriver> &driver, QObject *receiv
         return;
     }
 
+    if (cb) {
+        OpenPromise promise{
+            .cb = cb,
+        };
+        if (receiver) {
+            promise.receiver = receiver;
+        }
+        m_openWaiters.push_back(std::move(promise));
+    }
+
+    if (m_state == ADatabase::State::Connecting) {
+        return;
+    }
+
     setState(ADatabase::State::Connecting, {});
     ++m_queueSize;
     selfDriver = driver;
 
-    OpenPromise promise{
-        .cb = cb,
-    };
-
-    if (receiver) {
-        promise.receiver = receiver;
-    }
-
-    connect(&m_worker, &ASqliteThread::openned, this, [this, promise](bool isOpen, QString error) {
+    connect(&m_worker, &ASqliteThread::openned, this, [this](bool isOpen, QString error) {
         if (isOpen) {
             setState(ADatabase::State::Connected, {});
         } else {
             setState(ADatabase::State::Disconnected, error);
         }
 
-        if (!promise.receiver.has_value() || !promise.receiver->isNull()) {
-            if (promise.cb) {
-                promise.cb(isOpen, error);
-            }
-        }
+        deliverOpenWaiters(isOpen, error);
 
         if (--m_queueSize == 0) {
             // This might not be needed if we only use coroutines
