@@ -10,9 +10,62 @@
 #include <QDateTime>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QUuid>
 
 using namespace ASql;
 using namespace Qt::StringLiterals;
+
+namespace {
+
+class AResultError final : public AResultPrivate
+{
+public:
+    explicit AResultError(const QString &error)
+        : m_error{error}
+    {
+    }
+
+    bool lastResultSet() const override { return true; }
+    bool hasError() const override { return true; }
+    QString errorString() const override { return m_error; }
+
+    QByteArray query() const override { return {}; }
+    QVariantList queryArgs() const override { return {}; }
+
+    int size() const override { return 0; }
+    int fields() const override { return 0; }
+    qint64 numRowsAffected() const override { return 0; }
+
+    int indexOfField(QLatin1String name) const override { return -1; }
+    QString fieldName(int column) const override { return {}; }
+    QVariant value(int row, int column) const override { return {}; }
+
+    bool isNull(int row, int column) const override { return true; }
+    bool toBool(int row, int column) const override { return false; }
+    int toInt(int row, int column) const override { return 0; }
+    qint64 toLongLong(int row, int column) const override { return 0; }
+    quint64 toULongLong(int row, int column) const override { return 0; }
+    double toDouble(int row, int column) const override { return 0; }
+    QString toString(int row, int column) const override { return {}; }
+    std::string toStdString(int row, int column) const override { return {}; }
+    QUuid toUuid(int row, int column) const final { return {}; }
+    QDate toDate(int row, int column) const override { return {}; }
+    QTime toTime(int row, int column) const override { return {}; }
+    QDateTime toDateTime(int row, int column) const override { return {}; }
+    QJsonValue toJsonValue(int row, int column) const final { return {}; }
+    QCborValue toCborValue(int row, int column) const final { return {}; }
+    QByteArray toByteArray(int row, int column) const override { return {}; }
+
+private:
+    QString m_error;
+};
+
+} // namespace
+
+AResult ASql::resultError(const QString &message)
+{
+    return AResult{std::make_shared<AResultError>(message)};
+}
 
 AResult::AResult() = default;
 
