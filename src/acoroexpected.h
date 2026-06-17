@@ -49,11 +49,17 @@ public:
         }
 
         if constexpr (std::is_same_v<T, ADatabase>) {
-            if (arg.isValid()) {
+            if (arg.isValid() && arg.isOpen()) {
                 result = std::move(arg);
-            } else {
+            } else if (!arg.isValid()) {
                 result =
                     std::unexpected(QStringLiteral("Could not get a valid database connection"));
+            } else {
+                result = std::unexpected(QStringLiteral("Could not open database connection"));
+            }
+
+            if (!result.has_value()) {
+                ADatabase toRelease = std::move(arg);
             }
         } else {
             if (arg.hasError()) {

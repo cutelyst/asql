@@ -26,6 +26,7 @@ public:
 
 private Q_SLOTS:
     void testQueries();
+    void testPoolOpenFailure();
     void testPoolBeginCommit();
     void testPoolBeginRollback();
     void testDatabaseBeginCommit();
@@ -291,6 +292,34 @@ void TestSqlite::testQueries()
     }
 
     loop.exec();
+}
+
+void TestSqlite::testPoolOpenFailure()
+{
+    const QString poolName = u"bad_pool"_s;
+    APool::create(ASqlite::factory(u"sqlite:///no/such/asql/path/db.sqlite?READONLY"_s), poolName);
+
+    QEventLoop loop;
+    {
+        auto finished = std::make_shared<QObject>();
+        connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
+
+        auto testBadPool = [](std::shared_ptr<QObject> finished,
+                              QStringView poolName) -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "testPoolOpenFailure exited" << finished.use_count(); });
+
+            auto db = co_await APool::database(nullptr, poolName);
+            AVERIFY(!db);
+            AVERIFY(!db.error().isEmpty());
+
+            co_return;
+        };
+        testBadPool(finished, poolName);
+    }
+    loop.exec();
+
+    APool::remove(poolName);
 }
 
 void TestSqlite::testPoolBeginCommit()
