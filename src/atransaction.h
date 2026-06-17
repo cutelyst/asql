@@ -45,7 +45,8 @@ public:
      * but it will be ignored if it was not using the last reference.
      *
      * This is so that you can call this on a INSERT loop and have
-     * COMMIT being issued only on the last INSERT result.
+     * COMMIT being issued only on the last INSERT result. Earlier calls
+     * complete immediately without issuing COMMIT.
      *
      * \param cb
      */

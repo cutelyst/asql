@@ -17,16 +17,17 @@ using namespace Qt::StringLiterals;
 
 namespace {
 
-class AResultError final : public AResultPrivate
+class AResultStub final : public AResultPrivate
 {
 public:
-    explicit AResultError(const QString &error)
-        : m_error{error}
+    explicit AResultStub(bool isError, QString error = {})
+        : m_error{std::move(error)}
+        , m_isError{isError}
     {
     }
 
     bool lastResultSet() const override { return true; }
-    bool hasError() const override { return true; }
+    bool hasError() const override { return m_isError; }
     QString errorString() const override { return m_error; }
 
     QByteArray query() const override { return {}; }
@@ -58,13 +59,19 @@ public:
 
 private:
     QString m_error;
+    bool m_isError;
 };
 
 } // namespace
 
 AResult ASql::resultError(const QString &message)
 {
-    return AResult{std::make_shared<AResultError>(message)};
+    return AResult{std::make_shared<AResultStub>(true, message)};
+}
+
+AResult ASql::resultSuccess()
+{
+    return AResult{std::make_shared<AResultStub>(false)};
 }
 
 AResult::AResult() = default;
