@@ -136,6 +136,23 @@ QString connectionStatus(ConnStatusType type)
     }
 }
 
+QString quotePgListenIdentifier(PGconn *conn, QStringView name)
+{
+    if (!conn || name.isEmpty()) {
+        return {};
+    }
+
+    const QByteArray utf8 = name.toUtf8();
+    char *escaped = PQescapeIdentifier(conn, utf8.constData(), static_cast<size_t>(utf8.size()));
+    if (!escaped) {
+        return {};
+    }
+
+    const QString quoted = QString::fromUtf8(escaped);
+    PQfreemem(escaped);
+    return quoted;
+}
+
 } // namespace
 
 ADriverPg::ADriverPg(const QString &connInfo)
@@ -641,6 +658,16 @@ void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db,
                                         QObject *receiver,
                                         ANotificationFn cb)
 {
+    if (name.isEmpty()) {
+        qWarning(ASQL_PG) << "Invalid notification channel name" << name;
+        return;
+    }
+
+    if (isConnected() && m_conn && quotePgListenIdentifier(m_conn->conn(), name).isEmpty()) {
+        qWarning(ASQL_PG) << "Invalid notification channel name" << name;
+        return;
+    }
+
     if (m_subscribedNotifications.contains(name)) {
         qWarning(ASQL_PG) << "Already subscribed to notification" << name;
         return;
@@ -669,8 +696,21 @@ ACoroTerminator ADriverPg::listenCoro(std::shared_ptr<ADriver> db, QString name)
 {
     co_yield this;
 
+    if (!isConnected() || !m_conn) {
+        qWarning(ASQL_PG) << "Cannot listen, not connected" << name;
+        m_subscribedNotifications.remove(name);
+        co_return;
+    }
+
+    const QString quoted = quotePgListenIdentifier(m_conn->conn(), name);
+    if (quoted.isEmpty()) {
+        qWarning(ASQL_PG) << "Invalid notification channel name" << name;
+        m_subscribedNotifications.remove(name);
+        co_return;
+    }
+
     AExpectedResult result(this);
-    const QString query = u"LISTEN "_s + name;
+    const QString query = u"LISTEN "_s + quoted;
     exec(db, QStringView(query), this, result.ref());
     auto r = co_await result;
 
@@ -684,8 +724,19 @@ ACoroTerminator ADriverPg::unlistenCoro(std::shared_ptr<ADriver> db, QString nam
 {
     co_yield this;
 
+    if (!isConnected() || !m_conn) {
+        qWarning(ASQL_PG) << "Cannot unlisten, not connected" << name;
+        co_return;
+    }
+
+    const QString quoted = quotePgListenIdentifier(m_conn->conn(), name);
+    if (quoted.isEmpty()) {
+        qWarning(ASQL_PG) << "Invalid notification channel name" << name;
+        co_return;
+    }
+
     AExpectedResult result(this);
-    const QString query = u"UNLISTEN "_s + name;
+    const QString query = u"UNLISTEN "_s + quoted;
     exec(db, QStringView(query), this, result.ref());
     auto r = co_await result;
 
