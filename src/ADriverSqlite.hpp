@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <optional>
+#include <vector>
 
 #include <QHash>
 #include <QMutex>
@@ -188,6 +189,8 @@ public:
                                      const QString &name) override;
 
 private:
+    void deliverOpenWaiters(bool isOpen, const QString &error);
+
     std::optional<QPointer<QObject>> m_stateChangedReceiver;
     std::function<void(ADatabase::State, const QString &)> m_stateChangedCb;
     std::shared_ptr<ADriver> selfDriver;
@@ -199,6 +202,7 @@ private:
     bool m_flush              = false;
     bool m_queryRunning       = false;
     bool m_notificationPtrSet = false;
+    std::vector<OpenPromise> m_openWaiters;
 };
 
 } // namespace ASql

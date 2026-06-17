@@ -11,6 +11,7 @@
 #include <adriver.h>
 #include <libpq-fe.h>
 #include <optional>
+#include <vector>
 
 #include <QHash>
 #include <QPointer>
@@ -214,20 +215,21 @@ private:
     inline bool isConnected() const;
     ACoroTerminator listenCoro(std::shared_ptr<ADriver> db, QString name);
     ACoroTerminator unlistenCoro(std::shared_ptr<ADriver> db, QString name);
+    void deliverOpenWaiters(bool isOpen, const QString &error);
 
     struct OpenCaller {
         std::shared_ptr<ADriver> driver;
         AOpenFn cb;
         std::optional<QPointer<QObject>> receiverPtr;
 
-        void emit(bool isOpen, const QString &error)
+        void emit(bool isOpen, const QString &error) const
         {
             if (cb && (!receiverPtr.has_value() || !receiverPtr->isNull())) {
                 cb(isOpen, error);
             }
         }
     };
-    std::unique_ptr<OpenCaller> m_openCaller;
+    std::vector<OpenCaller> m_openWaiters;
 
     std::optional<QPointer<QObject>> m_stateChangedReceiver;
     std::function<void(ADatabase::State, const QString &)> m_stateChangedCb;

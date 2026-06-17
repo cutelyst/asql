@@ -172,18 +172,42 @@ bool ADriverPg::isValid() const
     return true;
 }
 
+void ADriverPg::deliverOpenWaiters(bool isOpen, const QString &error)
+{
+    const auto waiters = std::move(m_openWaiters);
+    m_openWaiters.clear();
+    for (const OpenCaller &caller : waiters) {
+        caller.emit(isOpen, error);
+    }
+}
+
 void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, AOpenFn cb)
 {
     qDebug(ASQL_PG) << "Open" << connectionInfo();
+
+    if (m_state == ADatabase::State::Connected) {
+        if (cb) {
+            cb(true, {});
+        }
+        return;
+    }
+
+    if (cb) {
+        OpenCaller caller;
+        caller.driver = driver;
+        caller.cb     = cb;
+        if (receiver) {
+            caller.receiverPtr = receiver;
+        }
+        m_openWaiters.push_back(std::move(caller));
+    }
+
+    if (m_state == ADatabase::State::Connecting) {
+        return;
+    }
+
     m_conn = std::make_unique<APgConn>(connectionInfo());
     if (m_conn->conn()) {
-        m_openCaller         = std::make_unique<OpenCaller>();
-        m_openCaller->driver = driver;
-        m_openCaller->cb     = cb;
-        if (receiver) {
-            m_openCaller->receiverPtr = receiver;
-        }
-
         const auto socket = m_conn->socket();
         if (socket > 0) {
             m_writeNotify = std::make_unique<QSocketNotifier>(socket, QSocketNotifier::Write);
@@ -209,10 +233,7 @@ void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, 
                     qDebug(ASQL_PG) << "PGRES_POLLING_OK 1" << type << m_writeNotify->isEnabled();
                     m_writeNotify->setEnabled(false);
                     setState(ADatabase::State::Connected, {});
-                    if (m_openCaller) {
-                        m_openCaller->emit(true, {});
-                        m_openCaller.reset();
-                    }
+                    deliverOpenWaiters(true, {});
 
                     // see if we have queue queries
                     nextQuery();
@@ -222,10 +243,7 @@ void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, 
                     const QString error = m_conn->errorMessage();
                     qDebug(ASQL_PG) << "PGRES_POLLING_FAILED" << type << error;
 
-                    if (m_openCaller) {
-                        m_openCaller->emit(false, error);
-                        m_openCaller.reset();
-                    }
+                    deliverOpenWaiters(false, error);
 
                     finishConnection(error);
                     return;
@@ -389,9 +407,7 @@ void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, 
         }
         //        qDebug(ASQL_PG) << "PG Socket" << m_conn << socket;
     } else {
-        if (cb) {
-            cb(false, u"PQconnectStart failed"_s);
-        }
+        deliverOpenWaiters(false, u"PQconnectStart failed"_s);
     }
 }
 

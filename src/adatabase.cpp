@@ -55,7 +55,8 @@ void ADatabase::open(QObject *receiver, ADatabaseOpenFn cb)
         d = std::make_shared<ADriver>();
     }
 
-    if (d->state() == ADatabase::State::Disconnected) {
+    if (d->state() == ADatabase::State::Disconnected ||
+        d->state() == ADatabase::State::Connecting) {
         if (cb) {
             // Wrap the legacy callback in an ACoroOpenData adapter.
             // The adapter holds a self-reference so it stays alive until
@@ -96,7 +97,8 @@ AExpectedOpen ADatabase::coOpen(QObject *receiver)
 
     if (d->state() == ADatabase::State::Connected) {
         coro.m_data->deliverOpen(true, {});
-    } else if (d->state() == ADatabase::State::Disconnected) {
+    } else if (d->state() == ADatabase::State::Disconnected ||
+               d->state() == ADatabase::State::Connecting) {
         d->open(d, receiver, AOpenFn{std::weak_ptr<ACoroOpenData>{coro.m_data}});
     }
     return coro;

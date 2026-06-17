@@ -11,6 +11,7 @@
 #include <optional>
 #include <sql.h>
 #include <sqlext.h>
+#include <vector>
 
 #include <QHash>
 #include <QMutex>
@@ -185,6 +186,8 @@ public:
                                      const QString &name) override;
 
 private:
+    void deliverOpenWaiters(bool isOpen, const QString &error);
+
     std::optional<QPointer<QObject>> m_stateChangedReceiver;
     std::function<void(ADatabase::State, const QString &)> m_stateChangedCb;
     std::shared_ptr<ADriver> selfDriver;
@@ -192,6 +195,7 @@ private:
     QThread m_thread;
     ADatabase::State m_state = ADatabase::State::Disconnected;
     int m_queueSize          = 0;
+    std::vector<OdbcOpenPromise> m_openWaiters;
 };
 
 } // namespace ASql

@@ -27,6 +27,7 @@ public:
 private Q_SLOTS:
     void testQueries();
     void testPoolOpenFailure();
+    void testCoOpenWhileConnecting();
     void testPoolBeginCommit();
     void testPoolBeginRollback();
     void testDatabaseBeginCommit();
@@ -320,6 +321,39 @@ void TestSqlite::testPoolOpenFailure()
     loop.exec();
 
     APool::remove(poolName);
+}
+
+void TestSqlite::testCoOpenWhileConnecting()
+{
+    QEventLoop loop;
+    {
+        auto finished = std::make_shared<QObject>();
+        connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
+
+        auto testDualCoOpen = [](std::shared_ptr<QObject> finished) -> ACoroTerminator {
+            auto _ = qScopeGuard([finished] {
+                qDebug() << "testCoOpenWhileConnecting exited" << finished.use_count();
+            });
+
+            ADatabase db(ASqlite::factory(u"sqlite://?MEMORY"_s));
+
+            auto openFirst = [&db]() -> ACoroTerminator {
+                auto opened = co_await db.coOpen();
+                AVERIFY(opened);
+                AVERIFY(*opened);
+            };
+            openFirst();
+
+            auto opened = co_await db.coOpen();
+            AVERIFY(opened);
+            AVERIFY(*opened);
+            AVERIFY(db.isOpen());
+
+            co_return;
+        };
+        testDualCoOpen(finished);
+    }
+    loop.exec();
 }
 
 void TestSqlite::testPoolBeginCommit()
