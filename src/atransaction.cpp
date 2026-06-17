@@ -6,6 +6,7 @@
 #include "atransaction.h"
 
 #include "acoroexpected.h"
+#include "aresult.h"
 
 #include <QLoggingCategory>
 
@@ -75,29 +76,35 @@ ATransaction &ATransaction::operator=(const ATransaction &copy)
 AExpectedResult ATransaction::commit(QObject *receiver)
 {
     Q_ASSERT(d);
-    if (d->running) {
-        if (d.use_count() == 1) {
-            d->running = false;
-            return d->db.commit(receiver);
-        }
-    } else {
+    if (!d->running) {
         qWarning(ASQL_TRANSACTION, "Transaction not started");
+        AExpectedResult coro(receiver);
+        coro.m_data->deliverDirect(std::unexpected(QStringLiteral("Transaction not started")));
+        return coro;
     }
 
-    return {receiver};
+    if (d.use_count() > 1) {
+        AExpectedResult coro(receiver);
+        coro.m_data->deliverDirect(resultSuccess());
+        return coro;
+    }
+
+    d->running = false;
+    return d->db.commit(receiver);
 }
 
 AExpectedResult ATransaction::rollback(QObject *receiver)
 {
     Q_ASSERT(d);
-    if (d->running) {
-        d->running = false;
-        return d->db.rollback(receiver);
-    } else {
+    if (!d->running) {
         qWarning(ASQL_TRANSACTION, "Transaction not started");
+        AExpectedResult coro(receiver);
+        coro.m_data->deliverDirect(std::unexpected(QStringLiteral("Transaction not started")));
+        return coro;
     }
 
-    return {receiver};
+    d->running = false;
+    return d->db.rollback(receiver);
 }
 
 bool ATransaction::isActive() const

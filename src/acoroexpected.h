@@ -116,7 +116,7 @@ public:
         return true;
     }
 
-    std::expected<T, QString> await_resume() { return m_data->result; }
+    std::expected<T, QString> await_resume() { return std::move(m_data->result); }
 
     ACoroExpected(QObject *receiver)
         : m_receiver(receiver)
@@ -140,8 +140,11 @@ public:
 
     ~ACoroExpected()
     {
-        m_data->status = ACoroData<T>::Finished;
         QObject::disconnect(m_destroyConn);
+        if (!m_data || m_data.use_count() > 1) {
+            return;
+        }
+        m_data->status = ACoroData<T>::Finished;
     }
 
     [[nodiscard]] ACoroDataRef ref() const

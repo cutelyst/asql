@@ -28,6 +28,7 @@ private Q_SLOTS:
     void testQueries();
     void testPoolOpenFailure();
     void testCoOpenWhileConnecting();
+    void testTransactionSharedCommit();
     void testPoolBeginCommit();
     void testPoolBeginRollback();
     void testDatabaseBeginCommit();
@@ -352,6 +353,53 @@ void TestSqlite::testCoOpenWhileConnecting()
             co_return;
         };
         testDualCoOpen(finished);
+    }
+    loop.exec();
+}
+
+void TestSqlite::testTransactionSharedCommit()
+{
+    QEventLoop loop;
+    {
+        auto finished = std::make_shared<QObject>();
+        connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
+
+        auto testSharedCommit = [](std::shared_ptr<QObject> finished) -> ACoroTerminator {
+            auto _ = qScopeGuard([finished] {
+                qDebug() << "testTransactionSharedCommit exited" << finished.use_count();
+            });
+
+            auto db = co_await APool::database(nullptr, u"file"_s);
+            AVERIFY(db);
+
+            auto create =
+                co_await db->exec(u"CREATE TABLE IF NOT EXISTS shared_commit_test (id INTEGER)"_s);
+            AVERIFY(create);
+
+            auto t = co_await db->begin();
+            AVERIFY(t);
+            AVERIFY(t->isActive());
+
+            {
+                ATransaction copy = *t;
+                auto skipped      = co_await copy.commit();
+                AVERIFY(skipped);
+                AVERIFY(!skipped->hasError());
+                AVERIFY(t->isActive());
+            }
+
+            auto committed = co_await t->commit();
+            AVERIFY(committed);
+            AVERIFY(!committed->hasError());
+            AVERIFY(!t->isActive());
+
+            auto again = co_await t->commit();
+            AVERIFY(!again);
+            AVERIFY(!again.error().isEmpty());
+
+            co_await db->exec(u"DROP TABLE shared_commit_test"_s);
+        };
+        testSharedCommit(finished);
     }
     loop.exec();
 }

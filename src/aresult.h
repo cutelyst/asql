@@ -531,6 +531,7 @@ protected:
 };
 
 [[nodiscard]] ASQL_EXPORT AResult resultError(const QString &message);
+[[nodiscard]] ASQL_EXPORT AResult resultSuccess();
 
 #define AColumnIndex(result, columnName) \
     ([result]() Q_DECL_NOEXCEPT -> int { \
