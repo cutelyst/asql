@@ -5,7 +5,9 @@
 #pragma once
 
 #include <asql_export.h>
+#include <asqliterals.h>
 #include <chrono>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -329,20 +331,25 @@ public:
     [[nodiscard]] AExpectedResult exec(QStringView query, QObject *receiver = nullptr);
 
     /*!
-     * \brief exec excutes a \param query against this database connection,
-     * once done an AResult object will have the retrieved data if any, always
-     * check for AExpectedResult::error() to see if the query was successful.
+     * \brief exec executes a UTF-8 \p query string literal against this database connection.
      *
-     * Postgres and SQLite allows for multiple commands to be sent, in this case you are
-     * expected to co_await only once. Use \sa execMulti for such cases.
+     * The query is not copied. Pass a UTF-8 string literal such as \c u8"SELECT 1".
+     * \c QUtf8StringView and other non-literal views are not accepted; use the QStringView
+     * overload for dynamic SQL.
      *
-     * \note Since ASql might queue queries only use this method for strings that can outlive
-     * the query execution, such as string literals.
-     *
-     * \param query
+     * \param query UTF-8 string literal, e.g. \c u8"SELECT 1"
      * \param receiver that tracks the lifetime of this query
      */
-    [[nodiscard]] AExpectedResult exec(QUtf8StringView query, QObject *receiver = nullptr);
+    template <std::size_t N>
+    [[nodiscard]] AExpectedResult exec(const char8_t (&query)[N], QObject *receiver = nullptr);
+
+    /*!
+     * \brief exec executes a UTF-8 \p query string literal against this database connection.
+     *
+     * \note For dynamic SQL use the QStringView overload.
+     */
+    template <std::size_t N>
+    [[nodiscard]] AExpectedResult exec(const char (&query)[N], QObject *receiver = nullptr);
 
     /*!
      *
@@ -360,22 +367,22 @@ public:
         exec(QStringView query, const QVariantList &params, QObject *receiver = nullptr);
 
     /*!
+     * \brief exec executes a UTF-8 \p query string literal with bound \p params.
      *
-     * \brief exec excutes a \param query against this database connection,
-     * once done an AResult object will have the retrieved data if any, always
-     * check for AExpectedResult::error() to see if the query was successful.
-     *
-     * Postgres and SQLite allows for multiple commands to be sent, in this case you are
-     * expected to co_await only once. Use \sa execMulti for such cases.
-     *
-     * \note Since ASql might queue queries only use this method for strings that can outlive
-     * the query execution, such as string literals.
-     *
-     * \param query
-     * \param receiver that tracks the lifetime of this query
+     * \note For dynamic SQL use the QStringView overload.
      */
+    template <std::size_t N>
     [[nodiscard]] AExpectedResult
-        exec(QUtf8StringView query, const QVariantList &params, QObject *receiver = nullptr);
+        exec(const char8_t (&query)[N], const QVariantList &params, QObject *receiver = nullptr);
+
+    /*!
+     * \brief exec executes a UTF-8 \p query string literal with bound \p params.
+     *
+     * \note For dynamic SQL use the QStringView overload.
+     */
+    template <std::size_t N>
+    [[nodiscard]] AExpectedResult
+        exec(const char (&query)[N], const QVariantList &params, QObject *receiver = nullptr);
 
     /*!
      * \brief exec executes a prepared \param query against this database connection
@@ -423,23 +430,21 @@ public:
     [[nodiscard]] AExpectedMultiResult execMulti(QStringView query, QObject *receiver = nullptr);
 
     /*!
-     * \brief exec excutes a \param query against this database connection,
-     * once done an AResult object will have the retrieved data if any, always
-     * check for AExpectedResult::error() to see if the query was successful.
+     * \brief execMulti executes a UTF-8 \p query string literal.
      *
-     * Postgres allows for multiple commands to be sent, in this case you should co_await
-     * for more results, check for AResult::lastResultSet() before that,
-     * if one of the commands fails the subsequently ones will not be delivered, which
-     * is why checking for AResult::lastResultSet() is important. This feature is
-     * not supported by Postgres on the method that accepts params.
-     *
-     * \note Since ASql might queue queries only use this method for strings that can outlive
-     * the query execution, such as string literals.
-     *
-     * \param query
-     * \param receiver that tracks the lifetime of this query
+     * \note For dynamic SQL use the QStringView overload.
      */
-    [[nodiscard]] AExpectedMultiResult execMulti(QUtf8StringView query,
+    template <std::size_t N>
+    [[nodiscard]] AExpectedMultiResult execMulti(const char8_t (&query)[N],
+                                                 QObject *receiver = nullptr);
+
+    /*!
+     * \brief execMulti executes a UTF-8 \p query string literal.
+     *
+     * \note For dynamic SQL use the QStringView overload.
+     */
+    template <std::size_t N>
+    [[nodiscard]] AExpectedMultiResult execMulti(const char (&query)[N],
                                                  QObject *receiver = nullptr);
 
     /**
@@ -531,6 +536,13 @@ public:
 protected:
     friend class APool;
     std::shared_ptr<ADriver> d;
+
+private:
+    [[nodiscard]] AExpectedResult execUtf8(QUtf8StringView query, QObject *receiver = nullptr);
+    [[nodiscard]] AExpectedResult
+        execUtf8(QUtf8StringView query, const QVariantList &params, QObject *receiver = nullptr);
+    [[nodiscard]] AExpectedMultiResult execMultiUtf8(QUtf8StringView query,
+                                                     QObject *receiver = nullptr);
 };
 
 /*!

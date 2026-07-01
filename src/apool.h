@@ -141,7 +141,18 @@ public:
     [[nodiscard]] static AExpectedResult
         exec(QStringView query, QObject *receiver = nullptr, QStringView poolName = defaultPool);
 
-    [[nodiscard]] static AExpectedResult exec(QUtf8StringView query,
+    /*!
+     * \brief exec executes a UTF-8 \p query string literal on a pooled connection.
+     *
+     * \note For dynamic SQL use the QStringView overload.
+     */
+    template <std::size_t N>
+    [[nodiscard]] static AExpectedResult exec(const char8_t (&query)[N],
+                                              QObject *receiver    = nullptr,
+                                              QStringView poolName = defaultPool);
+
+    template <std::size_t N>
+    [[nodiscard]] static AExpectedResult exec(const char (&query)[N],
                                               QObject *receiver    = nullptr,
                                               QStringView poolName = defaultPool);
 
@@ -149,7 +160,18 @@ public:
                                                         QObject *receiver    = nullptr,
                                                         QStringView poolName = defaultPool);
 
-    [[nodiscard]] static AExpectedMultiResult execMulti(QUtf8StringView query,
+    /*!
+     * \brief execMulti executes a UTF-8 \p query string literal on a pooled connection.
+     *
+     * \note For dynamic SQL use the QStringView overload.
+     */
+    template <std::size_t N>
+    [[nodiscard]] static AExpectedMultiResult execMulti(const char8_t (&query)[N],
+                                                        QObject *receiver    = nullptr,
+                                                        QStringView poolName = defaultPool);
+
+    template <std::size_t N>
+    [[nodiscard]] static AExpectedMultiResult execMulti(const char (&query)[N],
                                                         QObject *receiver    = nullptr,
                                                         QStringView poolName = defaultPool);
 
@@ -162,7 +184,19 @@ public:
                                               QObject *receiver    = nullptr,
                                               QStringView poolName = defaultPool);
 
-    [[nodiscard]] static AExpectedResult exec(QUtf8StringView query,
+    /*!
+     * \brief exec executes a UTF-8 \p query string literal with bound \p params.
+     *
+     * \note For dynamic SQL use the QStringView overload.
+     */
+    template <std::size_t N>
+    [[nodiscard]] static AExpectedResult exec(const char8_t (&query)[N],
+                                              const QVariantList &params,
+                                              QObject *receiver    = nullptr,
+                                              QStringView poolName = defaultPool);
+
+    template <std::size_t N>
+    [[nodiscard]] static AExpectedResult exec(const char (&query)[N],
                                               const QVariantList &params,
                                               QObject *receiver    = nullptr,
                                               QStringView poolName = defaultPool);
@@ -176,8 +210,22 @@ public:
                                                     QStringView poolName = defaultPool);
 
 private:
+    [[nodiscard]] static AExpectedResult execUtf8(QUtf8StringView query,
+                                                  QObject *receiver    = nullptr,
+                                                  QStringView poolName = defaultPool);
+    [[nodiscard]] static AExpectedMultiResult execMultiUtf8(QUtf8StringView query,
+                                                            QObject *receiver    = nullptr,
+                                                            QStringView poolName = defaultPool);
+    [[nodiscard]] static AExpectedResult execUtf8(QUtf8StringView query,
+                                                  const QVariantList &params,
+                                                  QObject *receiver    = nullptr,
+                                                  QStringView poolName = defaultPool);
     static void databaseCallback(QObject *receiver, ADatabaseFn cb, QStringView poolName);
     inline static void pushDatabaseBack(QStringView connectionName, ADriver *driver);
 };
 
 } // namespace ASql
+
+#include "apool_utf8.inl.h"
+
+#include <acoroexpected.h>
