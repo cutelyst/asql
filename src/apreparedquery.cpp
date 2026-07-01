@@ -59,3 +59,8 @@ int APreparedQuery::identification() const
 {
     return m_identification;
 }
+
+bool APreparedQuery::isValid() const
+{
+    return m_identification != 0 && !m_query.isEmpty();
+}
