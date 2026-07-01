@@ -8,6 +8,7 @@
 #include "acoroexpected.h"
 #include "adriver.h"
 #include "adriverfactory.h"
+#include "apreparedquery.h"
 #include "atransaction.h"
 
 #include <QLoggingCategory>
@@ -215,6 +216,10 @@ AExpectedResult ADatabase::exec(const APreparedQuery &query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
+    if (!query.isValid()) {
+        coro.m_data->deliverDirect(std::unexpected(QStringLiteral("Invalid prepared query")));
+        return coro;
+    }
     d->exec(d, query, QVariantList(), receiver, coro.ref());
     return coro;
 }
@@ -224,6 +229,10 @@ AExpectedResult
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
+    if (!query.isValid()) {
+        coro.m_data->deliverDirect(std::unexpected(QStringLiteral("Invalid prepared query")));
+        return coro;
+    }
     d->exec(d, query, params, receiver, coro.ref());
     return coro;
 }

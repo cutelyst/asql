@@ -71,9 +71,14 @@ public:
     QByteArray query() const;
     int identification() const;
 
+    /*!
+     * \brief isValid returns true if this prepared query has SQL and an identifier
+     */
+    [[nodiscard]] bool isValid() const;
+
 private:
     QByteArray m_query;
-    int m_identification;
+    int m_identification = 0;
 };
 
 } // namespace ASql
