@@ -424,13 +424,10 @@ AMigrationsPrivate::MigQuery AMigrationsPrivate::nextQuery(int versionFrom, int 
             ++it;
         }
     } else {
-        // down
-        auto it = down.constBegin();
-        while (it != down.constEnd()) {
-            if (it.key() > versionTo && it.key() <= versionFrom) {
-                ret = {it.value().query, it.key() - 1, it.value().noTransaction};
-            }
-            ++it;
+        // down — one step from versionFrom (not the highest key in range)
+        const auto it = down.constFind(versionFrom);
+        if (it != down.constEnd() && versionFrom > versionTo) {
+            ret = {it.value().query, it.key() - 1, it.value().noTransaction};
         }
     }
 
