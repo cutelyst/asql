@@ -117,6 +117,39 @@ inline QMetaType qDecodePSQLType(int t)
     return QMetaType(type);
 }
 
+QByteArray decodePgByteaText(const char *val, int length)
+{
+    if (length >= 2 && val[0] == '\\' && val[1] == 'x') {
+        return QByteArray::fromHex(QByteArray(val + 2, length - 2));
+    }
+
+    size_t outLength    = 0;
+    unsigned char *data = PQunescapeBytea(reinterpret_cast<const unsigned char *>(val), &outLength);
+    QByteArray decoded(reinterpret_cast<const char *>(data), int(outLength));
+    PQfreemem(data);
+    return decoded;
+}
+
+QByteArray pgColumnBytes(PGresult *result, int row, int column)
+{
+    if (PQgetisnull(result, row, column) == 1) {
+        return {};
+    }
+
+    const char *val  = PQgetvalue(result, row, column);
+    const int length = PQgetlength(result, row, column);
+
+    if (PQftype(result, column) != QBYTEAOID) {
+        return QByteArray(val, length);
+    }
+
+    if (PQfformat(result, column) == 1) {
+        return QByteArray(val, length);
+    }
+
+    return decodePgByteaText(val, length);
+}
+
 QString connectionStatus(ConnStatusType type)
 {
     switch (type) {
@@ -1199,13 +1232,7 @@ QVariant AResultPg::value(int row, int column) const
 #endif
     }
     case QMetaType::QByteArray:
-    {
-        size_t len;
-        unsigned char *data = PQunescapeBytea((const unsigned char *) val, &len);
-        QByteArray ba(reinterpret_cast<const char *>(data), int(len));
-        PQfreemem(data);
-        return QVariant(ba);
-    }
+        return decodePgByteaText(val, PQgetlength(m_result, row, column));
     case QMetaType::QJsonValue:
     {
         const auto doc = QJsonDocument::fromJson(val);
@@ -1390,12 +1417,7 @@ QCborValue AResultPg::toCborValue(int row, int column) const
 QByteArray AResultPg::toByteArray(int row, int column) const
 {
     Q_ASSERT_X(column < PQnfields(m_result), "toByteArray", "column out of range");
-    const char *val = PQgetvalue(m_result, row, column);
-    size_t len;
-    unsigned char *data = PQunescapeBytea((const unsigned char *) val, &len);
-    QByteArray ba(reinterpret_cast<const char *>(data), int(len));
-    PQfreemem(data);
-    return ba;
+    return pgColumnBytes(m_result, row, column);
 }
 
 #include "moc_adriverpg.cpp"
