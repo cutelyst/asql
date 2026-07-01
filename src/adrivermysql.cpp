@@ -718,9 +718,13 @@ ADriverMysql::ADriverMysql(const QString &connInfo)
 
     connect(&m_worker, &AMysqlThread::queryReady, this, [this] {
         Q_ASSERT(this);
-        QMutexLocker _(&m_worker.m_promisesMutex);
-        while (!m_worker.m_promisesReady.isEmpty()) {
-            MysqlQueryPromise promise = m_worker.m_promisesReady.dequeue();
+        QQueue<MysqlQueryPromise> ready;
+        {
+            QMutexLocker _(&m_worker.m_promisesMutex);
+            ready.swap(m_worker.m_promisesReady);
+        }
+        while (!ready.isEmpty()) {
+            MysqlQueryPromise promise = ready.dequeue();
             if (!promise.receiver.has_value() || !promise.receiver->isNull()) {
                 if (promise.cb) {
                     AResult result{promise.result};

@@ -30,6 +30,7 @@ private Q_SLOTS:
     void testPoolOpenFailure();
     void testCoOpenWhileConnecting();
     void testTransactionSharedCommit();
+    void testTransactionRaiiRollbackBeforePoolReturn();
     void testPoolBeginCommit();
     void testPoolBeginRollback();
     void testDatabaseBeginCommit();
@@ -435,6 +436,49 @@ void TestSqlite::testTransactionSharedCommit()
             co_await db->exec(u"DROP TABLE shared_commit_test"_s);
         };
         testSharedCommit(finished);
+    }
+    loop.exec();
+}
+
+void TestSqlite::testTransactionRaiiRollbackBeforePoolReturn()
+{
+    QEventLoop loop;
+    {
+        auto finished = std::make_shared<QObject>();
+        connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
+
+        auto testRaiiRollback = [](std::shared_ptr<QObject> finished) -> ACoroTerminator {
+            auto _ = qScopeGuard([finished] {
+                qDebug() << "testTransactionRaiiRollbackBeforePoolReturn exited"
+                         << finished.use_count();
+            });
+
+            auto setupDb = co_await APool::database(nullptr, u"file"_s);
+            AVERIFY(setupDb);
+            co_await setupDb->exec(u"CREATE TABLE IF NOT EXISTS raii_rollback_test (id INTEGER)"_s);
+            co_await setupDb->exec(u"DELETE FROM raii_rollback_test"_s);
+
+            {
+                auto db = co_await APool::database(nullptr, u"file"_s);
+                AVERIFY(db);
+                {
+                    auto t = co_await db->begin();
+                    AVERIFY(t);
+                    auto insert =
+                        co_await t->database().exec(u"INSERT INTO raii_rollback_test VALUES (7)"_s);
+                    AVERIFY(insert);
+                }
+            }
+
+            auto verifyDb = co_await APool::database(nullptr, u"file"_s);
+            AVERIFY(verifyDb);
+            auto select = co_await verifyDb->exec(u"SELECT COUNT(*) FROM raii_rollback_test"_s);
+            AVERIFY(select);
+            ACOMPARE_EQ((*select)[0][0].toInt(), 0);
+
+            co_await verifyDb->exec(u"DROP TABLE raii_rollback_test"_s);
+        };
+        testRaiiRollback(finished);
     }
     loop.exec();
 }
