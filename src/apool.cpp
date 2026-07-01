@@ -282,7 +282,7 @@ AExpectedResult APool::exec(QStringView query, QObject *receiver, QStringView po
     return coro;
 }
 
-AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringView poolName)
+AExpectedResult APool::execUtf8(QUtf8StringView query, QObject *receiver, QStringView poolName)
 {
     AExpectedResult coro(receiver);
     auto ref = coro.ref();
@@ -290,7 +290,7 @@ AExpectedResult APool::exec(QUtf8StringView query, QObject *receiver, QStringVie
     [](ACoroDataRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
         auto db = co_await database(receiver, poolName);
         if (db) {
-            auto result = co_await db->exec(query, receiver);
+            auto result = co_await db->execUtf8(query, receiver);
             if (result) {
                 ref.deliverResult(*result);
             } else {
@@ -340,7 +340,7 @@ AExpectedMultiResult APool::execMulti(QStringView query, QObject *receiver, QStr
 }
 
 AExpectedMultiResult
-    APool::execMulti(QUtf8StringView query, QObject *receiver, QStringView poolName)
+    APool::execMultiUtf8(QUtf8StringView query, QObject *receiver, QStringView poolName)
 {
     AExpectedMultiResult coro(receiver);
     auto ref = coro.ref();
@@ -348,7 +348,7 @@ AExpectedMultiResult
     [](ACoroDataRef ref, auto query, QObject *receiver, QStringView poolName) -> ACoroTerminator {
         auto db = co_await database(receiver, poolName);
         if (db) {
-            auto awaiter = db->execMulti(query, receiver);
+            auto awaiter = db->execMultiUtf8(query, receiver);
 
             auto result = co_await awaiter;
             while (result) {
@@ -427,10 +427,10 @@ AExpectedResult APool::exec(QStringView query,
     return coro;
 }
 
-AExpectedResult APool::exec(QUtf8StringView query,
-                            const QVariantList &params,
-                            QObject *receiver,
-                            QStringView poolName)
+AExpectedResult APool::execUtf8(QUtf8StringView query,
+                                const QVariantList &params,
+                                QObject *receiver,
+                                QStringView poolName)
 {
     AExpectedResult coro(receiver);
     auto ref = coro.ref();
@@ -439,7 +439,7 @@ AExpectedResult APool::exec(QUtf8StringView query,
         -> ACoroTerminator {
         auto db = co_await database(receiver, poolName);
         if (db) {
-            auto result = co_await db->exec(query, params, receiver);
+            auto result = co_await db->execUtf8(query, params, receiver);
             if (result) {
                 ref.deliverResult(*result);
             } else {

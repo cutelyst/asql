@@ -186,7 +186,7 @@ AExpectedMultiResult ADatabase::execMulti(QStringView query, QObject *receiver)
     return coro;
 }
 
-AExpectedMultiResult ADatabase::execMulti(QUtf8StringView query, QObject *receiver)
+AExpectedMultiResult ADatabase::execMultiUtf8(QUtf8StringView query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedMultiResult coro(receiver);
@@ -194,7 +194,7 @@ AExpectedMultiResult ADatabase::execMulti(QUtf8StringView query, QObject *receiv
     return coro;
 }
 
-AExpectedResult ADatabase::exec(QUtf8StringView query, QObject *receiver)
+AExpectedResult ADatabase::execUtf8(QUtf8StringView query, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);
@@ -203,7 +203,7 @@ AExpectedResult ADatabase::exec(QUtf8StringView query, QObject *receiver)
 }
 
 AExpectedResult
-    ADatabase::exec(QUtf8StringView query, const QVariantList &params, QObject *receiver)
+    ADatabase::execUtf8(QUtf8StringView query, const QVariantList &params, QObject *receiver)
 {
     Q_ASSERT(d);
     AExpectedResult coro(receiver);

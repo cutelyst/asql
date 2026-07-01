@@ -508,3 +508,5 @@ private:
 };
 
 } // namespace ASql
+
+#include "adatabase_utf8.inl.h"

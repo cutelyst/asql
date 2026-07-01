@@ -26,6 +26,7 @@ public:
 
 private Q_SLOTS:
     void testQueries();
+    void testUtf8LiteralExec();
     void testPoolOpenFailure();
     void testCoOpenWhileConnecting();
     void testTransactionSharedCommit();
@@ -293,6 +294,40 @@ void TestSqlite::testQueries()
         cancelatorYielded(finished);
     }
 
+    loop.exec();
+}
+
+void TestSqlite::testUtf8LiteralExec()
+{
+    QEventLoop loop;
+    {
+        auto finished = std::make_shared<QObject>();
+        connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
+
+        auto testLiteral = [](std::shared_ptr<QObject> finished) -> ACoroTerminator {
+            auto _ = qScopeGuard(
+                [finished] { qDebug() << "testUtf8LiteralExec exited" << finished.use_count(); });
+
+            auto db = co_await APool::database(nullptr, u"file"_s);
+            AVERIFY(db);
+
+            auto create =
+                co_await db->exec(u"CREATE TABLE IF NOT EXISTS utf8literal_test (name TEXT)"_s);
+            AVERIFY(create);
+
+            auto insert   = db->exec(u8"INSERT INTO utf8literal_test (name) VALUES ('literal')");
+            auto inserted = co_await insert;
+            AVERIFY(inserted);
+            ACOMPARE_EQ(inserted->numRowsAffected(), qint64(1));
+
+            auto select = co_await db->exec(u"SELECT name FROM utf8literal_test"_s);
+            AVERIFY(select);
+            ACOMPARE_EQ((*select)[0][0].toString(), u"literal"_s);
+
+            co_await db->exec(u"DROP TABLE utf8literal_test"_s);
+        };
+        testLiteral(finished);
+    }
     loop.exec();
 }
 

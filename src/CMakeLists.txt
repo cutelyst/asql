@@ -20,6 +20,7 @@ set(asql_SRC
 set(asql_HEADERS
     adatabase.h
     apreparedquery.h
+    asqliterals.h
     apool.h
     atransaction.h
     acoroexpected.h
