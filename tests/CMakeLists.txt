@@ -69,8 +69,21 @@ function(asql_prepared_test _testname _driver)
     endif()
 endfunction()
 
+function(asql_migrations_test _testname _driver)
+    add_executable(${_testname} ${_testname}.cpp)
+    add_test(NAME ${_testname} COMMAND ${_testname})
+    target_link_libraries(${_testname} PUBLIC ${_driver} ASql::Migrations coverage_test)
+    if(WIN32)
+        set_tests_properties(${_testname} PROPERTIES
+            ENVIRONMENT_MODIFICATION
+                "PATH=path_list_prepend:$<TARGET_FILE_DIR:${_testname}>")
+    endif()
+endfunction()
+
 if (ASQL_DRIVER_SQLITE)
     asql_test(sqlite_tst ASql::Sqlite)
+    asql_test(cache_tst ASql::Sqlite)
+    asql_migrations_test(migrations_tst ASql::Sqlite)
     asql_types_test(tst_TypesSqlite ASql::Sqlite)
     asql_prepared_test(tst_PreparedSqlite ASql::Sqlite)
 endif()

@@ -35,6 +35,33 @@ struct ACacheReceiverCb {
     }
 };
 
+namespace {
+
+void scheduleResult(QObject *context, ACacheReceiverCb receiver, AResult result)
+{
+    if (!receiver.cb) {
+        return;
+    }
+
+    QMetaObject::invokeMethod(
+        context, [receiver = std::move(receiver), result = std::move(result)]() mutable {
+        receiver.emitResult(std::move(result));
+    }, Qt::QueuedConnection);
+}
+
+void scheduleResult(QObject *context, AResultFn cb, AResult result)
+{
+    if (!cb) {
+        return;
+    }
+
+    QMetaObject::invokeMethod(context, [cb = std::move(cb), result = std::move(result)]() mutable {
+        cb(result);
+    }, Qt::QueuedConnection);
+}
+
+} // namespace
+
 struct ACacheValue {
     QVariantList args;
     std::vector<ACacheReceiverCb> receivers;
@@ -106,9 +133,7 @@ bool ACachePrivate::searchOrQueue(const QString &query,
                 }
 
                 qDebug(ASQL_CACHE) << "Cached query ready" << query.left(15) << args;
-                if (cb) {
-                    cb(value.result);
-                }
+                scheduleResult(q_ptr, cb, value.result);
             } else {
                 qDebug(ASQL_CACHE) << "Queuing request" << query.left(15) << args;
                 // queue another request
@@ -135,14 +160,14 @@ void ACachePrivate::failRequest(const QString &query,
             std::vector<ACacheReceiverCb> receivers = std::move(it.value().receivers);
             cache.erase(it);
             for (const ACacheReceiverCb &receiverObj : receivers) {
-                receiverObj.emitResult(errorResult);
+                scheduleResult(q_ptr, receiverObj, errorResult);
             }
             return;
         }
         ++it;
     }
 
-    cacheReceiver.emitResult(errorResult);
+    scheduleResult(q_ptr, cacheReceiver, errorResult);
 }
 
 ACoroTerminator
@@ -209,7 +234,7 @@ ACoroTerminator
             for (const ACacheReceiverCb &receiverObj : receivers) {
                 qDebug(ASQL_CACHE) << "Dispatching to receiver" << receiverObj.checkReceiver
                                    << query.left(15) << args;
-                receiverObj.emitResult(*result);
+                scheduleResult(q_ptr, receiverObj, *result);
             }
             found = true;
 
@@ -220,7 +245,7 @@ ACoroTerminator
 
     if (!found) {
         qWarning(ASQL_CACHE) << "Queued request not found" << query.left(15) << args;
-        cacheReceiver.emitResult(resultError(u"Queued cache request not found"_s));
+        scheduleResult(q_ptr, cacheReceiver, resultError(u"Queued cache request not found"_s));
     }
 }
 
