@@ -24,6 +24,7 @@ public:
     virtual ~ADriver() = default;
 
     QString connectionInfo() const;
+    QString redactedConnectionInfo() const;
     virtual QString driverName() const;
 
     virtual bool isValid() const;

@@ -4,6 +4,8 @@
  */
 #include "ADriverOdbc.hpp"
 
+#include "asql_connection_util.h"
+
 #ifdef HAVE_MSODBCSQL_H
 #    include <msodbcsql.h>
 #endif
@@ -16,6 +18,7 @@
 #include <QJsonValue>
 #include <QLoggingCategory>
 #include <QMutexLocker>
+#include <QRegularExpression>
 #include <QTimeZone>
 #include <QUuid>
 
@@ -130,6 +133,28 @@ void AOdbcThread::open()
         m_env = SQL_NULL_HENV;
         Q_EMIT openned(false, error);
         return;
+    }
+
+    static const QRegularExpression loginTimeoutRe(
+        u"(?i)(?:^|;)\\s*LOGIN_TIMEOUT\\s*=\\s*(\\d+)"_s);
+    const QRegularExpressionMatch loginTimeoutMatch = loginTimeoutRe.match(dsn);
+    if (loginTimeoutMatch.hasMatch()) {
+        const SQLUINTEGER loginTimeout =
+            static_cast<SQLUINTEGER>(loginTimeoutMatch.captured(1).toUInt());
+        ret = SQLSetConnectAttr(m_dbc,
+                                SQL_ATTR_LOGIN_TIMEOUT,
+                                reinterpret_cast<SQLPOINTER>(static_cast<uintptr_t>(loginTimeout)),
+                                0);
+        if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
+            const QString error =
+                u"Failed to set ODBC login timeout: "_s + odbcError(SQL_HANDLE_DBC, m_dbc);
+            SQLFreeHandle(SQL_HANDLE_DBC, m_dbc);
+            SQLFreeHandle(SQL_HANDLE_ENV, m_env);
+            m_dbc = SQL_NULL_HDBC;
+            m_env = SQL_NULL_HENV;
+            Q_EMIT openned(false, error);
+            return;
+        }
     }
 
     // Connect using the connection string.
@@ -826,7 +851,7 @@ ADriverOdbc::ADriverOdbc(const QString &connInfo)
     : ADriver{connInfo}
     , m_worker{connInfo}
 {
-    m_thread.setObjectName(connInfo);
+    m_thread.setObjectName(connectionThreadName(connInfo));
     m_worker.moveToThread(&m_thread);
 
     connect(&m_worker, &AOdbcThread::queryReady, this, [this] {

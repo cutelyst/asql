@@ -7,6 +7,7 @@
 
 #include "acoroexpected.h"
 #include "aresult.h"
+#include "asql_connection_util.h"
 
 #include <type_traits>
 #include <vector>
@@ -498,6 +499,43 @@ void AMysqlThread::open()
     }
 
     QUrl url(m_connInfo);
+    QUrlQuery query(url);
+
+    unsigned int connectTimeout = query.queryItemValue(u"connect_timeout"_s).toUInt();
+    if (connectTimeout > 0) {
+        mysql_options(m_mysql, MYSQL_OPT_CONNECT_TIMEOUT, &connectTimeout);
+    }
+
+    unsigned int readTimeout = query.queryItemValue(u"read_timeout"_s).toUInt();
+    if (readTimeout > 0) {
+        mysql_options(m_mysql, MYSQL_OPT_READ_TIMEOUT, &readTimeout);
+    }
+
+    unsigned long clientFlags = 0;
+    const QString scheme      = url.scheme().toLower();
+    if (scheme == u"mysqls"_s || scheme == u"mariadbs"_s) {
+        clientFlags |= CLIENT_SSL;
+    }
+
+    const QString sslMode = query.queryItemValue(u"ssl-mode"_s).toLower();
+    if (sslMode == u"required"_s || sslMode == u"verify_ca"_s || sslMode == u"verify_identity"_s) {
+        clientFlags |= CLIENT_SSL;
+    }
+
+    const QByteArray sslCa     = query.queryItemValue(u"ssl-ca"_s).toUtf8();
+    const QByteArray sslCert   = query.queryItemValue(u"ssl-cert"_s).toUtf8();
+    const QByteArray sslKey    = query.queryItemValue(u"ssl-key"_s).toUtf8();
+    const QByteArray sslCipher = query.queryItemValue(u"ssl-cipher"_s).toUtf8();
+    if ((clientFlags & CLIENT_SSL) || !sslCa.isEmpty() || !sslCert.isEmpty() || !sslKey.isEmpty() ||
+        !sslCipher.isEmpty()) {
+        mysql_ssl_set(m_mysql,
+                      sslCa.isEmpty() ? nullptr : sslCa.constData(),
+                      sslCert.isEmpty() ? nullptr : sslCert.constData(),
+                      sslKey.isEmpty() ? nullptr : sslKey.constData(),
+                      nullptr,
+                      sslCipher.isEmpty() ? nullptr : sslCipher.constData());
+    }
+
     const QByteArray host     = url.host().toUtf8();
     const QByteArray user     = url.userName().toUtf8();
     const QByteArray password = url.password().toUtf8();
@@ -511,8 +549,7 @@ void AMysqlThread::open()
                                      database.isEmpty() ? nullptr : database.constData(),
                                      port,
                                      nullptr, // unix socket
-                                     0        // client flags
-    );
+                                     clientFlags);
 
     if (!conn) {
         const QString error = QString::fromUtf8(mysql_error(m_mysql));
@@ -713,7 +750,7 @@ ADriverMysql::ADriverMysql(const QString &connInfo)
     : ADriver(connInfo)
     , m_worker(connInfo)
 {
-    m_thread.setObjectName(connInfo);
+    m_thread.setObjectName(connectionThreadName(connInfo));
     m_worker.moveToThread(&m_thread);
 
     connect(&m_worker, &AMysqlThread::queryReady, this, [this] {

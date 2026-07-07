@@ -166,9 +166,9 @@ public:
      * names and "rows" with the number of rows.
      *
      * This is the most compact representation of the data set, which is also faster
-     * to parse and faster to access the data since it's contiguos.
+     * to parse and faster to access the data since it's contiguous.
      *
-     * The formula to retrive some row:column data is data[row * NUM_COLUMNS + column].
+     * The formula to retrieve some row:column data is data[row * NUM_COLUMNS + column].
      *
      * \return { "columns": ["col1", "col2"], "data": [ 1, "foo", 2, "bar" ], "rows": 2 }
      */
@@ -181,13 +181,13 @@ public:
     [[nodiscard]] QCborArray toCborArrayMap() const;
 
     /*!
-     * \brief toCborMapArray returns returns all rows as Cbor map with columns as keys and rows as
+     * \brief toCborMapArray returns all rows as Cbor map with columns as keys and rows as
      * arrays \return
      */
     [[nodiscard]] QCborMap toCborMapArray() const;
 
     /*!
-     * \brief toCborMapIndexed returns returns all rows as Cbor map with columns as keys and rows as
+     * \brief toCborMapIndexed returns all rows as Cbor map with columns as keys and rows as
      * arrays, indexed by params \return
      */
     [[nodiscard]] QCborMap toCborMapIndexed(QStringView columnKey = u"columns",
@@ -198,9 +198,9 @@ public:
      * names and "rows" with the number of rows.
      *
      * This is the most compact representation of the data set, which is also faster
-     * to parse and faster to access the data since it's contiguos.
+     * to parse and faster to access the data since it's contiguous.
      *
-     * The formula to retrive some row:column data is data[row * NUM_COLUMNS + column].
+     * The formula to retrieve some row:column data is data[row * NUM_COLUMNS + column].
      *
      * \return { "columns": ["col1", "col2"], "data": [ 1, "foo", 2, "bar" ], "rows": 2 }
      */

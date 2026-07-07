@@ -6,6 +6,7 @@
 #include "adriver.h"
 
 #include "aresult.h"
+#include "asql_connection_util.h"
 
 #include <QDate>
 #include <QJsonValue>
@@ -58,6 +59,11 @@ ADriver::ADriver(const QString &connectionInfo)
 QString ADriver::connectionInfo() const
 {
     return m_info;
+}
+
+QString ADriver::redactedConnectionInfo() const
+{
+    return redactConnectionInfo(m_info);
 }
 
 QString ADriver::driverName() const

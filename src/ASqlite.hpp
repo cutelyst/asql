@@ -17,7 +17,7 @@ class ASQL_SQLITE_EXPORT ASqlite : public ADriverFactory
 {
 public:
     /*!
-     * \brief ASqlite contructs a driver factory with the connection info
+     * \brief ASqlite constructs a driver factory with the connection info
      *
      * This class allows for creating Sqlite driver using the connection info.
      *

@@ -201,22 +201,22 @@ public:
     using StateChangedFn = std::function<void(ADatabase::State state, const QString &status)>;
 
     /*!
-     * \brief ADatabase contructs an invalid database object
+     * \brief ADatabase constructs an invalid database object
      */
     ADatabase();
 
     /*!
-     * \brief ADatabase contructs an database object with the supplied driver
+     * \brief ADatabase constructs a database object with the supplied driver
      */
     ADatabase(std::shared_ptr<ADriver> driver);
 
     /*!
-     * \brief ADatabase contructs an database object with the supplied driver factory
+     * \brief ADatabase constructs a database object with the supplied driver factory
      */
     ADatabase(const std::shared_ptr<ADriverFactory> &factory);
 
     /*!
-     * \brief ADatabase contructs an database object from another database object
+     * \brief ADatabase constructs a database object from another database object
      */
     ADatabase(const ADatabase &other);
 
@@ -241,9 +241,7 @@ public:
     [[nodiscard]] bool isValid() const;
 
     /*!
-     * \brief isValid checks if this is a valid connection, invalid connections
-     * are the ones created with invalid drivers, or using the empty constructor.
-     * \return true if valid
+     * \brief driverName returns the driver identifier (for example \c QPSQL or \c QSQLITE).
      */
     [[nodiscard]] QString driverName() const;
 
@@ -318,9 +316,9 @@ public:
     [[nodiscard]] AExpectedResult rollback(QObject *receiver = nullptr);
 
     /*!
-     * \brief exec excutes a \param query against this database connection,
-     * once done an AResult object will have the retrieved data if any, always
-     * check for AExpectedResult::error() to see if the query was successful.
+     * \brief exec executes a \param query against this database connection.
+     * co_await the returned awaitable; on failure the result is \c std::unexpected with an
+     * error string.
      *
      * Postgres and SQLite allows for multiple commands to be sent, in this case you are
      * expected to co_await only once. Use \sa execMulti for such cases.
@@ -353,9 +351,9 @@ public:
 
     /*!
      *
-     * \brief exec excutes a \param query against this database connection,
-     * once done an AResult object will have the retrieved data if any, always
-     * check for AExpectedResult::error() to see if the query was successful.
+     * \brief exec executes a \param query against this database connection.
+     * co_await the returned awaitable; on failure the result is \c std::unexpected with an
+     * error string.
      *
      * Postgres and SQLite allows for multiple commands to be sent, in this case you are
      * expected to co_await only once. Use \sa execMulti for such cases.
@@ -414,9 +412,9 @@ public:
         exec(const APreparedQuery &query, const QVariantList &params, QObject *receiver = nullptr);
 
     /*!
-     * \brief exec excutes a \param query against this database connection,
-     * once done an AResult object will have the retrieved data if any, always
-     * check for AExpectedResult::error() to see if the query was successful.
+     * \brief exec executes a \param query against this database connection.
+     * co_await the returned awaitable; on failure the result is \c std::unexpected with an
+     * error string.
      *
      * Postgres allows for multiple commands to be sent, in this case you should co_await
      * for more results, check for AResult::lastResultSet() before that,
@@ -466,7 +464,7 @@ public:
     bool enterPipelineMode(std::chrono::milliseconds timeout = std::chrono::milliseconds{0});
 
     /**
-     * @brief exitPipelineModewill disables the pipeline mode on the driver, it's queue must be
+     * @brief exitPipelineMode disables the pipeline mode on the driver, its queue must be
      * empty and the connection must be open
      * @return
      */

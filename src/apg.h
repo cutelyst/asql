@@ -17,7 +17,7 @@ class ASQL_PG_EXPORT APg : public ADriverFactory
 {
 public:
     /*!
-     * \brief APg contructs a driver factory with the connection info
+     * \brief APg constructs a driver factory with the connection info
      *
      * This class allows for creating Postgres driver using the connection info.
      *
@@ -26,6 +26,7 @@ public:
      * * Username and database "postgresql://username@/db2"
      * * Username, host, database and options
      * "postgres://username@example.com/db3?target_session_attrs=read-write"
+     * * Optional: \c connect_timeout (seconds, libpq URI parameter)
      */
     APg(const QString &connectionInfo);
     ~APg();
