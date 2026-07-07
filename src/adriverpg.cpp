@@ -7,6 +7,7 @@
 
 #include "acoroexpected.h"
 #include "aresult.h"
+#include "asql_connection_util.h"
 
 #include <libpq-fe.h>
 
@@ -216,7 +217,7 @@ void ADriverPg::deliverOpenWaiters(bool isOpen, const QString &error)
 
 void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, AOpenFn cb)
 {
-    qDebug(ASQL_PG) << "Open" << connectionInfo();
+    qDebug(ASQL_PG) << "Open" << redactedConnectionInfo();
 
     if (m_state == ADatabase::State::Connected) {
         if (cb) {

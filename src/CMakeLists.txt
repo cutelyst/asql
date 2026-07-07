@@ -63,7 +63,7 @@ target_include_directories(ASqlQt${QT_VERSION_MAJOR} PUBLIC
 set_target_properties(ASqlQt${QT_VERSION_MAJOR} PROPERTIES
     EXPORT_NAME Core
     VERSION ${PROJECT_VERSION}
-    SOVERSION 0
+    SOVERSION 1
 )
 
 target_link_libraries(ASqlQt${QT_VERSION_MAJOR}
@@ -130,7 +130,7 @@ target_include_directories(ASqlQt${QT_VERSION_MAJOR}Migrations PUBLIC
 set_target_properties(ASqlQt${QT_VERSION_MAJOR}Migrations PROPERTIES
     EXPORT_NAME Migrations
     VERSION ${PROJECT_VERSION}
-    SOVERSION 0
+    SOVERSION 1
 )
 
 target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Migrations
@@ -193,7 +193,7 @@ if (ASQL_DRIVER_POSTGRES)
     set_target_properties(ASqlQt${QT_VERSION_MAJOR}Pg PROPERTIES
         EXPORT_NAME Pg
         VERSION ${PROJECT_VERSION}
-        SOVERSION 0
+        SOVERSION 1
     )
 
     target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Pg
@@ -258,7 +258,7 @@ if (ASQL_DRIVER_MYSQL)
     set_target_properties(ASqlQt${QT_VERSION_MAJOR}Mysql PROPERTIES
         EXPORT_NAME Mysql
         VERSION ${PROJECT_VERSION}
-        SOVERSION 0
+        SOVERSION 1
     )
 
     target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Mysql
@@ -328,7 +328,7 @@ if (ASQL_DRIVER_SQLITE)
     set_target_properties(ASqlQt${QT_VERSION_MAJOR}Sqlite PROPERTIES
         EXPORT_NAME Sqlite
         VERSION ${PROJECT_VERSION}
-        SOVERSION 0
+        SOVERSION 1
     )
 
     target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Sqlite
@@ -405,7 +405,7 @@ if (ASQL_DRIVER_ODBC)
     set_target_properties(ASqlQt${QT_VERSION_MAJOR}Odbc PROPERTIES
         EXPORT_NAME Odbc
         VERSION ${PROJECT_VERSION}
-        SOVERSION 0
+        SOVERSION 1
     )
 
     target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Odbc

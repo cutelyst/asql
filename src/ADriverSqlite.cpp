@@ -1,5 +1,7 @@
 #include "ADriverSqlite.hpp"
 
+#include "asql_connection_util.h"
+
 #include <QDateTime>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -20,7 +22,7 @@ ADriverSqlite::ADriverSqlite(const QString &connInfo)
     : ADriver{connInfo}
     , m_worker{connInfo}
 {
-    m_thread.setObjectName(connInfo);
+    m_thread.setObjectName(connectionThreadName(connInfo));
     m_worker.moveToThread(&m_thread);
 
     connect(&m_worker, &ASqliteThread::queryReady, this, [this] {

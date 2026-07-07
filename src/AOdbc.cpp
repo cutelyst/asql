@@ -5,6 +5,7 @@
 #include "AOdbc.hpp"
 
 #include "ADriverOdbc.hpp"
+#include "asql_connection_util.h"
 
 #include <adatabase.h>
 
@@ -72,10 +73,15 @@ QString urlToOdbcConnectionString(const QUrl &url)
         uri.append(u"DATABASE=%1;"_s.arg(queryItemValueInsensitive(query, u"DATABASE")));
     }
 
-    if (url.scheme() == u"odbc") {
-        uri.append(u"ENCRYPT=NO;");
-    } else if (url.scheme() == u"odbcs") {
-        uri.append(u"ENCRYPT=YES;");
+    if (url.scheme() == u"odbcs") {
+        if (!hasQueryItemInsensitive(query, u"ENCRYPT")) {
+            uri.append(u"ENCRYPT=YES;");
+        }
+    }
+
+    if (hasQueryItemInsensitive(query, u"connect_timeout")) {
+        uri.append(
+            u"LOGIN_TIMEOUT=%1;"_s.arg(queryItemValueInsensitive(query, u"connect_timeout")));
     }
 
     if (!url.userName().isEmpty()) {
@@ -89,7 +95,7 @@ QString urlToOdbcConnectionString(const QUrl &url)
     for (const auto &item : query.queryItems()) {
         uri.append(item.first + u"=" + item.second + u";");
     }
-    qCDebug(lcAOdbc) << "Constructed ODBC connection string:" << uri;
+    qCDebug(lcAOdbc) << "Constructed ODBC connection string:" << redactConnectionInfo(uri);
     return uri;
 }
 

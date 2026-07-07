@@ -26,6 +26,9 @@ public:
      * * Username and database "mysql://username@localhost/dbname"
      * * Username, password, host, port and database
      *   "mysql://username:password@hostname:3306/dbname"
+     * * TLS: use \c mysqls:// or \c mariadbs://, or \c ssl-mode=required on \c mysql://
+     * * Optional query parameters: \c ssl-ca, \c ssl-cert, \c ssl-key, \c ssl-cipher,
+     *   \c connect_timeout, \c read_timeout (seconds)
      */
     AMysql(const QString &connectionInfo);
     ~AMysql();

@@ -19,6 +19,13 @@ public:
     static const QStringView defaultPool;
 
     /*!
+     * \brief Connection pools are stored per calling thread (\c thread_local).
+     *
+     * Each thread maintains its own map of named pools. \l create(), \l remove(), \l pools(),
+     * and \l database() only affect the pool registry on the thread that invokes them.
+     * Use the same thread (or call \l create() on each worker thread) when sharing a pool name.
+     */
+    /*!
      * \brief create creates a new database pool
      *
      * Creates a new connection Pool that uses the factory to create new connections when they are
@@ -86,12 +93,12 @@ public:
     /*!
      * \brief setMaxConnections maximum number of connections of the pool
      *
-     * The default value is 0, which means ilimited, if a limit is set the \sa database method
-     * will start returning invalid objects untill the current number of connections is reduced.
+     * The default value is 10. When the limit is reached, \l database() queues callers until
+     * a connection is returned to the pool instead of creating a new one.
      *
-     * Changing this value only affect new connections created.
+     * Changing this value only affects new connections created.
      *
-     * \param max
+     * \param max maximum connections (0 means unlimited)
      * \param poolName
      */
     static void setMaxConnections(int max, QStringView poolName = defaultPool);
@@ -106,7 +113,7 @@ public:
      *
      * Sometimes one might want to increase connection buffer or set a different timezone,
      * any kind of connection setup that would be done as soon as the connection with the
-     * database is estabilished.
+     * database is established.
      *
      * This callback is not called when the connection is reused.
      *
@@ -115,7 +122,7 @@ public:
      *
      * Changing this value only affect new connections created.
      *
-     * \param max
+     * \param cb setup callback
      * \param poolName
      */
     static void setSetupCallback(ADatabaseFn cb, QStringView poolName = defaultPool);
@@ -126,14 +133,14 @@ public:
      * Sometimes one might want to "DISCARD" previous information on the connection,
      * this callback will be called when an existing connection is going to be reused.
      *
-     * This callback is not called when the connection is openned.
+     * This callback is not called when the connection is opened.
      *
      * Always call \sa ADatabase::exec() at once so that they are queued and executed before
      * the caller of \sa APool::database().
      *
      * Changing this value only affect new connections created.
      *
-     * \param max
+     * \param cb reuse callback
      * \param poolName
      */
     static void setReuseCallback(ADatabaseFn cb, QStringView poolName = defaultPool);

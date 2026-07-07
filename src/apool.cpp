@@ -36,7 +36,7 @@ struct APoolInternal {
     ADatabaseFn setupCb;
     ADatabaseFn reuseCb;
     int maxIdleConnections = 1;
-    int maximuConnections  = 0;
+    int maximuConnections  = 10;
     int connectionCount    = 0;
 };
 
