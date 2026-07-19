@@ -7,6 +7,7 @@
 #include "apool.h"
 #include "tst_types_common.h"
 
+#include <QJsonDocument>
 #include <QTest>
 
 using namespace ASql;
@@ -55,7 +56,9 @@ void TestTypesPostgres::testJsonbToByteArray()
             auto result = co_await APool::exec(u"SELECT $1::jsonb"_s, {QString::fromUtf8(json)});
             AVERIFY(result);
             AVERIFY(result->size() == 1);
-            ACOMPARE_EQ((*result)[0][0].toByteArray(), json);
+            // jsonb text form is server-canonicalized (key order / spacing); compare as JSON.
+            const QByteArray got = (*result)[0][0].toByteArray();
+            ACOMPARE_EQ(QJsonDocument::fromJson(got), QJsonDocument::fromJson(json));
         }(finished, json);
     }
     loop.exec();
