@@ -23,10 +23,12 @@ set(asql_SRC
 
 set(asql_HEADERS
     adatabase.h
+    adatabase_utf8.inl.h
     apreparedquery.h
     asqliterals.h
     asql_coro_delivery.h
     apool.h
+    apool_utf8.inl.h
     atransaction.h
     acoroexpected.h
     aresult.h
