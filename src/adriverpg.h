@@ -15,6 +15,7 @@
 
 #include <QHash>
 #include <QPointer>
+#include <QSet>
 #include <queue>
 
 class QTimer;
@@ -148,9 +149,6 @@ public:
 
     void setState(ADatabase::State state, const QString &status);
     ADatabase::State state() const override;
-    void onStateChanged(
-        QObject *receiver,
-        std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
     void begin(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb) override;
     void commit(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb) override;
@@ -196,8 +194,7 @@ public:
 
     void subscribeToNotification(const std::shared_ptr<ADriver> &db,
                                  const QString &name,
-                                 QObject *receiver,
-                                 ANotificationFn cb) override;
+                                 QObject *receiver) override;
     QStringList subscribedToNotifications() const override;
     void unsubscribeFromNotification(const std::shared_ptr<ADriver> &db,
                                      const QString &name) override;
@@ -232,8 +229,7 @@ private:
     std::vector<OpenCaller> m_openWaiters;
 
     std::optional<QPointer<QObject>> m_stateChangedReceiver;
-    std::function<void(ADatabase::State, const QString &)> m_stateChangedCb;
-    QHash<QString, ANotificationFn> m_subscribedNotifications;
+    QSet<QString> m_subscribedNotifications;
     std::queue<APGQuery> m_queuedQueries;
     std::shared_ptr<ADriver> selfDriver;
     QHash<int, QByteArray> m_preparedQueries;

@@ -31,9 +31,6 @@ public:
     bool self;
 };
 
-using ADatabaseOpenFn = std::function<void(bool isOpen, const QString &error)>;
-using ANotificationFn = std::function<void(const ADatabaseNotification &payload)>;
-
 /*!
  * \brief ACoroOpenData is the base interface used by coroutine awaitables to receive open results.
  *
@@ -98,49 +95,29 @@ public:
 };
 
 /*!
- * \brief AResultFn is callable type accepted by all driver query methods.
- *
- * It can be constructed from:
- * - A regular \c std::function<void(AResult&)> for non-coroutine callers (backward compatible).
- * - A \c std::weak_ptr<ACoroResult> for the coroutine path (no lambda needed).
+ * \brief AResultFn delivers query results into a coroutine awaitable.
  */
 class ASQL_EXPORT AResultFn
 {
 public:
     AResultFn() = default;
 
-    AResultFn(std::function<void(AResult &result)> fn)
-        : m_fn(std::move(fn))
-    {
-    }
-
-    AResultFn(std::weak_ptr<ACoroResult> coroData)
+    explicit AResultFn(std::weak_ptr<ACoroResult> coroData)
         : m_coroData(std::move(coroData))
     {
     }
 
     void operator()(AResult &result) const
     {
-        if (m_coroData.has_value()) {
-            if (auto data = m_coroData->lock()) {
-                data->deliver(result);
-            }
-        } else if (m_fn) {
-            m_fn(result);
+        if (auto data = m_coroData.lock()) {
+            data->deliver(result);
         }
     }
 
-    explicit operator bool() const
-    {
-        if (m_coroData.has_value()) {
-            return !m_coroData->expired();
-        }
-        return bool(m_fn);
-    }
+    explicit operator bool() const { return !m_coroData.expired(); }
 
 private:
-    std::function<void(AResult &result)> m_fn;
-    std::optional<std::weak_ptr<ACoroResult>> m_coroData;
+    std::weak_ptr<ACoroResult> m_coroData;
 };
 
 /*!
@@ -198,8 +175,6 @@ public:
     enum class State { Disconnected, Connecting, Connected };
     Q_ENUM(State)
 
-    using StateChangedFn = std::function<void(ADatabase::State state, const QString &status)>;
-
     /*!
      * \brief ADatabase constructs an invalid database object
      */
@@ -246,14 +221,9 @@ public:
     [[nodiscard]] QString driverName() const;
 
     /*!
-     * \brief open the database, the callback is called once the operation is done
-     * either by success or failure, with \param describing the error.
-     *
-     * The callback function is only called if current state is Disconnected.
-     *
-     * \param cb
+     * \brief Returns the underlying driver object for signal connections.
      */
-    void open(QObject *receiver = nullptr, ADatabaseOpenFn cb = {});
+    [[nodiscard]] ADriver *driver() const;
 
     /*!
      * \brief coOpen opens the database and returns a coroutine awaitable.
@@ -275,15 +245,6 @@ public:
      * \return database connection state
      */
     [[nodiscard]] State state() const;
-
-    /*!
-     * \brief onStateChanged the callback is called once connection state changes
-     *
-     * Only one callback can be registered per database
-     *
-     * \param cb
-     */
-    void onStateChanged(QObject *receiver, StateChangedFn cb);
 
     /*!
      * \brief isOpen returns if the database connection is open.
@@ -498,9 +459,9 @@ public:
      * back, in which case it will not be effective.
      *
      * \param channel name of the channel
-     * \param cb
+     * \param receiver optional lifetime guard for the LISTEN operation
      */
-    void subscribeToNotification(const QString &channel, QObject *receiver, ANotificationFn cb);
+    void subscribeToNotification(const QString &channel, QObject *receiver = nullptr);
 
     /**
      * @brief subscribedToNotifications
@@ -557,55 +518,31 @@ public:
 };
 
 /*!
- * \brief ADatabaseFn is the callable type accepted by pool methods that deliver a database
- * connection.
- *
- * It can be constructed from:
- * - A regular \c std::function<void(ADatabase)> for non-coroutine callers (backward compatible).
- * - A \c std::weak_ptr<ACoroDatabase> for the coroutine path (no lambda needed).
+ * \brief ADatabaseFn delivers a pooled database connection into a coroutine awaitable.
  */
 class ASQL_EXPORT ADatabaseFn
 {
 public:
     ADatabaseFn() = default;
 
-    template <typename Callable,
-              typename = std::enable_if_t<
-                  !std::is_same_v<std::decay_t<Callable>, ADatabaseFn> &&
-                  !std::is_same_v<std::decay_t<Callable>, std::weak_ptr<ACoroDatabase>> &&
-                  std::is_invocable_v<std::decay_t<Callable>, ADatabase>>>
-    ADatabaseFn(Callable &&fn)
-        : m_fn(std::forward<Callable>(fn))
-    {
-    }
-
-    ADatabaseFn(std::weak_ptr<ACoroDatabase> coroData)
+    explicit ADatabaseFn(std::weak_ptr<ACoroDatabase> coroData)
         : m_coroData(std::move(coroData))
     {
     }
 
     void operator()(ADatabase db) const
     {
-        if (m_coroData.has_value()) {
-            if (auto data = m_coroData->lock()) {
-                data->deliver(std::move(db));
-            }
-        } else if (m_fn) {
-            m_fn(std::move(db));
+        if (auto data = m_coroData.lock()) {
+            data->deliver(std::move(db));
         }
     }
 
-    explicit operator bool() const
-    {
-        if (m_coroData.has_value()) {
-            return !m_coroData->expired();
-        }
-        return bool(m_fn);
-    }
+    explicit operator bool() const { return !m_coroData.expired(); }
 
 private:
-    std::function<void(ADatabase db)> m_fn;
-    std::optional<std::weak_ptr<ACoroDatabase>> m_coroData;
+    std::weak_ptr<ACoroDatabase> m_coroData;
 };
 
 } // namespace ASql
+
+Q_DECLARE_METATYPE(ASql::ADatabaseNotification)

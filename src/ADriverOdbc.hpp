@@ -131,9 +131,6 @@ public:
 
     void setState(ADatabase::State state, const QString &status);
     ADatabase::State state() const override;
-    void onStateChanged(
-        QObject *receiver,
-        std::function<void(ADatabase::State state, const QString &status)> cb) override;
 
     void begin(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb) override;
     void commit(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb) override;
@@ -179,8 +176,7 @@ public:
 
     void subscribeToNotification(const std::shared_ptr<ADriver> &db,
                                  const QString &name,
-                                 QObject *receiver,
-                                 ANotificationFn cb) override;
+                                 QObject *receiver) override;
     QStringList subscribedToNotifications() const override;
     void unsubscribeFromNotification(const std::shared_ptr<ADriver> &db,
                                      const QString &name) override;
@@ -189,7 +185,6 @@ private:
     void deliverOpenWaiters(bool isOpen, const QString &error);
 
     std::optional<QPointer<QObject>> m_stateChangedReceiver;
-    std::function<void(ADatabase::State, const QString &)> m_stateChangedCb;
     std::shared_ptr<ADriver> selfDriver;
     AOdbcThread m_worker;
     QThread m_thread;

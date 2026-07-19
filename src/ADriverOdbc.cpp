@@ -968,24 +968,12 @@ bool ADriverOdbc::isOpen() const
 void ADriverOdbc::setState(ADatabase::State state, const QString &status)
 {
     m_state = state;
-    if (m_stateChangedCb &&
-        (!m_stateChangedReceiver.has_value() || !m_stateChangedReceiver->isNull())) {
-        m_stateChangedCb(state, status);
-    }
+    Q_EMIT stateChanged(state, status);
 }
 
 ADatabase::State ADriverOdbc::state() const
 {
     return m_state;
-}
-
-void ADriverOdbc::onStateChanged(QObject *receiver,
-                                 std::function<void(ADatabase::State, const QString &)> cb)
-{
-    m_stateChangedCb = cb;
-    if (receiver) {
-        m_stateChangedReceiver = receiver;
-    }
 }
 
 void ADriverOdbc::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb)
@@ -1177,8 +1165,7 @@ int ADriverOdbc::queueSize() const
 
 void ADriverOdbc::subscribeToNotification(const std::shared_ptr<ADriver> &,
                                           const QString &,
-                                          QObject *,
-                                          ANotificationFn)
+                                          QObject *)
 {
 }
 

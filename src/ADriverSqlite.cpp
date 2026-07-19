@@ -146,24 +146,12 @@ bool ADriverSqlite::isOpen() const
 void ADriverSqlite::setState(ADatabase::State state, const QString &status)
 {
     m_state = state;
-    if (m_stateChangedCb &&
-        (!m_stateChangedReceiver.has_value() || !m_stateChangedReceiver->isNull())) {
-        m_stateChangedCb(state, status);
-    }
+    Q_EMIT stateChanged(state, status);
 }
 
 ADatabase::State ADriverSqlite::state() const
 {
     return m_state;
-}
-
-void ADriverSqlite::onStateChanged(QObject *receiver,
-                                   std::function<void(ADatabase::State, const QString &)> cb)
-{
-    m_stateChangedCb = cb;
-    if (receiver) {
-        m_stateChangedReceiver = receiver;
-    }
 }
 
 void ADriverSqlite::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb)
@@ -351,9 +339,11 @@ int ADriverSqlite::queueSize() const
 
 void ADriverSqlite::subscribeToNotification(const std::shared_ptr<ADriver> &db,
                                             const QString &name,
-                                            QObject *receiver,
-                                            ANotificationFn cb)
+                                            QObject *receiver)
 {
+    Q_UNUSED(db);
+    Q_UNUSED(name);
+    Q_UNUSED(receiver);
 }
 
 QStringList ADriverSqlite::subscribedToNotifications() const

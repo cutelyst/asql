@@ -196,20 +196,21 @@ int main(int argc, char *argv[])
     });
     spinner->start();
 
-    db.open(nullptr, [&app, &db, &query, spinner](bool isOpen, const QString &error) {
+    [&app, &db, &query, spinner]() -> ACoroTerminator {
+        const auto open = co_await db.coOpen();
         spinner->stop();
-        fprintf(stderr, "\r  \r"); // clear spinner
+        fprintf(stderr, "\r  \r");
         fflush(stderr);
 
-        if (!isOpen) {
+        if (!open) {
             QTextStream err(stderr);
-            err << "Connection error: " << error << "\n";
+            err << "Connection error: " << open.error() << "\n";
             app.exit(1);
-            return;
+            co_return;
         }
 
         runQuery(db, query);
-    });
+    }();
 
     return app.exec();
 }

@@ -90,12 +90,6 @@ ADatabase::State ADriver::state() const
     return ADatabase::State::Disconnected;
 }
 
-void ADriver::onStateChanged(QObject *receiver, ADatabase::StateChangedFn cb)
-{
-    Q_UNUSED(receiver);
-    Q_UNUSED(cb);
-}
-
 bool ADriver::isOpen() const
 {
     return false;
@@ -227,12 +221,10 @@ int ADriver::queueSize() const
 
 void ADriver::subscribeToNotification(const std::shared_ptr<ADriver> &db,
                                       const QString &name,
-                                      QObject *receiver,
-                                      ANotificationFn cb)
+                                      QObject *receiver)
 {
     Q_UNUSED(db);
     Q_UNUSED(name);
-    Q_UNUSED(cb);
     Q_UNUSED(receiver);
 }
 
@@ -248,3 +240,9 @@ void ADriver::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, co
 }
 
 #include "moc_adriver.cpp"
+
+static const bool _asqlMetaTypesRegistered = [] {
+    qRegisterMetaType<ASql::ADatabase::State>();
+    qRegisterMetaType<ASql::ADatabaseNotification>();
+    return true;
+}();

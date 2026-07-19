@@ -50,43 +50,9 @@ QString ADatabase::driverName() const
     return d ? d->driverName() : u"INVALID_DRIVER"_s;
 }
 
-void ADatabase::open(QObject *receiver, ADatabaseOpenFn cb)
+ADriver *ADatabase::driver() const
 {
-    if (!d) {
-        d = std::make_shared<ADriver>();
-    }
-
-    if (d->state() == ADatabase::State::Disconnected ||
-        d->state() == ADatabase::State::Connecting) {
-        if (cb) {
-            // Wrap the legacy callback in an ACoroOpenData adapter.
-            // The adapter holds a self-reference so it stays alive until
-            // deliverOpen() is invoked, at which point the self-reference
-            // is released and only the driver's weak_ptr remains.
-            struct OpenAdapter final : public ACoroOpenData {
-                ADatabaseOpenFn fn;
-                std::optional<QPointer<QObject>> receiverPtr;
-                std::shared_ptr<OpenAdapter> keepAlive;
-
-                void deliverOpen(bool isOpen, const QString &error) override
-                {
-                    auto ref = std::move(keepAlive); // release self-ref after call
-                    if (!receiverPtr.has_value() || !receiverPtr->isNull()) {
-                        fn(isOpen, error);
-                    }
-                }
-            };
-            auto adapter       = std::make_shared<OpenAdapter>();
-            adapter->fn        = std::move(cb);
-            adapter->keepAlive = adapter; // self-reference
-            if (receiver) {
-                adapter->receiverPtr = receiver;
-            }
-            d->open(d, receiver, AOpenFn{std::weak_ptr<ACoroOpenData>(adapter)});
-        } else {
-            d->open(d, receiver, AOpenFn{});
-        }
-    }
+    return d.get();
 }
 
 AExpectedOpen ADatabase::coOpen(QObject *receiver)
@@ -111,12 +77,6 @@ ADatabase::State ADatabase::state() const
         return d->state();
     }
     return ADatabase::State::Disconnected;
-}
-
-void ADatabase::onStateChanged(QObject *receiver, StateChangedFn cb)
-{
-    Q_ASSERT(d);
-    d->onStateChanged(receiver, cb);
 }
 
 bool ADatabase::isOpen() const
@@ -267,12 +227,10 @@ bool ADatabase::pipelineSync()
     return d->pipelineSync();
 }
 
-void ADatabase::subscribeToNotification(const QString &channel,
-                                        QObject *receiver,
-                                        ANotificationFn cb)
+void ADatabase::subscribeToNotification(const QString &channel, QObject *receiver)
 {
     Q_ASSERT(d);
-    d->subscribeToNotification(d, channel, receiver, cb);
+    d->subscribeToNotification(d, channel, receiver);
 }
 
 QStringList ADatabase::subscribedToNotifications() const

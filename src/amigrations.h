@@ -18,90 +18,50 @@ class ASQL_MIGRATIONS_EXPORT AMigrations : public QObject
     Q_OBJECT
     Q_DECLARE_PRIVATE(AMigrations)
 public:
+    using AExpectedMigration = ACoroExpected<void>;
+
     explicit AMigrations(QObject *parent = nullptr);
     virtual ~AMigrations();
 
     /*!
      * \brief load migration information from the asql_migrations table using the specified
-     * migration \p name. \param db a valid dabase option \param name of the migration \param
-     * noTransactionDB a database object in case some script must run outside a transaction block
+     * migration \p name.
      */
-    ACoroTerminator load(ADatabase db, QString name, ADatabase noTransactionDB = {});
+    [[nodiscard]] AExpectedMigration
+        load(ADatabase db, QString name, ADatabase noTransactionDB = {});
 
     /*!
-     * \brief active version of this migration, only valid after ready has been emitted
-     * \return
+     * \brief active version of this migration, only valid after \l load() succeeds
      */
     int active() const;
 
     /*!
      * \brief latest version available
-     * \return
      */
     int latest() const;
 
-    /*!
-     * \brief fromFile extract migration data from file
-     * \param filename
-     * \return
-     */
     bool fromFile(const QString &filename);
-
-    /*!
-     * \brief fromFile extract migration data from string
-     * \param filename
-     * \return
-     */
     void fromString(const QString &text);
 
-    /*!
-     * \brief sqlFor Get SQL to migrate from one version to another, up or down.
-     * \param versionA
-     * \param versionB
-     * \return
-     */
     QString sqlFor(int versionFrom, int versionTo) const;
-
-    /*!
-     * \brief sqlFor Get SQL to migrate from one version to another, up or down.
-     * \param versionA
-     * \param versionB
-     * \return
-     */
     QStringList sqlListFor(int versionFrom, int versionTo) const;
 
     /*!
-     * \brief migrate Migrate from "active" to the latest version.
-     * All version numbers need to be positive, with version 0 representing an empty database.
-     *
-     * \sa finished() signal is emitted with the result.
-     * \param cb callback function that is called to inform the result
-     * \param dryRun if set will rollback the transaction instead of committing, this option
-     * diverges from regular operation as it will perform a single transaction block with all
-     * up/down steps at once, which depending on the operation will fail.
+     * \brief migrate from \l active() toward \p targetVersion (or \l latest() when \c -1).
      */
-    void migrate(std::function<void(bool error, const QString &errorString)> cb,
-                 bool dryRun = false);
-
-    /*!
-     * \brief migrate Migrate from "active" to different version, up or down.
-     * All version numbers need to be positive, with version 0 representing an empty database.
-     *
-     * \sa finished() signal is emitted with the result.
-     * \param targetVersion to try to apply changes
-     * \param cb callback function that is called to inform the result
-     * \param dryRun if set will rollback the transaction instead of committing, this option
-     * diverges from regular operation as it will perform a single transaction block with all
-     * up/down steps at once, which depending on the operation will fail.
-     */
-    ACoroTerminator migrate(int targetVersion,
-                            std::function<void(bool error, const QString &errorString)> cb,
-                            bool dryRun = false);
-
-Q_SIGNALS:
-    void ready(bool error, const QString &errorString);
+    [[nodiscard]] AExpectedMigration migrate(int targetVersion = -1, bool dryRun = false);
 
 private:
+    static ACoroTerminator loadCoroutine(std::shared_ptr<ACoroData<void>> data,
+                                         AMigrations *q,
+                                         ADatabase db,
+                                         QString name,
+                                         ADatabase noTransactionDB);
+    static ACoroTerminator migrateCoroutine(std::shared_ptr<ACoroData<void>> data,
+                                            AMigrations *q,
+                                            int targetVersion,
+                                            bool dryRun);
+
     AMigrationsPrivate *d_ptr;
 };
 
