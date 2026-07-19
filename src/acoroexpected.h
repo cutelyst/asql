@@ -2,6 +2,7 @@
 
 #include <adatabase.h>
 #include <aresult.h>
+#include <asql_coro_delivery.h>
 #include <atransaction.h>
 #include <coroutine>
 #include <expected>

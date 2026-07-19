@@ -8,9 +8,7 @@
 #include <asqliterals.h>
 #include <chrono>
 #include <cstddef>
-#include <functional>
 #include <memory>
-#include <optional>
 
 #include <QObject>
 #include <QVariantList>
@@ -29,128 +27,6 @@ public:
     QString name;
     QVariant payload;
     bool self;
-};
-
-/*!
- * \brief ACoroOpenData is the base interface used by coroutine awaitables to receive open results.
- *
- * The ASql engine holds a \c std::weak_ptr<ACoroOpenData> instead of a copied callback lambda.
- * When the open operation completes, the engine locks the weak_ptr and calls deliverOpen().
- * If the coroutine has already been destroyed, lock() returns nullptr and the call is skipped.
- */
-class ASQL_EXPORT ACoroOpenData
-{
-public:
-    virtual ~ACoroOpenData()                                    = default;
-    virtual void deliverOpen(bool isOpen, const QString &error) = 0;
-};
-
-/*!
- * \brief AOpenFn is callable type accepted by driver open methods.
- *
- * Constructed from a \c std::weak_ptr<ACoroOpenData>; the driver holds only the weak reference
- * and calls deliverOpen() on the pointed-to object when the connection attempt completes.
- * If the awaitable has already been destroyed, lock() returns nullptr and the call is skipped.
- */
-class ASQL_EXPORT AOpenFn
-{
-public:
-    AOpenFn() = default;
-
-    AOpenFn(std::weak_ptr<ACoroOpenData> coroData)
-        : m_coroData(std::move(coroData))
-    {
-    }
-
-    void operator()(bool isOpen, const QString &error) const
-    {
-        if (m_coroData.has_value()) {
-            if (auto data = m_coroData->lock()) {
-                data->deliverOpen(isOpen, error);
-            }
-        }
-    }
-
-    explicit operator bool() const { return m_coroData.has_value() && !m_coroData->expired(); }
-
-private:
-    std::optional<std::weak_ptr<ACoroOpenData>> m_coroData;
-};
-
-/*!
- * \brief ACoroResult is the abstract delivery interface used by coroutine awaitables that receive
- * query results (AResult).
- *
- * The ASql engine holds a \c std::weak_ptr<ACoroResult> instead of a copied callback lambda.
- * When the query completes, the engine locks the weak_ptr and calls deliver().
- * If the coroutine has already been destroyed, lock() returns nullptr and the call is skipped.
- *
- * The concrete implementation lives in \c ACoroData<T> (see acoroexpected.h).
- */
-class ASQL_EXPORT ACoroResult
-{
-public:
-    virtual ~ACoroResult()           = default;
-    virtual void deliver(AResult &v) = 0;
-};
-
-/*!
- * \brief AResultFn delivers query results into a coroutine awaitable.
- */
-class ASQL_EXPORT AResultFn
-{
-public:
-    AResultFn() = default;
-
-    explicit AResultFn(std::weak_ptr<ACoroResult> coroData)
-        : m_coroData(std::move(coroData))
-    {
-    }
-
-    void operator()(AResult &result) const
-    {
-        if (auto data = m_coroData.lock()) {
-            data->deliver(result);
-        }
-    }
-
-    explicit operator bool() const { return !m_coroData.expired(); }
-
-private:
-    std::weak_ptr<ACoroResult> m_coroData;
-};
-
-/*!
- * \brief ACoroDataRef is a lightweight, movable reference to an ACoroExpected's
- * coroutine data. It holds a weak pointer to the underlying ACoroResult so the driver
- * can deliver query results without keeping the awaitable alive.
- *
- * Obtain an instance via AExpectedResult::ref() or AExpectedMultiResult::ref().
- */
-class ASQL_EXPORT ACoroDataRef
-{
-public:
-    ACoroDataRef() = default;
-
-    explicit ACoroDataRef(std::weak_ptr<ACoroResult> coroData)
-        : m_coroData(std::move(coroData))
-    {
-    }
-
-    void deliverResult(AResult &result) const
-    {
-        if (auto data = m_coroData.lock()) {
-            data->deliver(result);
-        }
-    }
-
-    explicit operator bool() const { return !m_coroData.expired(); }
-
-    // Implicit conversion so ACoroDataRef can be passed anywhere AResultFn is expected.
-    operator AResultFn() const { return AResultFn{m_coroData}; }
-
-private:
-    std::weak_ptr<ACoroResult> m_coroData;
 };
 
 template <typename T>
@@ -502,45 +378,6 @@ private:
         execUtf8(QUtf8StringView query, const QVariantList &params, QObject *receiver = nullptr);
     [[nodiscard]] AExpectedMultiResult execMultiUtf8(QUtf8StringView query,
                                                      QObject *receiver = nullptr);
-};
-
-/*!
- * \brief ACoroDatabase is the abstract delivery interface used by coroutine awaitables that
- * receive a database connection (ADatabase).
- *
- * The concrete implementation lives in \c ACoroData<ADatabase> (see acoroexpected.h).
- */
-class ASQL_EXPORT ACoroDatabase
-{
-public:
-    virtual ~ACoroDatabase()          = default;
-    virtual void deliver(ADatabase v) = 0;
-};
-
-/*!
- * \brief ADatabaseFn delivers a pooled database connection into a coroutine awaitable.
- */
-class ASQL_EXPORT ADatabaseFn
-{
-public:
-    ADatabaseFn() = default;
-
-    explicit ADatabaseFn(std::weak_ptr<ACoroDatabase> coroData)
-        : m_coroData(std::move(coroData))
-    {
-    }
-
-    void operator()(ADatabase db) const
-    {
-        if (auto data = m_coroData.lock()) {
-            data->deliver(std::move(db));
-        }
-    }
-
-    explicit operator bool() const { return !m_coroData.expired(); }
-
-private:
-    std::weak_ptr<ACoroDatabase> m_coroData;
 };
 
 } // namespace ASql

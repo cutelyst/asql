@@ -1,37 +1,33 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2026 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
-#include "../../src/acache.h"
+#include "../../src/acoroexpected.h"
 #include "../../src/adatabase.h"
 #include "../../src/amigrations.h"
 #include "../../src/apg.h"
 #include "../../src/apool.h"
-#include "../../src/apreparedquery.h"
-#include "../../src/aresult.h"
 
 #include <QCoreApplication>
-#include <QDateTime>
-#include <QElapsedTimer>
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QLoggingCategory>
-#include <QTimer>
-#include <QUrl>
-#include <QUuid>
+#include <QEventLoop>
+#include <QScopeGuard>
 
 using namespace ASql;
 using namespace Qt::StringLiterals;
 
-int main(int argc, char *argv[])
+ACoroTerminator runMigrationsDemo(std::shared_ptr<QObject> finished)
 {
-    QCoreApplication app(argc, argv);
+    auto _ = qScopeGuard([finished] {});
 
-    APool::create(APg::factory(u"postgres:///"_s));
+    auto db = co_await APool::database();
+    if (!db) {
+        qDebug() << "Could not get a connection:" << db.error();
+        co_return;
+    }
 
-    auto mig = new AMigrations();
-    mig->fromString(uR"V0G0N(
+    AMigrations mig;
+    mig.fromString(uR"V0G0N(
 -- 1 up
 create table messages (message text);
 insert into messages values ('I ♥ Cutelyst!');
@@ -42,10 +38,38 @@ create table log (message text);
 insert into log values ('logged');
 -- 2 down
 drop table log;
--- 3 up
-create tabsle log (message text);
 )V0G0N"_s);
-    qDebug() << "MIG" << mig->latest() << mig->active();
 
-    app.exec();
+    qDebug() << "MIG latest" << mig.latest() << "active" << mig.active();
+
+    const auto loaded = co_await mig.load(*db, u"demo"_s);
+    if (!loaded) {
+        qDebug() << "LOAD error:" << loaded.error();
+        co_return;
+    }
+
+    const auto migrated = co_await mig.migrate(2);
+    if (!migrated) {
+        qDebug() << "MIGRATE error:" << migrated.error();
+        co_return;
+    }
+
+    qDebug() << "Migrated to version" << mig.active();
+}
+
+int main(int argc, char *argv[])
+{
+    QCoreApplication app(argc, argv);
+
+    APool::create(APg::factory(u"postgres:///"_s));
+
+    QEventLoop loop;
+    {
+        auto finished = std::make_shared<QObject>();
+        QObject::connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
+        runMigrationsDemo(finished);
+    }
+    loop.exec();
+
+    return 0;
 }

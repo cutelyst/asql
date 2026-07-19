@@ -1,27 +1,60 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2026 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
-#include "../../src/acache.h"
+#include "../../src/acoroexpected.h"
 #include "../../src/adatabase.h"
-#include "../../src/amigrations.h"
 #include "../../src/apg.h"
 #include "../../src/apool.h"
 #include "../../src/aresult.h"
-#include "../../src/atransaction.h"
 
 #include <QCoreApplication>
-#include <QDateTime>
-#include <QJsonArray>
+#include <QEventLoop>
 #include <QJsonObject>
-#include <QLoggingCategory>
+#include <QScopeGuard>
 #include <QTimer>
-#include <QUrl>
-#include <QUuid>
 
 using namespace ASql;
 using namespace Qt::StringLiterals;
+
+ACoroTerminator runDeleterDemo(std::shared_ptr<QObject> finished)
+{
+    auto _ = qScopeGuard([finished] {});
+
+    {
+        auto db = co_await APool::database();
+        if (!db) {
+            qDebug() << "Could not get a connection:" << db.error();
+            co_return;
+        }
+
+        auto result = co_await db->exec(u"SELECT now()"_s);
+        if (result) {
+            qDebug() << "SELECT" << result->toJsonObject();
+        }
+    }
+
+    {
+        // Returning the previous connection triggers the reuse hook on checkout.
+        auto db = co_await APool::database();
+        if (db) {
+            auto result = co_await db->exec(u"SELECT now()"_s);
+            if (result) {
+                qDebug() << "SELECT after reuse" << result->toJsonObject();
+            }
+        }
+    }
+
+    auto *cancelator = new QObject;
+    QTimer::singleShot(100, cancelator, [cancelator] { cancelator->deleteLater(); });
+    auto result = co_await APool::exec(u"SELECT pg_sleep(5), now()"_s, cancelator);
+    if (result) {
+        qDebug() << "cancelled query succeeded:" << result->toJsonObject();
+    } else {
+        qDebug() << "cancelled query:" << result.error();
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -30,7 +63,7 @@ int main(int argc, char *argv[])
     APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setSetupHook([](ADatabase db) -> ACoroTerminator {
         qDebug() << "setup db";
-        auto result = co_await db.exec(u"SET TIME ZONE 'Europe/Rome'", nullptr);
+        auto result = co_await db.exec(u"SET TIME ZONE 'Europe/Rome'"_s);
         if (result) {
             qDebug() << "SETUP" << result->toJsonObject();
         }
@@ -38,55 +71,19 @@ int main(int argc, char *argv[])
 
     APool::setReuseHook([](ADatabase db) -> ACoroTerminator {
         qDebug() << "reuse db";
-        auto result = co_await db.exec(u"DISCARD ALL", nullptr);
+        auto result = co_await db.exec(u"DISCARD ALL"_s);
         if (result) {
-            qDebug() << "SETUP" << result->toJsonObject();
+            qDebug() << "REUSE" << result->toJsonObject();
         }
     });
 
-    auto obj = new QObject;
+    QEventLoop loop;
     {
-        ADatabase db(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
-        // db.open(nullptr,
-        //         [](bool ok, const QString &status)  -> ACoroTerminator { qDebug() << "OPEN value"
-        //         << ok << status; });
-        // db.exec(u"SELECT now()"_s, obj, [](AResult &result) {
-        //     if (result.hasError()) {
-        //         qDebug() << "SELECT error" << result.errorString();
-        //         return;
-        //     }
-
-        //     if (result.size()) {
-        //         qDebug() << "SELECT value" << result.begin().value(0);
-        //     }
-        // });
+        auto finished = std::make_shared<QObject>();
+        QObject::connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
+        runDeleterDemo(finished);
     }
+    loop.exec();
 
-    [](QObject *obj) -> ACoroTerminator {
-        // APool::database().exec(u"SELECT pg_sleep(5)", obj, [](AResult &result) {
-        //     qDebug() << "SELECT result.size()" << result.hasError() << result.errorString()
-        //     << result.size();
-        // });
-
-        // APool::database().exec(u"SELECT now()", obj, [](AResult &result) {
-        //     qDebug() << "SELECT result.size()" << result.hasError() << result.errorString()
-        //     << result.toJsonObject();
-        // });
-
-        // QTimer::singleShot(2000, obj, [=] {
-        //     qDebug() << "Delete Obj";
-        //     delete obj;
-        // });
-
-        // QTimer::singleShot(2500, [=] {
-        //     qDebug() << "Reuse Timer Obj";
-        //     APool::database().exec(u"SELECT now()", nullptr, [](AResult &result) {
-        //         qDebug() << "SELECT result.size()" << result.hasError() << result.errorString()
-        //         << result.toJsonObject();
-        //     });
-        // });
-        co_return;
-    }(obj);
-
-    app.exec();
+    return 0;
 }
