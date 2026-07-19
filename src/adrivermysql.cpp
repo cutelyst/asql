@@ -717,6 +717,7 @@ ADriverMysql::ADriverMysql(const QString &connInfo)
     m_worker.moveToThread(&m_thread);
 
     connect(&m_worker, &AMysqlThread::queryReady, this, [this] {
+        Q_ASSERT(this);
         QMutexLocker _(&m_worker.m_promisesMutex);
         while (!m_worker.m_promisesReady.isEmpty()) {
             MysqlQueryPromise promise = m_worker.m_promisesReady.dequeue();

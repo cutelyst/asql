@@ -13,11 +13,11 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-24.04
 
         config:
           - name: clang-tidy
-            cmake_arg: '-DCMAKE_CXX_CLANG_TIDY=clang-tidy'
+            cmake_arg: '-DCMAKE_CXX_COMPILER=clang++-18 -DCMAKE_CXX_CLANG_TIDY=clang-tidy-18 -DASQL_BUILD_DEMOS=OFF'
             qt_version: "6.11.0"
 
           - name: clazy
@@ -29,7 +29,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update -qq
-          sudo apt install -y clazy doxygen graphviz postgresql-server-dev-16 clang-tidy-18 unixodbc-dev libsqlite3-dev
+          sudo apt install -y clazy clang-18 doxygen graphviz postgresql-server-dev-16 clang-tidy-18 unixodbc-dev libsqlite3-dev libc++-dev libc++abi-dev
 
       - name: Install Qt ${{ matrix.config.qt_version }} with options and default aqtversion
         uses: jurplel/install-qt-action@v4
