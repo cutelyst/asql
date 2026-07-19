@@ -1,29 +1,78 @@
 /*
- * SPDX-FileCopyrightText: (C) 2020 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-FileCopyrightText: (C) 2020-2026 Daniel Nicoletti <dantti12@gmail.com>
  * SPDX-License-Identifier: MIT
  */
 
-#include "../../src/acache.h"
+#include "../../src/acoroexpected.h"
 #include "../../src/adatabase.h"
-#include "../../src/amigrations.h"
 #include "../../src/apg.h"
 #include "../../src/apool.h"
 #include "../../src/aresult.h"
 #include "../../src/atransaction.h"
 
-#include <thread>
-
 #include <QCoreApplication>
-#include <QDateTime>
-#include <QJsonArray>
+#include <QEventLoop>
 #include <QJsonObject>
-#include <QLoggingCategory>
-#include <QTimer>
-#include <QUrl>
-#include <QUuid>
+#include <QScopeGuard>
 
 using namespace ASql;
 using namespace Qt::StringLiterals;
+
+ACoroTerminator runTransactionsDemo(std::shared_ptr<QObject> finished)
+{
+    auto _ = qScopeGuard([finished] {});
+
+    {
+        auto t = co_await APool::begin();
+        if (!t) {
+            qDebug() << "BEGIN error:" << t.error();
+            co_return;
+        }
+
+        auto result = co_await t->database().exec(u"SELECT now()"_s);
+        if (!result) {
+            qDebug() << "SELECT error:" << result.error();
+            co_return;
+        }
+        qDebug() << "SELECT" << result->toJsonObject();
+
+        auto commit = co_await t->commit();
+        qDebug() << "COMMIT" << (commit ? u"ok"_s : commit.error());
+    }
+
+    auto setup = co_await APool::database();
+    if (!setup) {
+        qDebug() << "database error:" << setup.error();
+        co_return;
+    }
+
+    auto create = co_await setup->exec(u"CREATE TEMP TABLE IF NOT EXISTS tx_demo (id INTEGER)"_s);
+    if (!create) {
+        qDebug() << "CREATE error:" << create.error();
+        co_return;
+    }
+
+    {
+        auto t = co_await APool::begin();
+        if (!t) {
+            qDebug() << "BEGIN error:" << t.error();
+            co_return;
+        }
+
+        auto insert = co_await t->database().exec(u"INSERT INTO tx_demo VALUES (1)"_s);
+        if (!insert) {
+            qDebug() << "INSERT error:" << insert.error();
+            co_return;
+        }
+        qDebug() << "INSERT rows" << insert->numRowsAffected();
+        // Leave scope without commit — RAII rolls back.
+    }
+
+    auto count = co_await setup->exec(u"SELECT COUNT(*) FROM tx_demo"_s);
+    if (count) {
+        qDebug() << "rows after RAII rollback" << (*count)[0][0].toInt();
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -32,81 +81,13 @@ int main(int argc, char *argv[])
     APool::create(APg::factory(u"postgres:///?target_session_attrs=read-write"_s));
     APool::setMaxIdleConnections(10);
 
-#if 0
-    []() -> ACoroTerminator {
-        auto db = APool::database();
-        auto t  = co_await db.beginTransaction();
-        if (t) {
-            db.exec(u"SELECT now()"_s, nullptr);
-            if (!result) {
-                qDebug() << "SELECT error" << result.error();
-                co_return;
-            }
-
-            if (result->size()) {
-                qDebug() << "SELECT value" << result.begin().value(0);
-                ATransaction(t).commit();
-            }
-        }
-    }();
-#endif
-
+    QEventLoop loop;
     {
-#if 0
-        ATransaction t(APool::database());
-        t.begin(nullptr, [t](AResult &result) {
-            if (result.hasError()) {
-                qDebug() << "BEGIN error" << result.errorString();
-                return;
-            }
-
-            t.database().exec(u"SELECT now()"_s, nullptr, [=](AResult &result) {
-                if (result.hasError()) {
-                    qDebug() << "SELECT error" << result.errorString();
-                    return;
-                }
-
-                if (result.size()) {
-                    qDebug() << "SELECT value" << result.begin().value(0);
-                }
-            });
-        });
-#endif
+        auto finished = std::make_shared<QObject>();
+        QObject::connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
+        runTransactionsDemo(finished);
     }
+    loop.exec();
 
-    {
-#if 0
-        ATransaction t(APool::database());
-        t.begin(nullptr, [t](AResult &result) {
-            if (result.hasError()) {
-                qDebug() << "BEGIN error" << result.errorString();
-                return;
-            }
-
-            for (int i = 0; i < 5; ++i) {
-                t.database().exec(u"SELECT $1"_s,
-                                  {
-                                      i,
-                                  },
-                                  nullptr,
-                                  [t](AResult &result) mutable {
-                    if (result.hasError()) {
-                        qDebug() << "SELECT i error" << result.errorString();
-                        return;
-                    }
-
-                    if (result.size()) {
-                        qDebug() << "SELECT i value" << result.begin().value(0);
-                    }
-
-                    t.commit(nullptr, [](AResult &result) {
-                        qDebug() << "COMMIT i result" << result.hasError() << result.errorString();
-                    });
-                });
-            }
-        });
-#endif
-    }
-
-    app.exec();
+    return 0;
 }

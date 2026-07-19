@@ -126,7 +126,36 @@ db->exec(APreparedQuery(u"INSERT INTO temp4 VALUE ($1, $2, $3, $4, $5, $6, $7) R
 ```
 
 #### Transactions
-`ADatabase::begin()` returns an `AExpectedTransaction`. `co_await` it to start the transaction; the returned `ATransaction` will automatically roll back when it goes out of scope unless `commit()` is called.
+`ADatabase::begin()` and `APool::begin()` return an `AExpectedTransaction`. `co_await` it to start
+the transaction; the returned `ATransaction` will automatically roll back when it goes out of scope
+unless `commit()` is called.
+
+`APool::begin()` grabs a pooled connection and starts the transaction in one step:
+```c++
+ACoroTerminator runPoolTransaction()
+{
+    auto transaction = co_await APool::begin();
+    if (!transaction) {
+        qDebug() << "BEGIN error:" << transaction.error();
+        co_return;
+    }
+
+    auto result = co_await transaction->database().exec(
+        u"INSERT INTO messages (message) VALUES ($1) RETURNING id"_s,
+        {u"Hello from pool begin!"_s});
+    if (!result) {
+        qDebug() << "INSERT error:" << result.error();
+        co_return; // transaction rolls back automatically
+    }
+
+    auto commit = co_await transaction->commit();
+    if (!commit) {
+        qDebug() << "COMMIT error:" << commit.error();
+    }
+}
+```
+
+`ADatabase::begin()` returns an `AExpectedTransaction` on an existing connection:
 ```c++
 ACoroTerminator runTransaction()
 {

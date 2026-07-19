@@ -206,6 +206,16 @@ public:
                                               QObject *receiver    = nullptr,
                                               QStringView poolName = defaultPool);
 
+    /*!
+     * \brief begin starts a transaction on a pooled connection
+     *
+     * Suspends until a connection is available, opens it if needed, then issues \c BEGIN.
+     * The returned \c ATransaction holds the pooled connection until it is committed,
+     * rolled back, or destroyed (RAII rollback).
+     *
+     * \param receiver optional QObject that cancels the operation when destroyed
+     * \param poolName pool identifier
+     */
     [[nodiscard]] static AExpectedTransaction begin(QObject *receiver    = nullptr,
                                                     QStringView poolName = defaultPool);
 

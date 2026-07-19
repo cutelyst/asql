@@ -521,21 +521,33 @@ AExpectedResult APool::exec(const APreparedQuery &query,
 
     return coro;
 }
+
+namespace {
+
+ACoroTerminator beginCoroutine(std::shared_ptr<ACoroData<ATransaction>> chainData,
+                               QObject *receiver,
+                               QString poolName)
+{
+    auto db = co_await APool::database(receiver, poolName);
+    if (!db) {
+        chainData->deliverDirect(std::unexpected(db.error()));
+        co_return;
+    }
+
+    auto transaction = co_await db->begin(receiver);
+    if (!transaction) {
+        chainData->deliverDirect(std::unexpected(transaction.error()));
+        co_return;
+    }
+
+    chainData->deliverDirect(std::move(*transaction));
+}
+
+} // namespace
+
 AExpectedTransaction APool::begin(QObject *receiver, QStringView poolName)
 {
     AExpectedTransaction coro(receiver);
-    [](auto chainData, QObject *receiver, QStringView poolName) -> ACoroTerminator {
-        auto db = co_await database(receiver, poolName);
-        if (db) {
-            auto result = co_await db->begin(receiver);
-            if (result) {
-                chainData->deliverDirect(std::move(*result));
-                co_return;
-            }
-            chainData->deliverDirect(std::unexpected(result.error()));
-            co_return;
-        }
-        chainData->deliverDirect(std::unexpected(db.error()));
-    }(coro.m_data, receiver, poolName);
+    beginCoroutine(coro.m_data, receiver, poolName.toString());
     return coro;
 }
