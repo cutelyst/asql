@@ -35,6 +35,14 @@ if (APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif()
 
+# Qt 6.5.0–6.5.4 still use stdext::make_checked_array_iterator on MSVC; VS 18
+# removed it. Force-include a shim so builds with the project minimum Qt work.
+# Limit to CXX so C sources (e.g. sqlite3.c) do not pull in the C++ STL.
+if (MSVC AND QT_VERSION VERSION_LESS "6.5.5")
+    add_compile_options(
+        "$<$<COMPILE_LANGUAGE:CXX>:/FI${CMAKE_CURRENT_SOURCE_DIR}/cmake/msvc_stdext_shim.h>")
+endif()
+
 #
 # Options
 #
