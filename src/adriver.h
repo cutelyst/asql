@@ -82,7 +82,8 @@ public:
 
     virtual void subscribeToNotification(const std::shared_ptr<ADriver> &driver,
                                          const QString &name,
-                                         QObject *receiver);
+                                         QObject *receiver,
+                                         ANotificationFn cb);
     virtual QStringList subscribedToNotifications() const;
     virtual void unsubscribeFromNotification(const std::shared_ptr<ADriver> &driver,
                                              const QString &name);

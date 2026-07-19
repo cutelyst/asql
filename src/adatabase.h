@@ -8,6 +8,7 @@
 #include <asqliterals.h>
 #include <chrono>
 #include <cstddef>
+#include <functional>
 #include <memory>
 
 #include <QObject>
@@ -28,6 +29,8 @@ public:
     QVariant payload;
     bool self;
 };
+
+using ANotificationFn = std::function<void(const ADatabaseNotification &notification)>;
 
 template <typename T>
 class ACoroExpected;
@@ -335,9 +338,10 @@ public:
      * back, in which case it will not be effective.
      *
      * \param channel name of the channel
-     * \param receiver optional lifetime guard for the LISTEN operation
+     * \param receiver optional lifetime guard; destroyed receivers drop the subscription
+     * \param cb called when a notification arrives on this channel
      */
-    void subscribeToNotification(const QString &channel, QObject *receiver = nullptr);
+    void subscribeToNotification(const QString &channel, QObject *receiver, ANotificationFn cb);
 
     /**
      * @brief subscribedToNotifications

@@ -1165,7 +1165,8 @@ int ADriverOdbc::queueSize() const
 
 void ADriverOdbc::subscribeToNotification(const std::shared_ptr<ADriver> &,
                                           const QString &,
-                                          QObject *)
+                                          QObject *,
+                                          ANotificationFn)
 {
 }
 

@@ -15,7 +15,6 @@
 
 #include <QHash>
 #include <QPointer>
-#include <QSet>
 #include <queue>
 
 class QTimer;
@@ -194,7 +193,8 @@ public:
 
     void subscribeToNotification(const std::shared_ptr<ADriver> &db,
                                  const QString &name,
-                                 QObject *receiver) override;
+                                 QObject *receiver,
+                                 ANotificationFn cb) override;
     QStringList subscribedToNotifications() const override;
     void unsubscribeFromNotification(const std::shared_ptr<ADriver> &db,
                                      const QString &name) override;
@@ -230,7 +230,7 @@ private:
     std::vector<OpenCaller> m_openWaiters;
 
     std::optional<QPointer<QObject>> m_stateChangedReceiver;
-    QSet<QString> m_subscribedNotifications;
+    QHash<QString, ANotificationFn> m_subscribedNotifications;
     std::queue<APGQuery> m_queuedQueries;
     std::shared_ptr<ADriver> selfDriver;
     QHash<int, QByteArray> m_preparedQueries;
