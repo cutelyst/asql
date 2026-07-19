@@ -201,6 +201,7 @@ public:
 
 private:
     inline void setupCheckReceiver(APGQuery &pgQuery, QObject *receiver);
+    void cancelCurrentQueryOnReceiverDestroyed(QObject *obj);
     inline bool runQuery(APGQuery &pgQuery);
     inline bool queryShouldBeQueued() const;
     void nextQuery();
