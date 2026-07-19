@@ -7,10 +7,39 @@
 #include <expected>
 #include <utility>
 
+#include <QCoreApplication>
 #include <QPointer>
 #include <QQueue>
+#include <QTimer>
 
 namespace ASql {
+
+namespace detail {
+
+inline thread_local bool g_resumingCoro = false;
+
+inline void resumeCoroHandle(std::coroutine_handle<> handle)
+{
+    if (!handle) {
+        return;
+    }
+
+    if (g_resumingCoro) {
+        if (QCoreApplication::instance()) {
+            QTimer::singleShot(
+                0, QCoreApplication::instance(), [handle]() mutable { resumeCoroHandle(handle); });
+        } else {
+            handle.resume();
+        }
+        return;
+    }
+
+    g_resumingCoro = true;
+    handle.resume();
+    g_resumingCoro = false;
+}
+
+} // namespace detail
 
 /*!
  * \brief ACoroData is the concrete coroutine state class for \c ACoroExpected<T>.
@@ -76,7 +105,7 @@ public:
 
         const auto prevStatus = std::exchange(status, Done);
         if (prevStatus == Suspended && handle) {
-            handle.resume();
+            detail::resumeCoroHandle(handle);
         }
     }
 
@@ -91,7 +120,7 @@ public:
 
         const auto prevStatus = std::exchange(status, Done);
         if (prevStatus == Suspended && handle) {
-            handle.resume();
+            detail::resumeCoroHandle(handle);
         }
     }
 };
@@ -158,6 +187,7 @@ protected:
     friend class ACache;
     friend class ATransaction;
     friend class APool;
+    friend class AMigrations;
     std::shared_ptr<ACoroData<T>> m_data;
 
 private:
@@ -197,7 +227,7 @@ class ACoroMultiExpected
             status = result.lastResultSet() ? Done : Waiting;
 
             if (prevStatus == Suspended && handle) {
-                handle.resume();
+                detail::resumeCoroHandle(handle);
             }
         }
     };
@@ -292,7 +322,7 @@ class AExpectedOpen
             }
 
             if (handle) {
-                handle.resume();
+                detail::resumeCoroHandle(handle);
             }
         }
     };

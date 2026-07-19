@@ -398,21 +398,14 @@ void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, 
                             //                            qDebug(ASQL_PG) << "NOTIFICATION" << name
                             //                            << notify;
 
-                            auto it = m_subscribedNotifications.constFind(name);
-                            if (it != m_subscribedNotifications.constEnd()) {
-                                if (it.value()) {
-                                    QString payload;
-                                    if (notify->extra) {
-                                        payload = QString::fromUtf8(notify->extra);
-                                    }
-                                    const bool self =
-                                        (notify->be_pid == PQbackendPID(m_conn->conn())) ? true
-                                                                                         : false;
-                                    //                                qDebug(ASQL_PG) <<
-                                    //                                "NOTIFICATION" << self << name
-                                    //                                << payload;
-                                    it.value()(ADatabaseNotification{name, payload, self});
+                            if (m_subscribedNotifications.contains(name)) {
+                                QString payload;
+                                if (notify->extra) {
+                                    payload = QString::fromUtf8(notify->extra);
                                 }
+                                const bool self = (notify->be_pid == PQbackendPID(m_conn->conn()));
+                                Q_EMIT notificationReceived(
+                                    ADatabaseNotification{name, payload, self});
                             } else {
                                 qWarning(
                                     ASQL_PG,
@@ -453,24 +446,12 @@ bool ADriverPg::isOpen() const
 void ADriverPg::setState(ADatabase::State state, const QString &status)
 {
     m_state = state;
-    if (m_stateChangedCb &&
-        (!m_stateChangedReceiver.has_value() || !m_stateChangedReceiver->isNull())) {
-        m_stateChangedCb(state, status);
-    }
+    Q_EMIT stateChanged(state, status);
 }
 
 ADatabase::State ADriverPg::state() const
 {
     return m_state;
-}
-
-void ADriverPg::onStateChanged(QObject *receiver,
-                               std::function<void(ADatabase::State, const QString &)> cb)
-{
-    m_stateChangedCb = cb;
-    if (receiver) {
-        m_stateChangedReceiver = receiver;
-    }
 }
 
 void ADriverPg::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb)
@@ -705,8 +686,7 @@ int ADriverPg::queueSize() const
 
 void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db,
                                         const QString &name,
-                                        QObject *receiver,
-                                        ANotificationFn cb)
+                                        QObject *receiver)
 {
     if (name.isEmpty()) {
         qWarning(ASQL_PG) << "Invalid notification channel name" << name;
@@ -723,7 +703,7 @@ void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db,
         return;
     }
 
-    m_subscribedNotifications.insert(name, cb);
+    m_subscribedNotifications.insert(name);
     listenCoro(db, name);
 
     connect(
@@ -732,7 +712,7 @@ void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db,
 
 QStringList ADriverPg::subscribedToNotifications() const
 {
-    return m_subscribedNotifications.keys();
+    return QStringList(m_subscribedNotifications.begin(), m_subscribedNotifications.end());
 }
 
 void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name)

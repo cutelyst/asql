@@ -1,17 +1,20 @@
-#ifndef MIGRATIONS_TST_H
-#    define MIGRATIONS_TST_H
+/*
+ * SPDX-FileCopyrightText: (C) 2026 Daniel Nicoletti <dantti12@gmail.com>
+ * SPDX-License-Identifier: MIT
+ */
 
-#    include "ASqlite.hpp"
-#    include "CoverageObject.hpp"
-#    include "acoroexpected.h"
-#    include "adatabase.h"
-#    include "amigrations.h"
-#    include "apool.h"
+#include "ASqlite.hpp"
+#include "CoverageObject.hpp"
+#include "acoroexpected.h"
+#include "adatabase.h"
+#include "amigrations.h"
+#include "apool.h"
 
-#    include <QEventLoop>
-#    include <QObject>
-#    include <QScopeGuard>
-#    include <QTest>
+#include <functional>
+
+#include <QObject>
+#include <QScopeGuard>
+#include <QTest>
 
 using namespace ASql;
 using namespace Qt::Literals::StringLiterals;
@@ -50,6 +53,86 @@ CREATE TABLE mig_step10 (id INTEGER);
 -- 10 down
 DROP TABLE mig_step10;
 )"_s;
+
+ACoroTerminator runMigrationUpAndDown(std::shared_ptr<QObject> finished)
+{
+    auto _ = qScopeGuard([finished] {});
+
+    auto db = co_await APool::database(nullptr, u"migrations"_s);
+    AVERIFY(db);
+
+    AMigrations mig;
+    mig.fromString(kContiguousMigrations);
+
+    AVERIFY(co_await mig.load(*db, u"contiguous"_s));
+    AVERIFY(co_await mig.migrate(3));
+    AVERIFY(co_await mig.migrate(0));
+
+    auto versionResult = co_await db->exec(u"SELECT version FROM asql_migrations WHERE name = ?"_s,
+                                           {u"contiguous"_s});
+    AVERIFY(versionResult);
+    ACOMPARE_EQ((*versionResult)[0][0].toInt(), 0);
+
+    auto tablesResult = co_await db->exec(
+        u"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name LIKE 'mig_v%'"_s);
+    AVERIFY(tablesResult);
+    ACOMPARE_EQ((*tablesResult)[0][0].toInt(), 0);
+}
+
+ACoroTerminator runSparseMigrationDown(std::shared_ptr<QObject> finished)
+{
+    auto _ = qScopeGuard([finished] {});
+
+    auto db = co_await APool::database(nullptr, u"migrations"_s);
+    AVERIFY(db);
+
+    AMigrations mig;
+    mig.fromString(kSparseMigrations);
+
+    AVERIFY(co_await mig.load(*db, u"sparse"_s));
+    AVERIFY(co_await mig.migrate(10));
+    AVERIFY(co_await mig.migrate(0));
+
+    auto versionResult =
+        co_await db->exec(u"SELECT version FROM asql_migrations WHERE name = ?"_s, {u"sparse"_s});
+    AVERIFY(versionResult);
+    ACOMPARE_EQ((*versionResult)[0][0].toInt(), 9);
+}
+
+ACoroTerminator runMigrationNameBinding(std::shared_ptr<QObject> finished)
+{
+    auto _ = qScopeGuard([finished] {});
+
+    auto db = co_await APool::database(nullptr, u"migrations"_s);
+    AVERIFY(db);
+
+    AMigrations mig;
+    mig.fromString(uR"(
+-- 1 up
+CREATE TABLE mig_name (id INTEGER);
+-- 1 down
+DROP TABLE mig_name;
+)"_s);
+
+    AVERIFY(co_await mig.load(*db, u"name'with'quote"_s));
+    AVERIFY(co_await mig.migrate(1));
+
+    auto versionResult = co_await db->exec(u"SELECT version FROM asql_migrations WHERE name = ?"_s,
+                                           {u"name'with'quote"_s});
+    AVERIFY(versionResult);
+    ACOMPARE_EQ((*versionResult)[0][0].toInt(), 1);
+}
+
+void runCoroutineTest(const std::function<ACoroTerminator(std::shared_ptr<QObject>)> &fn)
+{
+    QEventLoop loop;
+    {
+        auto finished = std::make_shared<QObject>();
+        QObject::connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
+        fn(finished);
+    }
+    loop.exec();
+}
 
 } // namespace
 
@@ -103,197 +186,18 @@ void TestMigrations::testFromStringParsing()
 
 void TestMigrations::testMigrateUpAndDown()
 {
-    QEventLoop loop;
-    {
-        auto finished = std::make_shared<QObject>();
-        connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-
-        auto run = [](std::shared_ptr<QObject> finished) -> ACoroTerminator {
-            auto _ = qScopeGuard([finished] {});
-
-            auto db = co_await APool::database(nullptr, u"migrations"_s);
-            AVERIFY(db);
-
-            AMigrations mig;
-            mig.fromString(kContiguousMigrations);
-
-            QEventLoop loadLoop;
-            bool loadError = true;
-            QObject::connect(&mig, &AMigrations::ready, &mig, [&](bool error, QString) {
-                loadError = error;
-                loadLoop.quit();
-            });
-            mig.load(*db, u"contiguous"_s);
-            loadLoop.exec();
-            AVERIFY(!loadError);
-
-            QEventLoop upLoop;
-            bool upError = true;
-            mig.migrate(3, [&](bool error, QString) {
-                upError = error;
-                upLoop.quit();
-            });
-            upLoop.exec();
-            AVERIFY(!upError);
-
-            QEventLoop downLoop;
-            bool downError = true;
-            mig.migrate(0, [&](bool error, QString) {
-                downError = error;
-                downLoop.quit();
-            });
-            downLoop.exec();
-            AVERIFY(!downError);
-
-            int version        = -1;
-            auto versionResult = co_await db->exec(
-                u"SELECT version FROM asql_migrations WHERE name = ?"_s, {u"contiguous"_s});
-            AVERIFY(versionResult);
-            ACOMPARE_EQ(versionResult->size(), 1);
-            version = (*versionResult)[0][0].toInt();
-            ACOMPARE_EQ(version, 0);
-
-            auto tablesResult = co_await db->exec(
-                u"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name LIKE 'mig_v%'"_s);
-            AVERIFY(tablesResult);
-            ACOMPARE_EQ((*tablesResult)[0][0].toInt(), 0);
-        };
-        run(finished);
-    }
-    loop.exec();
+    runCoroutineTest(runMigrationUpAndDown);
 }
 
 void TestMigrations::testDownOneStepFromSparseVersions()
 {
-    QEventLoop loop;
-    {
-        auto finished = std::make_shared<QObject>();
-        connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-
-        auto run = [](std::shared_ptr<QObject> finished) -> ACoroTerminator {
-            auto _ = qScopeGuard([finished] {});
-
-            auto db = co_await APool::database(nullptr, u"migrations"_s);
-            AVERIFY(db);
-
-            AMigrations mig;
-            mig.fromString(kSparseMigrations);
-
-            QEventLoop loadLoop;
-            bool loadError = true;
-            QObject::connect(&mig, &AMigrations::ready, &mig, [&](bool error, QString) {
-                loadError = error;
-                loadLoop.quit();
-            });
-            mig.load(*db, u"sparse"_s);
-            loadLoop.exec();
-            AVERIFY(!loadError);
-
-            QEventLoop upLoop;
-            bool upError = true;
-            mig.migrate(10, [&](bool error, QString) {
-                upError = error;
-                upLoop.quit();
-            });
-            upLoop.exec();
-            AVERIFY(!upError);
-
-            QEventLoop downLoop;
-            bool downError = true;
-            mig.migrate(0, [&](bool error, QString) {
-                downError = error;
-                downLoop.quit();
-            });
-            downLoop.exec();
-            AVERIFY(!downError);
-
-            int version        = -1;
-            auto versionResult = co_await db->exec(
-                u"SELECT version FROM asql_migrations WHERE name = ?"_s, {u"sparse"_s});
-            AVERIFY(versionResult);
-            ACOMPARE_EQ(versionResult->size(), 1);
-            version = (*versionResult)[0][0].toInt();
-            ACOMPARE_EQ(version, 9);
-
-            auto step10 = co_await db->exec(
-                u"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?"_s,
-                {u"mig_step10"_s});
-            AVERIFY(step10);
-            ACOMPARE_EQ((*step10)[0][0].toInt(), 0);
-
-            auto step5 = co_await db->exec(
-                u"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?"_s,
-                {u"mig_step5"_s});
-            AVERIFY(step5);
-            ACOMPARE_EQ((*step5)[0][0].toInt(), 1);
-        };
-        run(finished);
-    }
-    loop.exec();
+    runCoroutineTest(runSparseMigrationDown);
 }
 
 void TestMigrations::testMigrationNameBinding()
 {
-    QEventLoop loop;
-    {
-        auto finished = std::make_shared<QObject>();
-        connect(finished.get(), &QObject::destroyed, &loop, &QEventLoop::quit);
-
-        auto run = [](std::shared_ptr<QObject> finished) -> ACoroTerminator {
-            auto _ = qScopeGuard([finished] {});
-
-            auto db = co_await APool::database(nullptr, u"migrations"_s);
-            AVERIFY(db);
-
-            AMigrations mig;
-            mig.fromString(uR"(
--- 1 up
-CREATE TABLE mig_bound (id INTEGER);
--- 1 down
-DROP TABLE mig_bound;
-)"_s);
-
-            const QString name = u"safe'name"_s;
-
-            QEventLoop loadLoop;
-            bool loadError = true;
-            QObject::connect(&mig, &AMigrations::ready, &mig, [&](bool error, QString) {
-                loadError = error;
-                loadLoop.quit();
-            });
-            mig.load(*db, name);
-            loadLoop.exec();
-            AVERIFY(!loadError);
-
-            QEventLoop migrateLoop;
-            bool migrateError = true;
-            mig.migrate(1, [&](bool error, QString) {
-                migrateError = error;
-                migrateLoop.quit();
-            });
-            migrateLoop.exec();
-            AVERIFY(!migrateError);
-
-            int version = -1;
-            auto versionResult =
-                co_await db->exec(u"SELECT version FROM asql_migrations WHERE name = ?"_s, {name});
-            AVERIFY(versionResult);
-            ACOMPARE_EQ(versionResult->size(), 1);
-            version = (*versionResult)[0][0].toInt();
-            ACOMPARE_EQ(version, 1);
-
-            auto tableResult = co_await db->exec(
-                u"SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?"_s,
-                {u"mig_bound"_s});
-            AVERIFY(tableResult);
-            ACOMPARE_EQ((*tableResult)[0][0].toInt(), 1);
-        };
-        run(finished);
-    }
-    loop.exec();
+    runCoroutineTest(runMigrationNameBinding);
 }
-
-#endif // MIGRATIONS_TST_H
 
 QTEST_MAIN(TestMigrations)
 #include "migrations_tst.moc"

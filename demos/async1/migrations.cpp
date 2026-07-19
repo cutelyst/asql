@@ -28,18 +28,9 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    //    APool::addDatabase(u"postgres://server.com,server2.com/mydb?target_session_attrs=read-write"_s);
     APool::create(APg::factory(u"postgres:///"_s));
 
     auto mig = new AMigrations();
-    mig->connect(mig, &AMigrations::ready, [=](bool error, const QString &erroString) {
-        qDebug() << "Read to migrate" << error << erroString;
-        mig->migrate(0, [=](bool error, const QString &errorString) {
-            qDebug() << "Migration Error" << error << errorString;
-        });
-    });
-    // mig->load(APool::database(), u"foo"_s);
-
     mig->fromString(uR"V0G0N(
 -- 1 up
 create table messages (message text);
@@ -55,7 +46,6 @@ drop table log;
 create tabsle log (message text);
 )V0G0N"_s);
     qDebug() << "MIG" << mig->latest() << mig->active();
-    //    qDebug() << "sqlFor" << mig->sqlFor(0, 2);
 
     app.exec();
 }

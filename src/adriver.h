@@ -6,8 +6,8 @@
 
 #include <adatabase.h>
 #include <asql_export.h>
-#include <functional>
 
+#include <QObject>
 #include <QSocketNotifier>
 #include <QString>
 
@@ -31,7 +31,6 @@ public:
     virtual void open(const std::shared_ptr<ADriver> &driver, QObject *receiver, AOpenFn cb);
 
     virtual ADatabase::State state() const;
-    virtual void onStateChanged(QObject *receiver, ADatabase::StateChangedFn cb);
 
     virtual bool isOpen() const;
 
@@ -82,11 +81,14 @@ public:
 
     virtual void subscribeToNotification(const std::shared_ptr<ADriver> &driver,
                                          const QString &name,
-                                         QObject *receiver,
-                                         ANotificationFn cb);
+                                         QObject *receiver);
     virtual QStringList subscribedToNotifications() const;
     virtual void unsubscribeFromNotification(const std::shared_ptr<ADriver> &driver,
                                              const QString &name);
+
+Q_SIGNALS:
+    void stateChanged(ASql::ADatabase::State state, const QString &status);
+    void notificationReceived(const ASql::ADatabaseNotification &notification);
 
 private:
     QString m_info;

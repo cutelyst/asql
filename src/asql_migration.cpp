@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "acoroexpected.h"
 #include "adatabase.h"
 #include "amigrations.h"
 
@@ -139,7 +140,6 @@ int main(int argc, char *argv[])
     if (conn.startsWith(u"postgres://") || conn.startsWith(u"postgresql://")) {
         db              = APg::database(conn);
         noTransactionDB = APg::database(conn);
-        noTransactionDB.open();
     }
 #endif
 
@@ -147,7 +147,6 @@ int main(int argc, char *argv[])
     if (conn.startsWith(u"sqlite://")) {
         db              = ASqlite::database(conn);
         noTransactionDB = ASqlite::database(conn);
-        noTransactionDB.open();
     }
 #endif
 
@@ -158,95 +157,103 @@ int main(int argc, char *argv[])
         return 5;
     }
 
-    db.open(nullptr, [=](bool isOpen, const QString &errorString) {
-        if (!isOpen) {
+    [&]() -> ACoroTerminator {
+        const auto open = co_await db.coOpen();
+        if (!open) {
             std::cerr << qPrintable(
                              QCoreApplication::translate("main", "Failed to open database: %1.")
-                                 .arg(errorString))
+                                 .arg(open.error()))
                       << std::endl;
             qApp->exit(6);
-            return;
+            co_return;
         }
 
-        auto mig = new AMigrations;
-        mig->fromString(sql);
-        mig->connect(mig, &AMigrations::ready, [=](bool error, const QString &errorString) {
-            if (error) {
+        if (noTransactionDB.isValid()) {
+            const auto noTxOpen = co_await noTransactionDB.coOpen();
+            if (!noTxOpen) {
                 std::cerr << qPrintable(QCoreApplication::translate(
-                                            "main", "Failed to initialize migrations: %1.")
-                                            .arg(errorString))
+                                            "main", "Failed to open no-transaction database: %1.")
+                                            .arg(noTxOpen.error()))
                           << std::endl;
-                qApp->exit(7);
-                return;
+                qApp->exit(6);
+                co_return;
+            }
+        }
+
+        AMigrations mig;
+        mig.fromString(sql);
+
+        const auto load = co_await mig.load(db, name, noTransactionDB);
+        if (!load) {
+            std::cerr << qPrintable(QCoreApplication::translate(
+                                        "main", "Failed to initialize migrations: %1.")
+                                        .arg(load.error()))
+                      << std::endl;
+            qApp->exit(7);
+            co_return;
+        }
+
+        const int newVersion =
+            targetVersion != -1 && targetVersion <= mig.latest() ? targetVersion : mig.latest();
+
+        if (mig.active() == newVersion) {
+            std::cerr << qPrintable(QCoreApplication::translate(
+                                        "main", "Database is already at target version: %1.")
+                                        .arg(QString::number(mig.active())))
+                      << std::endl;
+            qApp->exit(0);
+            co_return;
+        }
+
+        if (showSql) {
+            std::cout << qPrintable(QCoreApplication::translate("main", "Migration SQL:"))
+                      << std::endl
+                      << qPrintable(mig.sqlFor(mig.active(), newVersion)) << std::endl;
+        }
+
+        if (!confirm || newVersion < mig.active()) {
+            if (newVersion < mig.active()) {
+                std::cout << qPrintable(
+                    QCoreApplication::translate(
+                        "main", "Do you want to ROLLBACK '%1' from %2 to %3? [yes/no] ")
+                        .arg(name)
+                        .arg(QString::number(mig.active()))
+                        .arg(QString::number(newVersion)));
+            } else {
+                std::cout << qPrintable(
+                    QCoreApplication::translate(
+                        "main", "Do you wanto to migrate '%1' from %2 to %3? [y/n] ")
+                        .arg(name)
+                        .arg(QString::number(mig.active()))
+                        .arg(QString::number(newVersion)));
             }
 
-            const int newVersion = targetVersion != -1 && targetVersion <= mig->latest()
-                                       ? targetVersion
-                                       : mig->latest();
-
-            if (mig->active() == newVersion) {
-                std::cerr << qPrintable(QCoreApplication::translate(
-                                            "main", "Database is already at target version: %1.")
-                                            .arg(QString::number(mig->active())))
-                          << std::endl;
-                qApp->exit(0);
-                return;
+            std::string value;
+            std::cin >> value;
+            if ((newVersion < mig.active() && value != "yes") ||
+                (newVersion > mig.active() && value != "y")) {
+                qApp->exit(8);
+                co_return;
             }
+        }
 
-            if (showSql) {
-                std::cout << qPrintable(QCoreApplication::translate("main", "Migration SQL:"))
-                          << std::endl
-                          << qPrintable(mig->sqlFor(mig->active(), newVersion)) << std::endl;
-            }
+        QElapsedTimer t;
+        t.start();
+        const auto migrated = co_await mig.migrate(newVersion, dryRun);
+        if (!migrated) {
+            std::cerr << qPrintable(QCoreApplication::translate("main", "Error: %1.")
+                                        .arg(migrated.error()))
+                      << std::endl;
+            qApp->exit(9);
+            co_return;
+        }
 
-            if (!confirm || newVersion < mig->active()) {
-                if (newVersion < mig->active()) {
-                    std::cout << qPrintable(
-                        QCoreApplication::translate(
-                            "main", "Do you want to ROLLBACK '%1' from %2 to %3? [yes/no] ")
-                            .arg(name)
-                            .arg(QString::number(mig->active()))
-                            .arg(QString::number(newVersion)));
-                } else {
-                    std::cout << qPrintable(
-                        QCoreApplication::translate(
-                            "main", "Do you wanto to migrate '%1' from %2 to %3? [y/n] ")
-                            .arg(name)
-                            .arg(QString::number(mig->active()))
-                            .arg(QString::number(newVersion)));
-                }
-
-                std::string value;
-                std::cin >> value;
-                if ((newVersion < mig->active() && value != "yes") ||
-                    (newVersion > mig->active() && value != "y")) {
-                    qApp->exit(8);
-                    return;
-                }
-            }
-
-            QElapsedTimer t;
-            t.start();
-            mig->migrate(newVersion, [t](bool error, const QString &errorString) {
-                if (error) {
-                    std::cerr << qPrintable(QCoreApplication::translate("main", "Error: %1.")
-                                                .arg(errorString))
-                              << std::endl;
-                    qApp->exit(9);
-                } else {
-                    std::cout << qPrintable(QCoreApplication::translate(
-                                                "main",
-                                                "Migration finished with success: '%1'. Took %2 ms")
-                                                .arg(errorString)
-                                                .arg(t.elapsed()))
-                              << std::endl;
-                    qApp->exit(0);
-                }
-            }, dryRun);
-        });
-
-        mig->load(db, name, noTransactionDB);
-    });
+        std::cout << qPrintable(QCoreApplication::translate(
+                                    "main", "Migration finished with success. Took %1 ms")
+                                    .arg(t.elapsed()))
+                  << std::endl;
+        qApp->exit(0);
+    }();
 
     return app.exec();
 }

@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include <acoroexpected.h>
 #include <adatabase.h>
 #include <adriverfactory.h>
 #include <asql_export.h>
@@ -12,6 +13,8 @@
 #include <QUrl>
 
 namespace ASql {
+
+using APoolHookFn = std::function<ACoroTerminator(ADatabase)>;
 
 class ASQL_EXPORT APool
 {
@@ -109,7 +112,7 @@ public:
     static int maxConnections(QStringView poolName = defaultPool);
 
     /*!
-     * \brief setSetupCallback setup a connection before being used for the first time
+     * \brief setSetupHook runs a coroutine before a pooled connection is first used
      *
      * Sometimes one might want to increase connection buffer or set a different timezone,
      * any kind of connection setup that would be done as soon as the connection with the
@@ -122,28 +125,18 @@ public:
      *
      * Changing this value only affect new connections created.
      *
-     * \param cb setup callback
+     * \param hook coroutine run before the first use of a new pooled connection
      * \param poolName
      */
-    static void setSetupCallback(ADatabaseFn cb, QStringView poolName = defaultPool);
+    static void setSetupHook(APoolHookFn hook, QStringView poolName = defaultPool);
 
     /*!
-     * \brief setReuseCallback setup a connection before being reused
+     * \brief setReuseHook runs a coroutine before a pooled connection is reused.
      *
-     * Sometimes one might want to "DISCARD" previous information on the connection,
-     * this callback will be called when an existing connection is going to be reused.
-     *
-     * This callback is not called when the connection is opened.
-     *
-     * Always call \sa ADatabase::exec() at once so that they are queued and executed before
-     * the caller of \sa APool::database().
-     *
-     * Changing this value only affect new connections created.
-     *
-     * \param cb reuse callback
+     * \param hook coroutine run when an existing connection is handed out again
      * \param poolName
      */
-    static void setReuseCallback(ADatabaseFn cb, QStringView poolName = defaultPool);
+    static void setReuseHook(APoolHookFn hook, QStringView poolName = defaultPool);
 
     [[nodiscard]] static AExpectedResult
         exec(QStringView query, QObject *receiver = nullptr, QStringView poolName = defaultPool);
@@ -227,7 +220,9 @@ private:
                                                   const QVariantList &params,
                                                   QObject *receiver    = nullptr,
                                                   QStringView poolName = defaultPool);
-    static void databaseCallback(QObject *receiver, ADatabaseFn cb, QStringView poolName);
+    static void deliverDatabase(QObject *receiver,
+                                std::shared_ptr<ACoroData<ADatabase>> coroData,
+                                QStringView poolName);
     inline static void pushDatabaseBack(QStringView connectionName, ADriver *driver);
 };
 

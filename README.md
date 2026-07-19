@@ -36,7 +36,7 @@ ASql fully supports C++20/23 coroutines. Use `ACoroTerminator` as the return typ
 Make sure to read (C++ Coro Guidelines on Coroutines)[https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#sscp-coro]
 
 ### Creating a Pool
-A connection pool is a convenient way of getting new connections without worrying about configuring it and it's lifetime, once you are done with it the connection returns to the pool. It's also possible to have a single database connection without it being attached to a pool, by creating ADatabase object directly and calling open().
+A connection pool is a convenient way of getting new connections without worrying about configuring it and it's lifetime, once you are done with it the connection returns to the pool. It's also possible to have a single database connection without it being attached to a pool, by creating an `ADatabase` object directly and calling `co_await db.coOpen()`.
 
 ```c++
 using namespace ASql;
@@ -201,49 +201,41 @@ runCached(cache);
 ```
 
 ### Cancelation
-ASql was created with web usage in mind, namely to be used in Cutelyst but can also be used on Desktop/Mobile apps too, so in order to cancel
-or avoid a crash due some invalid pointer captured by the lambda you can pass a QObject pointer, that if deleted and was set for the current
-query will send a cancelation packet, this doesn't always work (due the packet arriving after the query was done), but your lambda will not be called anymore.
+ASql was created with web usage in mind, namely to be used in Cutelyst but can also be used on Desktop/Mobile apps too. Pass a `QObject*` receiver to `exec()` or `coOpen()`; if that object is destroyed while a query or open is in flight, the operation is cancelled and the coroutine receives an error instead of resuming with a dangling pointer.
 
 ```c++
 auto cancelator = new QObject;
-auto result = co_await db->exec(u"SELECT pg_sleep(5)", cancelator, [=] (AResult &result) {
-    // This will never be called but it would crash
-    // if cancelator was dangling reference and not passed as last parameter
-    cancelator->setProperty("foo");
+auto result = co_await db->exec(u"SELECT pg_sleep(5)", cancelator);
 
-}); // notice the object being passed here
-
-delete cancelator;
+delete cancelator; // cancels the in-flight query; co_await resumes with an error
 ```
 
 ### Notifications (Postgres only)
 
-Each Database object can have a single function subscribed to one notification, if the connection is closed the subscription is cleared and a new subscription has to be made, this it's handy to have the subcription call on a named lambda:
+Subscribe to a channel and connect to the driver signal to receive payloads. If the connection drops, re-subscribe after reconnecting:
 
 ```c++
 ADatabase db;
-auto subscribe = [=] () mutable {
-   db.subscribeToNotification(u"my_awesome_notification"_s,
-     [=] (const ADatabaseNotification &notification) {
-       qDebug() << "DB notification:" << notification.self << notification.name
-                << notification.payload;
-   }, this);
-};
+QObject receiver;
 
-db.onStateChanged(nullptr, [=] (ADatabase::State state, const QString &status) mutable {
-   qDebug() << "state changed" << state << status << db.isOpen();
+connect(db.driver(), &ADriver::notificationReceived, &receiver,
+        [](const ADatabaseNotification &notification) {
+            qDebug() << "DB notification:" << notification.self << notification.name
+                     << notification.payload;
+        });
 
-   if (state == ADatabase::Disconnected) {
-       qDebug() << "state disconnected";
-       db.open(); // Try to reconnect
-   } else if (state == ADatabase::Connected) {
-       // subscribe to the notification again
-       subscribe();
-   }
-});
+connect(db.driver(), &ADriver::stateChanged, &receiver,
+        [&db](ADatabase::State state, const QString &status) {
+            qDebug() << "state changed" << state << status << db.isOpen();
 
-db.open();
+            if (state == ADatabase::Disconnected) {
+                qDebug() << "state disconnected";
+            } else if (state == ADatabase::Connected) {
+                db.subscribeToNotification(u"my_awesome_notification"_s, &receiver);
+            }
+        });
+
+co_await db.coOpen(&receiver);
 ```
 
 ### Migrations
@@ -253,10 +245,11 @@ and test for proprer SQL.
 Each migration must have a positive integer number with up and down scripts, the current migration version is stored at asql_migrations table that is automatically created if you load a new migration.
 
 ```c++
-auto mig = new AMigrations();
+ACoroTerminator runMigrations()
+{
+    AMigrations mig;
 
-// load it from string or filename
-mig->fromString(uR"V0G0N(
+    mig.fromString(uR"V0G0N(
 -- 1 up
 create table messages (message text);
 insert into messages values ('I ♥ Cutelyst!');
@@ -271,13 +264,16 @@ drop table log;
 create table log (message text);
 )V0G0N");
 
-mig->connect(mig, &AMigrations::ready, [=] (bool error, const QString &erroString) {
-    qDebug() << "LOADED" << error << erroString;
+    const auto loaded = co_await mig.load();
+    if (!loaded) {
+        qDebug() << "LOAD error:" << loaded.error();
+        co_return;
+    }
 
-    // Migrate to version 2, if omitted defaults to the latest version available
-    mig->migrate(2, [=] (bool error, const QString &errorString) {
-        qDebug() << "MIGRATED" << error << errorString;
-    });
-});
-mig->load(APool::database(), "my_app_foo");
+    // Migrate to version 2; omit targetVersion to migrate to the latest version
+    const auto migrated = co_await mig.migrate(2);
+    if (!migrated) {
+        qDebug() << "MIGRATE error:" << migrated.error();
+    }
+}
 ```
