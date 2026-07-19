@@ -138,7 +138,7 @@ void APool::pushDatabaseBack(QStringView connectionName, ADriver *driver)
             }
 
             ADatabase db{std::shared_ptr<ADriver>(
-                driver, [connectionName = QString(connectionName)](ADriver *driver) {
+                driver, [connectionName = connectionName.toString()](ADriver *driver) {
                 pushDatabaseBack(connectionName, driver);
             })};
             if (iPool.reuseHook) {
