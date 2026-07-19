@@ -70,6 +70,8 @@ jobs:
       - name: Install dependencies on macOS
         if: runner.os == 'macOS'
         run: |
+          # GitHub macOS runners ship aws/tap; Homebrew 6+ warns on untrusted taps.
+          brew untap aws/tap || true
           brew install postgresql@16
           brew services start postgresql@16
           # Wait until the server accepts connections
