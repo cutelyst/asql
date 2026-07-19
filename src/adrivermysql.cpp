@@ -528,10 +528,11 @@ void AMysqlThread::open()
     const QByteArray sslCipher = query.queryItemValue(u"ssl-cipher"_s).toUtf8();
     if ((clientFlags & CLIENT_SSL) || !sslCa.isEmpty() || !sslCert.isEmpty() || !sslKey.isEmpty() ||
         !sslCipher.isEmpty()) {
+        // Order is key, cert, ca, capath, cipher (was previously key/ca swapped).
         mysql_ssl_set(m_mysql,
-                      sslCa.isEmpty() ? nullptr : sslCa.constData(),
-                      sslCert.isEmpty() ? nullptr : sslCert.constData(),
                       sslKey.isEmpty() ? nullptr : sslKey.constData(),
+                      sslCert.isEmpty() ? nullptr : sslCert.constData(),
+                      sslCa.isEmpty() ? nullptr : sslCa.constData(),
                       nullptr,
                       sslCipher.isEmpty() ? nullptr : sslCipher.constData());
     }
