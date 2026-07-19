@@ -358,37 +358,27 @@ int main(int argc, char *argv[])
         destroyedLambda();
     }
 
-    if (false) {
+    if (true) {
         auto callPoolBegin = []() -> ACoroTerminator {
-            auto _ = qScopeGuard([] { qDebug() << "coro pool exited"; });
-            qDebug() << "coro exec pool started";
+            auto _ = qScopeGuard([] { qDebug() << "coro pool begin exited"; });
+            qDebug() << "coro pool begin started";
 
-#if 0
-// TODO enable once APool::begin() is fixed
-            auto t = co_await APool::begin(nullptr);
-            if (t.has_value()) {
-                qDebug() << "coro exec t has value" << t->database().isOpen();
+            auto t = co_await APool::begin();
+            if (!t) {
+                qDebug() << "coro pool begin error" << t.error();
+                co_return;
+            }
+            qDebug() << "coro pool begin ok, open" << t->database().isOpen();
+
+            auto result = co_await t->database().exec(u8"SELECT now()");
+            if (result) {
+                qDebug() << "coro pool begin SELECT" << result->toJsonObject();
             } else {
-                qDebug() << "coro exec t error" << t.error();
+                qDebug() << "coro pool begin SELECT error" << result.error();
             }
 
-            auto result = co_await t->database().exec(u8"SELECT now()", nullptr);
-            if (result.has_value()) {
-                qDebug() << "coro exec result has value" << result->toJsonObject();
-            } else {
-                qDebug() << "coro exec result error" << result.error();
-            }
-
-            auto obj = new QObject;
-            QTimer::singleShot(500, obj, [obj] {
-                qDebug() << "Delete Obj later";
-                delete obj;
-            });
-            co_yield obj; // so that this promise is destroyed if this object is destroyed
-#endif
-
-            std::ignore = APool::exec(u8"SELECT now(), pg_sleep(1)" /*, obj*/);
-            co_return;
+            auto commit = co_await t->commit();
+            qDebug() << "coro pool begin COMMIT" << (commit ? u"ok"_s : commit.error());
         };
 
         callPoolBegin();
