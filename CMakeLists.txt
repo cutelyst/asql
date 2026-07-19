@@ -131,24 +131,25 @@ function(project_target_compile_definitions target)
 endfunction()
 
 # cmake config files
+set(ASQL_CMAKE_PACKAGE_NAME "ASql${PROJECT_VERSION_MAJOR}Qt${QT_VERSION_MAJOR}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/asqlqt-config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${ASQL_CMAKE_PACKAGE_NAME}Config.cmake
     @ONLY
 )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/asqlqt-config-version.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}ConfigVersion.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${ASQL_CMAKE_PACKAGE_NAME}ConfigVersion.cmake
     @ONLY
 )
 install(
     FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}Config.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}ConfigVersion.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ASqlQt${QT_VERSION_MAJOR}/
+        ${CMAKE_CURRENT_BINARY_DIR}/${ASQL_CMAKE_PACKAGE_NAME}Config.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/${ASQL_CMAKE_PACKAGE_NAME}ConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${ASQL_CMAKE_PACKAGE_NAME}/
 )
 
 install(EXPORT ASqlTargets
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ASqlQt${QT_VERSION_MAJOR}/
-    FILE ASql${PROJECT_VERSION_MAJOR}Qt${QT_VERSION_MAJOR}Targets.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${ASQL_CMAKE_PACKAGE_NAME}/
+    FILE ${ASQL_CMAKE_PACKAGE_NAME}Targets.cmake
     NAMESPACE ASql::
     COMPONENT Devel
 )
