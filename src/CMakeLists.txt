@@ -1,6 +1,10 @@
 # SPDX-FileCopyrightText: (C) 2020-2024 Daniel Nicoletti <dantti12@gmail.com>
 # SPDX-License-Identifier: MIT
 
+# Versioned on-disk library names so major releases can co-install
+# (e.g. libASql1Qt6.so vs libASql0Qt6.so).
+set(ASQL_LIB_OUTPUT_PREFIX "ASql${PROJECT_VERSION_MAJOR}Qt${QT_VERSION_MAJOR}")
+
 set(asql_SRC
     adatabase.cpp
     adatabase.h
@@ -40,7 +44,7 @@ generate_export_header(ASqlQt${QT_VERSION_MAJOR}
 )
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/asql_export.h
-    DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
+    DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql
 )
 
 #Add an alias so that library can be used inside the build tree, e.g. when testing
@@ -58,13 +62,14 @@ target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}
 
 target_include_directories(ASqlQt${QT_VERSION_MAJOR} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-  $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
+  $<INSTALL_INTERFACE:include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql>
 )
 
 set_target_properties(ASqlQt${QT_VERSION_MAJOR} PROPERTIES
     EXPORT_NAME Core
+    OUTPUT_NAME ${ASQL_LIB_OUTPUT_PREFIX}
     VERSION ${PROJECT_VERSION}
-    SOVERSION 1
+    SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
 target_link_libraries(ASqlQt${QT_VERSION_MAJOR}
@@ -77,14 +82,14 @@ install(TARGETS ASqlQt${QT_VERSION_MAJOR}
     EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION bin COMPONENT runtime
     ARCHIVE DESTINATION lib COMPONENT devel
-    PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
+    PUBLIC_HEADER DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
 )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/asql-qt.pc.in
-    ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}.pc
+    ${CMAKE_CURRENT_BINARY_DIR}/ASql${PROJECT_VERSION_MAJOR}Qt${QT_VERSION_MAJOR}.pc
     @ONLY
 )
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ASqlQt${QT_VERSION_MAJOR}.pc
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ASql${PROJECT_VERSION_MAJOR}Qt${QT_VERSION_MAJOR}.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
 
@@ -108,7 +113,7 @@ generate_export_header(ASqlQt${QT_VERSION_MAJOR}Migrations
 )
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/asql_migrations_export.h
-    DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
+    DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql
 )
 
 add_library(ASql::Migrations ALIAS ASqlQt${QT_VERSION_MAJOR}Migrations)
@@ -125,13 +130,14 @@ target_compile_definitions(ASqlQt${QT_VERSION_MAJOR}Migrations
 
 target_include_directories(ASqlQt${QT_VERSION_MAJOR}Migrations PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
+    $<INSTALL_INTERFACE:include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql>
 )
 
 set_target_properties(ASqlQt${QT_VERSION_MAJOR}Migrations PROPERTIES
     EXPORT_NAME Migrations
+    OUTPUT_NAME ${ASQL_LIB_OUTPUT_PREFIX}Migrations
     VERSION ${PROJECT_VERSION}
-    SOVERSION 1
+    SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
 target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Migrations
@@ -145,7 +151,7 @@ install(TARGETS ASqlQt${QT_VERSION_MAJOR}Migrations
     EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION bin COMPONENT runtime
     ARCHIVE DESTINATION lib COMPONENT devel
-    PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
+    PUBLIC_HEADER DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
 )
 # End Migrations Library
 
@@ -171,7 +177,7 @@ if (ASQL_DRIVER_POSTGRES)
     )
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/asql_pg_export.h
-        DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
+        DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql
     )
 
     add_library(ASql::Pg ALIAS ASqlQt${QT_VERSION_MAJOR}Pg)
@@ -188,13 +194,14 @@ if (ASQL_DRIVER_POSTGRES)
 
     target_include_directories(ASqlQt${QT_VERSION_MAJOR}Pg PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
+        $<INSTALL_INTERFACE:include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql>
     )
 
     set_target_properties(ASqlQt${QT_VERSION_MAJOR}Pg PROPERTIES
         EXPORT_NAME Pg
+        OUTPUT_NAME ${ASQL_LIB_OUTPUT_PREFIX}Pg
         VERSION ${PROJECT_VERSION}
-        SOVERSION 1
+        SOVERSION ${PROJECT_VERSION_MAJOR}
     )
 
     target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Pg
@@ -210,7 +217,7 @@ if (ASQL_DRIVER_POSTGRES)
         EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION bin COMPONENT runtime
         ARCHIVE DESTINATION lib COMPONENT devel
-        PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
+        PUBLIC_HEADER DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
     )
 endif() # End Postgres Driver
 
@@ -236,7 +243,7 @@ if (ASQL_DRIVER_MYSQL)
     )
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/asql_mysql_export.h
-        DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
+        DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql
     )
 
     add_library(ASql::Mysql ALIAS ASqlQt${QT_VERSION_MAJOR}Mysql)
@@ -253,13 +260,14 @@ if (ASQL_DRIVER_MYSQL)
 
     target_include_directories(ASqlQt${QT_VERSION_MAJOR}Mysql PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
+        $<INSTALL_INTERFACE:include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql>
     )
 
     set_target_properties(ASqlQt${QT_VERSION_MAJOR}Mysql PROPERTIES
         EXPORT_NAME Mysql
+        OUTPUT_NAME ${ASQL_LIB_OUTPUT_PREFIX}Mysql
         VERSION ${PROJECT_VERSION}
-        SOVERSION 1
+        SOVERSION ${PROJECT_VERSION_MAJOR}
     )
 
     target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Mysql
@@ -275,7 +283,7 @@ if (ASQL_DRIVER_MYSQL)
         EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION bin COMPONENT runtime
         ARCHIVE DESTINATION lib COMPONENT devel
-        PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
+        PUBLIC_HEADER DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
     )
 endif() # End MySQL Driver
 
@@ -307,7 +315,7 @@ if (ASQL_DRIVER_SQLITE)
     )
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/asql_sqlite_export.h
-        DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
+        DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql
     )
 
     add_library(ASql::Sqlite ALIAS ASqlQt${QT_VERSION_MAJOR}Sqlite)
@@ -319,7 +327,7 @@ if (ASQL_DRIVER_SQLITE)
 
     target_include_directories(ASqlQt${QT_VERSION_MAJOR}Sqlite PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
+        $<INSTALL_INTERFACE:include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql>
     )
 
     if (ASQL_SQLITE3_BUNDLED_SRC)
@@ -328,8 +336,9 @@ if (ASQL_DRIVER_SQLITE)
 
     set_target_properties(ASqlQt${QT_VERSION_MAJOR}Sqlite PROPERTIES
         EXPORT_NAME Sqlite
+        OUTPUT_NAME ${ASQL_LIB_OUTPUT_PREFIX}Sqlite
         VERSION ${PROJECT_VERSION}
-        SOVERSION 1
+        SOVERSION ${PROJECT_VERSION_MAJOR}
     )
 
     target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Sqlite
@@ -347,7 +356,7 @@ if (ASQL_DRIVER_SQLITE)
         EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION bin COMPONENT runtime
         ARCHIVE DESTINATION lib COMPONENT devel
-        PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
+        PUBLIC_HEADER DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
     )
 
 endif () # End Sqlite Driver
@@ -374,7 +383,7 @@ if (ASQL_DRIVER_ODBC)
     )
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/asql_odbc_export.h
-        DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql
+        DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql
     )
 
     add_library(ASql::Odbc ALIAS ASqlQt${QT_VERSION_MAJOR}Odbc)
@@ -386,7 +395,7 @@ if (ASQL_DRIVER_ODBC)
 
     target_include_directories(ASqlQt${QT_VERSION_MAJOR}Odbc PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include/asql-qt${QT_VERSION_MAJOR}/ASql>
+        $<INSTALL_INTERFACE:include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql>
     )
 
     # Optional: SQL Server ODBC extensions (fractional-second time, etc.)
@@ -405,8 +414,9 @@ if (ASQL_DRIVER_ODBC)
 
     set_target_properties(ASqlQt${QT_VERSION_MAJOR}Odbc PROPERTIES
         EXPORT_NAME Odbc
+        OUTPUT_NAME ${ASQL_LIB_OUTPUT_PREFIX}Odbc
         VERSION ${PROJECT_VERSION}
-        SOVERSION 1
+        SOVERSION ${PROJECT_VERSION_MAJOR}
     )
 
     target_link_libraries(ASqlQt${QT_VERSION_MAJOR}Odbc
@@ -422,7 +432,7 @@ if (ASQL_DRIVER_ODBC)
         EXPORT ASqlTargets DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION bin COMPONENT runtime
         ARCHIVE DESTINATION lib COMPONENT devel
-        PUBLIC_HEADER DESTINATION include/asql-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
+        PUBLIC_HEADER DESTINATION include/asql${PROJECT_VERSION_MAJOR}-qt${QT_VERSION_MAJOR}/ASql COMPONENT devel
     )
 
 endif () # End ODBC Driver
