@@ -410,6 +410,17 @@ void AOdbcThread::fetchResults(SQLHSTMT stmt, OdbcQueryPromise &promise)
         return;
     }
 
+    // Non-row statements (BEGIN/COMMIT/ROLLBACK, DML) have no result columns.
+    // SQLFetch on them yields "Invalid cursor state" on SQL Server.
+    if (numCols == 0) {
+        SQLLEN rowCount = 0;
+        SQLRowCount(stmt, &rowCount);
+        if (rowCount >= 0) {
+            promise.result->m_numRowsAffected = static_cast<qint64>(rowCount);
+        }
+        return;
+    }
+
     // Fetch column names and types
     QVector<SQLSMALLINT> colTypes(numCols);
     for (SQLSMALLINT i = 1; i <= numCols; ++i) {
@@ -484,13 +495,14 @@ void AOdbcThread::bindParameters(SQLHSTMT stmt,
         SQLRETURN ret         = SQL_SUCCESS;
 
         if (val.isNull()) {
+            // SQL Server rejects SQL_C_DEFAULT for untyped NULLs; WCHAR/VARCHAR is portable.
             indicators[i] = SQL_NULL_DATA;
             ret           = SQLBindParameter(stmt,
                                              paramNum,
                                              SQL_PARAM_INPUT,
-                                             SQL_C_DEFAULT,
-                                             SQL_VARCHAR,
-                                             0,
+                                             SQL_C_WCHAR,
+                                             SQL_WVARCHAR,
+                                             1,
                                              0,
                                              nullptr,
                                              0,
@@ -499,9 +511,10 @@ void AOdbcThread::bindParameters(SQLHSTMT stmt,
             switch (val.typeId()) {
             case QMetaType::Bool:
             {
+                // Fixed-length BIT: StrLen_or_Ind must be 0 (not sizeof), same as INTEGER.
                 SQLCHAR bval  = val.toBool() ? 1 : 0;
                 buffers[i]    = QByteArray(reinterpret_cast<const char *>(&bval), sizeof(bval));
-                indicators[i] = sizeof(SQLCHAR);
+                indicators[i] = 0;
                 ret           = SQLBindParameter(stmt,
                                                  paramNum,
                                                  SQL_PARAM_INPUT,
@@ -978,7 +991,8 @@ ADatabase::State ADriverOdbc::state() const
 
 void ADriverOdbc::begin(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb)
 {
-    exec(db, u8"BEGIN", receiver, std::move(cb));
+    // SQL Server rejects bare BEGIN; BEGIN TRANSACTION is portable across ODBC backends.
+    exec(db, u8"BEGIN TRANSACTION", receiver, std::move(cb));
 }
 
 void ADriverOdbc::commit(const std::shared_ptr<ADriver> &db, QObject *receiver, ACoroDataRef cb)
