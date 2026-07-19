@@ -471,26 +471,42 @@ void ADriverPg::rollback(const std::shared_ptr<ADriver> &db, QObject *receiver, 
 
 void ADriverPg::setupCheckReceiver(APGQuery &pgQuery, QObject *receiver)
 {
-    if (receiver) {
-        pgQuery.receiver      = receiver;
-        pgQuery.checkReceiver = receiver;
-        connect(receiver, &QObject::destroyed, this, [=, this](QObject *obj) {
-            if (m_queryRunning && !m_queuedQueries.empty() &&
-                m_queuedQueries.front().checkReceiver == obj && m_conn) {
-                PGcancel *cancel = PQgetCancel(m_conn->conn());
-                char errbuf[256];
-                int ret = PQcancel(cancel, errbuf, 256);
-                if (ret == 1) {
-                    qDebug(ASQL_PG) << "PQcancel sent";
-                } else {
-                    qDebug(ASQL_PG) << "PQcancel failed" << ret << errbuf;
-                }
-                PQfreeCancel(cancel);
-            }
-            //            qDebug(ASQL_PG) << "destroyed" << m_queryRunning <<
-            //            m_queuedQueries.empty() ;
-        });
+    if (!receiver) {
+        return;
     }
+
+    pgQuery.receiver      = receiver;
+    pgQuery.checkReceiver = receiver;
+    // PQcancel can only abort the currently running query; connect once per
+    // receiver so queued queries for the same object do not stack handlers.
+    connect(receiver,
+            &QObject::destroyed,
+            this,
+            &ADriverPg::cancelCurrentQueryOnReceiverDestroyed,
+            Qt::UniqueConnection);
+}
+
+void ADriverPg::cancelCurrentQueryOnReceiverDestroyed(QObject *obj)
+{
+    if (!m_queryRunning || m_queuedQueries.empty() || !m_conn) {
+        return;
+    }
+
+    // Only the front query is in flight on the server; later queued ones
+    // never started and will be skipped via QPointer when nextQuery runs.
+    if (m_queuedQueries.front().checkReceiver != obj) {
+        return;
+    }
+
+    PGcancel *cancel = PQgetCancel(m_conn->conn());
+    char errbuf[256];
+    int ret = PQcancel(cancel, errbuf, 256);
+    if (ret == 1) {
+        qDebug(ASQL_PG) << "PQcancel sent";
+    } else {
+        qDebug(ASQL_PG) << "PQcancel failed" << ret << errbuf;
+    }
+    PQfreeCancel(cancel);
 }
 
 bool ADriverPg::runQuery(APGQuery &pgQuery)
