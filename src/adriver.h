@@ -5,6 +5,7 @@
 #pragma once
 
 #include <adatabase.h>
+#include <asql_coro_delivery.h>
 #include <asql_export.h>
 
 #include <QObject>

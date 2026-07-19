@@ -21,6 +21,7 @@ set(asql_HEADERS
     adatabase.h
     apreparedquery.h
     asqliterals.h
+    asql_coro_delivery.h
     apool.h
     atransaction.h
     acoroexpected.h

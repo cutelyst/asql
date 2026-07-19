@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: MIT
 
 cmake_minimum_required(VERSION 3.28)
-project(libasql VERSION 0.109.0 LANGUAGES CXX)
+project(libasql
+    VERSION 1.0.0
+    LANGUAGES CXX
+)
 
 include(GNUInstallDirs)
 include(GenerateExportHeader)
