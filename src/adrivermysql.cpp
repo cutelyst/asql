@@ -1065,11 +1065,13 @@ int ADriverMysql::queueSize() const
 
 void ADriverMysql::subscribeToNotification(const std::shared_ptr<ADriver> &db,
                                            const QString &name,
-                                           QObject *receiver)
+                                           QObject *receiver,
+                                           ANotificationFn cb)
 {
     Q_UNUSED(db)
     Q_UNUSED(name)
     Q_UNUSED(receiver)
+    Q_UNUSED(cb)
     // MySQL does not support server-side notifications
 }
 

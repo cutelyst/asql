@@ -221,11 +221,13 @@ int ADriver::queueSize() const
 
 void ADriver::subscribeToNotification(const std::shared_ptr<ADriver> &db,
                                       const QString &name,
-                                      QObject *receiver)
+                                      QObject *receiver,
+                                      ANotificationFn cb)
 {
     Q_UNUSED(db);
     Q_UNUSED(name);
     Q_UNUSED(receiver);
+    Q_UNUSED(cb);
 }
 
 QStringList ADriver::subscribedToNotifications() const

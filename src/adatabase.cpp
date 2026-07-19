@@ -227,10 +227,12 @@ bool ADatabase::pipelineSync()
     return d->pipelineSync();
 }
 
-void ADatabase::subscribeToNotification(const QString &channel, QObject *receiver)
+void ADatabase::subscribeToNotification(const QString &channel,
+                                        QObject *receiver,
+                                        ANotificationFn cb)
 {
     Q_ASSERT(d);
-    d->subscribeToNotification(d, channel, receiver);
+    d->subscribeToNotification(d, channel, receiver, std::move(cb));
 }
 
 QStringList ADatabase::subscribedToNotifications() const

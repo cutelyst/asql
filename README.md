@@ -241,17 +241,11 @@ delete cancelator; // cancels the in-flight query; co_await resumes with an erro
 
 ### Notifications (Postgres only)
 
-Subscribe to a channel and connect to the driver signal to receive payloads. If the connection drops, re-subscribe after reconnecting:
+Subscribe with a per-channel callback. If the connection drops, re-subscribe after reconnecting:
 
 ```c++
 ADatabase db;
 QObject receiver;
-
-connect(db.driver(), &ADriver::notificationReceived, &receiver,
-        [](const ADatabaseNotification &notification) {
-            qDebug() << "DB notification:" << notification.self << notification.name
-                     << notification.payload;
-        });
 
 connect(db.driver(), &ADriver::stateChanged, &receiver,
         [&db](ADatabase::State state, const QString &status) {
@@ -260,7 +254,13 @@ connect(db.driver(), &ADriver::stateChanged, &receiver,
             if (state == ADatabase::Disconnected) {
                 qDebug() << "state disconnected";
             } else if (state == ADatabase::Connected) {
-                db.subscribeToNotification(u"my_awesome_notification"_s, &receiver);
+                db.subscribeToNotification(
+                    u"my_awesome_notification"_s,
+                    &receiver,
+                    [](const ADatabaseNotification &notification) {
+                        qDebug() << "DB notification:" << notification.self
+                                 << notification.name << notification.payload;
+                    });
             }
         });
 

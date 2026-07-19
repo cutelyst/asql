@@ -398,14 +398,18 @@ void ADriverPg::open(const std::shared_ptr<ADriver> &driver, QObject *receiver, 
                             //                            qDebug(ASQL_PG) << "NOTIFICATION" << name
                             //                            << notify;
 
-                            if (m_subscribedNotifications.contains(name)) {
+                            auto it = m_subscribedNotifications.constFind(name);
+                            if (it != m_subscribedNotifications.constEnd()) {
                                 QString payload;
                                 if (notify->extra) {
                                     payload = QString::fromUtf8(notify->extra);
                                 }
                                 const bool self = (notify->be_pid == PQbackendPID(m_conn->conn()));
-                                Q_EMIT notificationReceived(
-                                    ADatabaseNotification{name, payload, self});
+                                const ADatabaseNotification notification{name, payload, self};
+                                if (it.value()) {
+                                    it.value()(notification);
+                                }
+                                Q_EMIT notificationReceived(notification);
                             } else {
                                 qWarning(
                                     ASQL_PG,
@@ -702,7 +706,8 @@ int ADriverPg::queueSize() const
 
 void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db,
                                         const QString &name,
-                                        QObject *receiver)
+                                        QObject *receiver,
+                                        ANotificationFn cb)
 {
     if (name.isEmpty()) {
         qWarning(ASQL_PG) << "Invalid notification channel name" << name;
@@ -719,16 +724,19 @@ void ADriverPg::subscribeToNotification(const std::shared_ptr<ADriver> &db,
         return;
     }
 
-    m_subscribedNotifications.insert(name);
+    m_subscribedNotifications.insert(name, std::move(cb));
     listenCoro(db, name);
 
-    connect(
-        receiver, &QObject::destroyed, this, [=, this] { m_subscribedNotifications.remove(name); });
+    if (receiver) {
+        connect(receiver, &QObject::destroyed, this, [=, this] {
+            m_subscribedNotifications.remove(name);
+        });
+    }
 }
 
 QStringList ADriverPg::subscribedToNotifications() const
 {
-    return QStringList(m_subscribedNotifications.begin(), m_subscribedNotifications.end());
+    return m_subscribedNotifications.keys();
 }
 
 void ADriverPg::unsubscribeFromNotification(const std::shared_ptr<ADriver> &db, const QString &name)
