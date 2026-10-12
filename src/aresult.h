@@ -23,12 +23,10 @@ namespace ASql {
 namespace detail {
 
 template <typename T>
-struct is_optional : std::false_type {
-};
+struct is_optional : std::false_type {};
 
 template <typename T>
-struct is_optional<std::optional<T>> : std::true_type {
-};
+struct is_optional<std::optional<T>> : std::true_type {};
 
 } // namespace detail
 
